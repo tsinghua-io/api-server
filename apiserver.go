@@ -5,7 +5,9 @@ Api server in go
 package main
 
 import (
-	"github.com/tsinghua-io/api-server/api"
+	"github.com/tsinghua-io/api-server/agent"
+	"github.com/tsinghua-io/api-server/middleware"
+	"github.com/tsinghua-io/api-server/webapp"
 	"log"
 	"net/http"
 )
@@ -14,9 +16,14 @@ const (
 	ADDRESS = "127.0.0.1:8080"
 )
 
+func BindRoute(app *webapp.WebApp) {
+	app.PreRequest(middleware.GetUserSession)
+	app.UseAgent(agent.UserAgent)
+}
+
 func main() {
-	app := api.NewWebApp()
-	app.BindRoute()
+	app := webapp.NewWebApp()
+	BindRoute(app)
 	http.Handle("/", app)
 	err := http.ListenAndServe(ADDRESS, nil)
 	if err != nil {
