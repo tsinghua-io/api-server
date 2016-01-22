@@ -16,7 +16,7 @@ func (webapp *WebApp) BindRoute() {
 }
 
 func getUserHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
 	userid := mux.Vars(r)["id"]
 
