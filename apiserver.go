@@ -8,7 +8,7 @@ import (
 	"github.com/tsinghua-io/api-server/agent"
 	"github.com/tsinghua-io/api-server/middleware"
 	"github.com/tsinghua-io/api-server/webapp"
-	"log"
+	"github.com/golang/glog"
 	"net/http"
 )
 
@@ -28,6 +28,6 @@ func main() {
 	http.Handle("/", app)
 	err := http.ListenAndServe(ADDRESS, nil)
 	if err != nil {
-		log.Fatal("Error occured when lauching server: \n", err)
+		glog.Fatalln("Error occured when lauching server: \n", err)
 	}
 }

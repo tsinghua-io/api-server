@@ -23,5 +23,5 @@ func (ada CicAdapter) GetUserInfo() {
 		Name:       "宁雪妃ci",
 		Department: "電子工程",
 		User_type:  "undergraduate"},
-		http.StatusOK}
+		http.StatusUnauthorized}
 }

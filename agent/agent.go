@@ -27,14 +27,19 @@ func (useragent *userAgent) GetInfo(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+
+	adapterNum := len(adapter.AdapterNewerList)
 	queue := make(chan adapter.CommunicateUnit,
-		len(adapter.AdapterNewerList))
+		adapterNum)
 	for _, adaNewer := range adapter.AdapterNewerList {
 		ada := adaNewer(userSession.(middleware.UserSession), queue)
 		go ada.GetUserInfo()
 	}
+
 	var ans adapter.CommunicateUnit
 	var answerStatus bool
+	ansNumber := adapterNum
+
 	for {
 		ans = <-queue
 		// fixme: status should be choosen as the most
@@ -45,6 +50,11 @@ func (useragent *userAgent) GetInfo(w http.ResponseWriter, r *http.Request) {
 			j, _ := json.Marshal(ans.Resource)
 			w.Write(j)
 			answerStatus = true
+			break
+		}
+
+		ansNumber -= 1
+		if ansNumber <= 0 {
 			break
 		}
 	}
