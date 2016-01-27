@@ -18,6 +18,7 @@ const (
 
 func BindRoute(app *webapp.WebApp) {
 	app.PreRequest(middleware.GetUserSession)
+	app.PreRequest(middleware.GetMD5Tag)
 	app.UseAgent(agent.UserAgent)
 }
 
