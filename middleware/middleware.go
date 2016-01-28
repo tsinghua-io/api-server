@@ -8,6 +8,8 @@ import (
 	"strings"
 	"gopkg.in/redis.v3"
 	"github.com/golang/glog"
+	"crypto/sha256"
+	"fmt"
 )
 
 type UserSession struct {
@@ -41,6 +43,11 @@ func GetUserSession(w http.ResponseWriter, r *http.Request) bool {
 
 	loginNameAndPass := strings.SplitN(token[0], "@", 2)
 	loginName := loginNameAndPass[0]
+	loginPass := loginNameAndPass[1]
+
+	// Fixme: add salt to avoid look-up table attacks
+	loginPassHash := fmt.Sprintf("%x", sha256.Sum256([]byte(loginPass)))
+	userKey := loginName + ":" + loginPassHash
 
 	// Fetch session cookie from redis
 	client := redis.NewClient(&redis.Options{
@@ -48,7 +55,9 @@ func GetUserSession(w http.ResponseWriter, r *http.Request) bool {
 		Password: "",
 		DB:       0,  // use default DB
 	})
-	oldSession, err := client.Get(loginName + ":old").Result()
+
+	// Only two fetch, maybe should not use pipeline here
+	oldSession, err := client.Get(userKey + ":old").Result()
 	if err == redis.Nil {
 		oldSession = ""
 	} else if err != nil {
@@ -56,7 +65,7 @@ func GetUserSession(w http.ResponseWriter, r *http.Request) bool {
 		oldSession = ""
 	}
 
-	cicSession, err := client.Get(loginName + ":cic").Result()
+	cicSession, err := client.Get(userKey + ":cic").Result()
 	if err == redis.Nil {
 		cicSession = ""
 	} else if err != nil {
@@ -67,9 +76,9 @@ func GetUserSession(w http.ResponseWriter, r *http.Request) bool {
 	context.Set(r, "setSession", func (session string, cic bool) bool {
 		var key string
 		if cic {
-			key = loginName + ":cic"
+			key = userKey + ":cic"
 		} else {
-			key = loginName + ":old"
+			key = userKey + ":old"
 		}
 		// fixme: should exists an expiration
 		err := client.Set(key, session, 0).Err()
@@ -82,7 +91,7 @@ func GetUserSession(w http.ResponseWriter, r *http.Request) bool {
 
 	context.Set(r, "userSession", UserSession{
 		LoginName: loginName,
-		LoginPass: loginNameAndPass[1],
+		LoginPass: loginPass,
 		Session: oldSession,
 		CicSession: cicSession,
 	})
