@@ -5,10 +5,10 @@ Api server in go
 package main
 
 import (
+	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/agent"
 	"github.com/tsinghua-io/api-server/middleware"
 	"github.com/tsinghua-io/api-server/webapp"
-	"github.com/golang/glog"
 	"net/http"
 )
 

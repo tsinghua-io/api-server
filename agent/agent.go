@@ -4,6 +4,7 @@ package agent
 
 import (
 	"encoding/json"
+	"github.com/golang/glog"
 	"github.com/gorilla/context"
 	"github.com/tsinghua-io/api-server/adapter"
 	"github.com/tsinghua-io/api-server/middleware"
@@ -28,38 +29,26 @@ func (useragent *userAgent) GetInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	adapterNum := len(adapter.AdapterNewerList)
-	queue := make(chan adapter.CommunicateUnit,
-		adapterNum)
-	for _, adaNewer := range adapter.AdapterNewerList {
-		ada := adaNewer(userSession.(middleware.UserSession), queue)
-		go ada.GetUserInfo()
+	setSession, ok := context.GetOk(r, "setSession")
+	setSessionFunc := setSession.(func(string, bool) bool)
+	if !ok {
+		glog.Warningln("No setSession func in the request context.")
 	}
 
-	var ans adapter.CommunicateUnit
-	var answerStatus bool
-	ansNumber := adapterNum
+	oldAda := adapter.NewOldAdapter(userSession.(middleware.UserSession))
+	ans, err := oldAda.GetUserInfo()
 
-	for {
-		ans = <-queue
-		// fixme: status should be choosen as the most
-		// meaningful status. 500 > 401 > 400
-		// fixme: 304 not modified
-		if ans.Status == http.StatusOK ||
-			ans.Status == http.StatusCreated {
-			j, _ := json.Marshal(ans.Resource)
-			w.Write(j)
-			answerStatus = true
-			break
-		}
-
-		ansNumber -= 1
-		if ansNumber <= 0 {
-			break
-		}
-	}
-	if !answerStatus {
-		w.WriteHeader(ans.Status)
+	if err != nil {
+		glog.Warningln("Failed getting user info using old learning web. ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
+	// update session
+	if ans.Session != userSession.(middleware.UserSession).Session {
+		setSessionFunc(ans.Session, false)
+	}
+	j, _ := json.Marshal(ans.Resource)
+	w.WriteHeader(ans.Status)
+	w.Write(j)
 }

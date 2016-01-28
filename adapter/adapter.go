@@ -13,14 +13,15 @@ const (
 )
 
 type Adapter interface {
-	GetUserInfo()
+	GetUserInfo() (CommunicateUnit, error)
 }
 
-type AdapterNewer func(middleware.UserSession, chan CommunicateUnit) Adapter
+type AdapterNewer func(middleware.UserSession) Adapter
 
 var AdapterNewerList = []AdapterNewer{NewOldAdapter, NewCicAdapter}
 
 type CommunicateUnit struct {
 	Resource interface{}
-	Status   int
+	Status   int    // response http status
+	Session  string // the session used in this request
 }

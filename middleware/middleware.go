@@ -3,13 +3,13 @@
 package middleware
 
 import (
-	"github.com/gorilla/context"
-	"net/http"
-	"strings"
-	"gopkg.in/redis.v3"
-	"github.com/golang/glog"
 	"crypto/sha256"
 	"fmt"
+	"github.com/golang/glog"
+	"github.com/gorilla/context"
+	"gopkg.in/redis.v3"
+	"net/http"
+	"strings"
 )
 
 type UserSession struct {
@@ -53,7 +53,7 @@ func GetUserSession(w http.ResponseWriter, r *http.Request) bool {
 	client := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "",
-		DB:       0,  // use default DB
+		DB:       0, // use default DB
 	})
 
 	// Only two fetch, maybe should not use pipeline here
@@ -73,7 +73,7 @@ func GetUserSession(w http.ResponseWriter, r *http.Request) bool {
 		cicSession = ""
 	}
 
-	context.Set(r, "setSession", func (session string, cic bool) bool {
+	context.Set(r, "setSession", func(session string, cic bool) bool {
 		var key string
 		if cic {
 			key = userKey + ":cic"
@@ -90,9 +90,9 @@ func GetUserSession(w http.ResponseWriter, r *http.Request) bool {
 	})
 
 	context.Set(r, "userSession", UserSession{
-		LoginName: loginName,
-		LoginPass: loginPass,
-		Session: oldSession,
+		LoginName:  loginName,
+		LoginPass:  loginPass,
+		Session:    oldSession,
 		CicSession: cicSession,
 	})
 

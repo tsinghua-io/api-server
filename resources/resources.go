@@ -5,16 +5,16 @@ package resources
 type SUser struct {
 	Id         string
 	Name       string
-	Department string
 	User_type  string
+	Department string
 }
 
 type User struct {
 	SUser
-	Class  string
 	Gender string
 	Email  string
 	Phone  string
+	Class  string
 }
 
 type SCourse struct {
