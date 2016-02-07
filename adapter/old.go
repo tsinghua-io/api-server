@@ -5,8 +5,10 @@ import (
 	"github.com/tsinghua-io/api-server/middleware"
 	"github.com/tsinghua-io/api-server/resources"
 	"golang.org/x/net/html"
+	"io/ioutil"
 	"net/http"
 	"net/url"
+	"regexp"
 )
 
 // OldAdapter is the adapter for learn.tsinghua.edu.cn
@@ -24,13 +26,22 @@ func loginOld(name string, pass string) (string, error) {
 	form.Add("userpass", pass)
 	resp, err := http.PostForm("https://learn.tsinghua.edu.cn/MultiLanguage/lesson/teacher/loginteacher.jsp", form)
 	defer resp.Body.Close()
-	return resp.Header.Get("Set-Cookie"), err
+	body, err := ioutil.ReadAll(resp.Body)
+	match, _ := regexp.MatchString("用户名或密码错误，登录失败", string(body))
+	if match {
+		// Login failed.
+		return "", err
+	} else {
+		// Login success.
+		return resp.Header.Get("Set-Cookie"), err
+	}
 }
 
 func (ada OldAdapter) getOldResponse(url string, userSession middleware.UserSession,
-	headers map[string]string) (*http.Response, string, error) {
+	headers map[string]string) (*goquery.Document, string, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
+
 	var cookie string
 	if userSession.Session != "" {
 		cookie = userSession.Session
@@ -39,41 +50,61 @@ func (ada OldAdapter) getOldResponse(url string, userSession middleware.UserSess
 		// login and get session
 		var err error
 		cookie, err = loginOld(userSession.LoginName, userSession.LoginPass)
-		if err != nil {
-			return &http.Response{}, "", err
+		if err != nil || cookie == "" {
+			return &goquery.Document{}, "", err
 		}
 		req.Header.Add("Cookie", cookie)
 	}
+
 	// Set request headers
 	for name, value := range headers {
 		req.Header.Add(name, value)
 	}
-
+	// Do the request
 	resp, err := client.Do(req)
-	// TODO: if session expired, do another login.
-	// cookie = cookie + resp.Header.Get("Set-Cookie")
-	//fmt.Printf("cookie: %s\n", cookie)
-	return resp, cookie, err
+	defer resp.Body.Close()
+	// Construct goquery.Document
+	doc, err := goquery.NewDocumentFromResponse(resp)
+	if err != nil {
+		return &goquery.Document{}, cookie, err
+	}
+	content, _ := doc.Html()
+	match, _ := regexp.MatchString("请您登陆后再使用", content)
+	if match {
+		// Maybe session expire. Try relogin once
+		var err error
+		cookie, err = loginOld(userSession.LoginName, userSession.LoginPass)
+		if err != nil || cookie == "" {
+			// Error or login failed.
+			return &goquery.Document{}, "", err
+		}
+		req.Header.Set("Cookie", cookie)
+
+		resp, err := client.Do(req)
+		defer resp.Body.Close()
+		doc, err := goquery.NewDocumentFromResponse(resp)
+		if err != nil {
+			return &goquery.Document{}, cookie, err
+		}
+		return doc, cookie, err
+	} else {
+		return doc, cookie, err
+	}
 }
 
 func (ada OldAdapter) GetUserInfo() (CommunicateUnit, error) {
 	url := OldUrl + "/MultiLanguage/vspace/vspace_userinfo1.jsp"
-	resp, newCookie, err := ada.getOldResponse(url, ada.userSession, make(map[string]string))
+	doc, newCookie, err := ada.getOldResponse(url, ada.userSession, make(map[string]string))
 
 	if err != nil {
 		return CommunicateUnit{}, err
+	} else if newCookie == "" {
+		// Login failed
+		return CommunicateUnit{nil, http.StatusUnauthorized, newCookie}, nil
 	} else {
 		// parsing the response body
-		//body, _ := ioutil.ReadAll(resp.Body)
-		//respBody := string(body)
-		doc, err := goquery.NewDocumentFromResponse(resp)
-		if err != nil {
-			return CommunicateUnit{}, err
-		}
-
 		docTable := doc.Find("form")
 		infos := docTable.Find(".tr_l,.tr_l2").Map(func(i int, valueTR *goquery.Selection) string {
-			//fmt.Println(valueTR.Html())
 			switch valueTR.Nodes[0].FirstChild.Type {
 			case html.TextNode:
 				info, _ := valueTR.Html()
