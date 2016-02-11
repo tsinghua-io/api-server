@@ -10,6 +10,7 @@ import (
 	"github.com/tsinghua-io/api-server/middleware"
 	"github.com/tsinghua-io/api-server/webapp"
 	"net/http"
+	"github.com/NYTimes/gziphandler"
 )
 
 const (
@@ -25,7 +26,7 @@ func BindRoute(app *webapp.WebApp) {
 func main() {
 	app := webapp.NewWebApp()
 	BindRoute(app)
-	http.Handle("/", app)
+	http.Handle("/", gziphandler.GzipHandler(app))
 	err := http.ListenAndServe(ADDRESS, nil)
 	if err != nil {
 		glog.Fatalln("Error occured when lauching server: \n", err)
