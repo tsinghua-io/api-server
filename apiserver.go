@@ -7,7 +7,6 @@ package main
 import (
 	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/agent"
-	"github.com/tsinghua-io/api-server/middleware"
 	"github.com/tsinghua-io/api-server/webapp"
 	"net/http"
 	"github.com/NYTimes/gziphandler"
@@ -18,9 +17,9 @@ const (
 )
 
 func BindRoute(app *webapp.WebApp) {
-	app.PreRequest(middleware.GetUserSession)
-	app.PreRequest(middleware.GetMD5Tag)
 	app.UseAgent(agent.UserAgent)
+	app.UseMiddleware(agent.GetUserSession)
+	app.UseMiddleware(agent.GetMD5Tag)
 }
 
 func main() {

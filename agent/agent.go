@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"github.com/golang/glog"
 	"github.com/gorilla/context"
-	"github.com/tsinghua-io/api-server/adapter"
-	"github.com/tsinghua-io/api-server/middleware"
+	"github.com/tsinghua-io/api-server/adapter/old"
+	//"github.com/tsinghua-io/api-server/adapter/cic"
 	"github.com/tsinghua-io/api-server/webapp"
 	"net/http"
 )
@@ -23,32 +23,28 @@ func (useragent userAgent) BindRoute(app *webapp.WebApp) {
 
 // GetInfo of userAgent get and update the Info field of this user
 func (useragent *userAgent) GetInfo(w http.ResponseWriter, r *http.Request) {
-	userSession, ok := context.GetOk(r, "userSession")
+	oldSession, ok := context.GetOk(r, "oldSession")
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	setSession, ok := context.GetOk(r, "setSession")
-	setSessionFunc := setSession.(func(string, bool) bool)
-	if !ok {
-		glog.Warningln("No setSession func in the request context.")
+	oldAda := old.New(oldSession.([]*http.Cookie))
+	res, status := oldAda.GetUserInfo()
+
+	if status != http.StatusOK {
+		// clear the cookie
+		clearSession, ok := context.GetOk(r, "clearSession")
+		clearSessionFunc := clearSession.(func(bool) bool)
+		if !ok {
+			glog.Warningln("No clearSession func in the request context.")
+		}
+		clearSessionFunc(false) // clear session of old learning web
 	}
 
-	oldAda := adapter.NewOldAdapter(userSession.(middleware.UserSession))
-	ans, err := oldAda.GetUserInfo()
-
-	if err != nil {
-		glog.Warningln("Failed getting user info using old learning web. ", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+	w.WriteHeader(status)
+	if res != nil {
+		j, _ := json.Marshal(res)
+		w.Write(j)
 	}
-
-	// update session
-	if ans.Session != userSession.(middleware.UserSession).Session {
-		setSessionFunc(ans.Session, false)
-	}
-	j, _ := json.Marshal(ans.Resource)
-	w.WriteHeader(ans.Status)
-	w.Write(j)
 }

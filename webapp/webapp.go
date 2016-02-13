@@ -7,7 +7,7 @@ import (
 
 type WebApp struct {
 	*mux.Router
-	preRequestHandlers []Handler
+	handler http.Handler
 }
 
 type routeAgent interface {
@@ -17,26 +17,20 @@ type routeAgent interface {
 func NewWebApp() *WebApp {
 	app := &WebApp{
 		Router: mux.NewRouter()}
+	app.handler = app.Router
 	return app
 }
 
-type Handler func(w http.ResponseWriter, r *http.Request) bool
+type Middleware func(http.Handler) http.Handler
 
 // PreRequest of WebApp adds a pre-request handler.
 // The lastest added middleware is called first.
-func (app *WebApp) PreRequest(f Handler) {
-	app.preRequestHandlers = append([]Handler{f},
-		app.preRequestHandlers...)
+func (app *WebApp) UseMiddleware(f Middleware) {
+	app.handler = f(app.handler)
 }
 
 func (app *WebApp) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	for _, h := range app.preRequestHandlers {
-		status := h(w, r)
-		if !status {
-			return
-		}
-	}
-	app.Router.ServeHTTP(w, r)
+	app.handler.ServeHTTP(w, r)
 }
 
 // UseAgent of WebApp adds the routes of a routeAgent to the app receiver by calling agent.BindRoute.
