@@ -47,7 +47,7 @@ func Login(name string, pass string) (cookies []*http.Cookie, err error) {
 	return
 }
 
-func (ada OldAdapter) getOldResponse(url string, headers map[string]string) (doc *goquery.Document, err error) {
+func (ada *OldAdapter) getOldResponse(url string, headers map[string]string) (doc *goquery.Document, err error) {
 	url = BaseURL + url
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -75,7 +75,7 @@ func (ada OldAdapter) getOldResponse(url string, headers map[string]string) (doc
 	return
 }
 
-func (ada OldAdapter) GetUserInfo() (interface{}, int) {
+func (ada *OldAdapter) PersonalInfo() (interface{}, int) {
 	url := "/MultiLanguage/vspace/vspace_userinfo1.jsp"
 	doc, err := ada.getOldResponse(url, make(map[string]string))
 

@@ -30,7 +30,7 @@ func (useragent *userAgent) GetInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	oldAda := old.New(oldSession.([]*http.Cookie))
-	res, status := oldAda.GetUserInfo()
+	res, status := oldAda.PersonalInfo()
 
 	if status != http.StatusOK {
 		// clear the cookie
