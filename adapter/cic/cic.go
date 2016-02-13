@@ -82,12 +82,12 @@ func getAuth(username string, password string) (location string, err error) {
 	return
 }
 
-func New(jar cookiejar.Jar) CicAdapter {
+func New(jar cookiejar.Jar) *CicAdapter {
 	baseURL, err := url.Parse(BaseURL)
 	if err != nil {
 		glog.Errorf("Unable to parse base URL: %s", BaseURL)
-		return CicAdapter{}
+		return &CicAdapter{}
 	}
 
-	return CicAdapter{jar.Cookies(baseURL)}
+	return &CicAdapter{jar.Cookies(baseURL)}
 }
