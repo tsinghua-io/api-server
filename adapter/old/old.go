@@ -75,7 +75,7 @@ func (ada *OldAdapter) getOldResponse(url string, headers map[string]string) (do
 	return
 }
 
-func (ada *OldAdapter) PersonalInfo() (interface{}, int) {
+func (ada *OldAdapter) PersonalInfo() (*resource.User, int) {
 	url := "/MultiLanguage/vspace/vspace_userinfo1.jsp"
 	doc, err := ada.getOldResponse(url, make(map[string]string))
 
@@ -103,7 +103,7 @@ func (ada *OldAdapter) PersonalInfo() (interface{}, int) {
 			glog.Errorf("User information parsing error: cannot parse all the informations from %s", infos)
 			return nil, http.StatusBadGateway
 		} else {
-			return resource.User{
+			return &resource.User{
 				Id:        infos[0],
 				Name:      infos[1],
 				Type: infos[14],

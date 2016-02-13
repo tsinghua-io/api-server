@@ -19,7 +19,7 @@ const (
 func BindRoute(app *webapp.WebApp) {
 	app.UseAgent(agent.UserAgent)
 	app.UseMiddleware(agent.GetUserSession)
-	app.UseMiddleware(agent.GetMD5Tag)
+	//app.UseMiddleware(agent.GetMD5Tag)
 }
 
 func main() {
