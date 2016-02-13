@@ -3,25 +3,16 @@
 package adapter
 
 import (
-	"github.com/tsinghua-io/api-server/middleware"
-)
-
-// Websites urls.
-const (
-	OldUrl = "https://learn.tsinghua.edu.cn"
-	CicUrl = "https://learn.cic.tsinghua.edu.cn"
+	"github.com/tsinghua-io/api-server/resource"
 )
 
 type Adapter interface {
-	GetUserInfo() (CommunicateUnit, error)
-}
+	PersonalInfo() (user *resource.User, status int)
 
-type AdapterNewer func(middleware.UserSession) Adapter
+	Attending() (courses []*resource.Course, status int)
+	Attended() (courses []*resource.Course, status int)
 
-var AdapterNewerList = []AdapterNewer{NewOldAdapter, NewCicAdapter}
-
-type CommunicateUnit struct {
-	Resource interface{}
-	Status   int    // response http status
-	Session  string // the session used in this request
+	Announcements(course_id string) (courses []*resource.Announcement, status int)
+	Files(course_id string) (courses []*resource.File, status int)
+	Homeworks(course_id string) (courses []*resource.Homework, status int)
 }
