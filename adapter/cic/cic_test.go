@@ -28,3 +28,20 @@ func TestLoginFail(t *testing.T) {
 
 	t.Log("Error received: ", err)
 }
+
+func TestPersonalInfo(t *testing.T) {
+	cookies, err := Login(Username, Password)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	adapter := New(cookies)
+	user, err := adapter.PersonalInfo()
+	if err != nil {
+		t.Errorf("Unable to get personal data: ", err)
+		return
+	}
+
+	t.Log(user)
+}
