@@ -1,7 +1,7 @@
 package cic
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 	//"github.com/tsinghua-io/api-server/resources"
 	// "github.com/golang/glog"
@@ -25,20 +25,20 @@ type CicAdapter struct {
 func Login(username string, password string) (cookies []*http.Cookie, err error) {
 	location, err := getAuth(username, password)
 	if err != nil {
-		err = errors.New("Failed to get auth: " + err.Error())
+		err = fmt.Errorf("Failed to get auth: %s", err)
 		return
 	}
 
 	// Do not follow 302 redirect.
 	req, err := http.NewRequest("GET", location, nil)
 	if err != nil {
-		err = errors.New("Invalid location: " + err.Error())
+		err = fmt.Errorf("Invalid location: %s", err)
 		return
 	}
 
 	resp, err := http.DefaultTransport.RoundTrip(req)
 	if err != nil {
-		err = errors.New("Failed to login using auth: " + err.Error())
+		err = fmt.Errorf("Failed to login using auth: %s", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -56,8 +56,7 @@ func getAuth(username string, password string) (location string, err error) {
 	// Do not follow 302 redirect.
 	req, err := http.NewRequest("POST", LoginURL, strings.NewReader(data))
 	if err != nil {
-		err = errors.New("Failed to create the request: " +
-			err.Error())
+		err = fmt.Errorf("Failed to create the request: %s", err)
 		return
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -65,7 +64,7 @@ func getAuth(username string, password string) (location string, err error) {
 
 	resp, err := http.DefaultTransport.RoundTrip(req)
 	if err != nil {
-		err = errors.New("Request error: " + err.Error())
+		err = fmt.Errorf("Request error: %s", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -76,9 +75,9 @@ func getAuth(username string, password string) (location string, err error) {
 	if strings.Contains(location, "status=SUCCESS") {
 		err = nil
 	} else if strings.Contains(location, "status=BAD_CREDENTIALS") {
-		err = errors.New("Bad credentials.")
+		err = fmt.Errorf("Bad credentials.")
 	} else {
-		err = errors.New("Unknown new location: " + location)
+		err = fmt.Errorf("Unknown new location: %s", location)
 	}
 	return
 }
