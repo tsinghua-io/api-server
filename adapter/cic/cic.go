@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 	//"github.com/tsinghua-io/api-server/resources"
-	// "github.com/golang/glog"
+	"github.com/golang/glog"
 	// "io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
@@ -85,7 +85,9 @@ func getAuth(username string, password string) (location string, err error) {
 func New(jar cookiejar.Jar) CicAdapter {
 	baseURL, err := url.Parse(BaseURL)
 	if err != nil {
-
+		glog.Errorf("Unable to parse base URL: %s", BaseURL)
+		return CicAdapter{}
 	}
+
 	return CicAdapter{jar.Cookies(baseURL)}
 }
