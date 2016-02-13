@@ -104,49 +104,58 @@ func New(cookies []*http.Cookie) *CicAdapter {
 	return adapter
 }
 
-func (adapter *CicAdapter) PersonalInfo() (user *resource.User, err error) {
+func (adapter *CicAdapter) PersonalInfo() (user *resource.User, status int) {
 	resp, err := adapter.client.Post(PersonalInfoURL, "application/x-www-form-urlencoded", nil)
 	if err != nil {
+		glog.Errorf("Unable to fetch personal info: %s", err)
+		status = http.StatusBadGateway
 		return
 	}
 	defer resp.Body.Close()
 
+	// Parse into JSON.
 	j, err := simplejson.NewFromReader(resp.Body)
 	if err != nil {
+		glog.Errorf("Unable to parse the response to JSON: %s", err)
+		status = http.StatusBadGateway
 		return
 	}
 
+	// Fill data into User.
+	j = j.Get("dataSingle")
 	tempUser := resource.User{}
 
-	tempUser.Id, err = j.GetPath("dataSingle", "id").String()
-	if err != nil {
-		return
-	}
-	tempUser.Name, err = j.GetPath("dataSingle", "name").String()
-	if err != nil {
-		return
-	}
-	tempUser.Department, err = j.GetPath("dataSingle", "majorName").String()
-	if err != nil {
-		return
-	}
-	tempUser.Class, err = j.GetPath("dataSingle", "classname").String()
-	if err != nil {
-		return
-	}
-	tempUser.Gender, err = j.GetPath("dataSingle", "gender").String()
-	if err != nil {
-		return
-	}
-	tempUser.Email, err = j.GetPath("dataSingle", "email").String()
-	if err != nil {
-		return
-	}
-	tempUser.Phone, err = j.GetPath("dataSingle", "phone").String()
-	if err != nil {
+	for {
+		if tempUser.Id, err = j.Get("id").String(); err != nil {
+			break
+		}
+		if tempUser.Name, err = j.Get("name").String(); err != nil {
+			break
+		}
+		if tempUser.Department, err = j.Get("majorName").String(); err != nil {
+			break
+		}
+		if tempUser.Class, err = j.Get("classname").String(); err != nil {
+			break
+		}
+		if tempUser.Gender, err = j.Get("gender").String(); err != nil {
+			break
+		}
+		if tempUser.Email, err = j.Get("email").String(); err != nil {
+			break
+		}
+		if tempUser.Phone, err = j.Get("phone").String(); err != nil {
+			break
+		}
+
+		// Safe.
+		user = &tempUser
+		status = http.StatusOK
 		return
 	}
 
-	user = &tempUser
+	// Failed.
+	glog.Errorf("Unable to parse all the fields: %s", err)
+	status = http.StatusBadGateway
 	return
 }

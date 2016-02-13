@@ -1,12 +1,14 @@
 package cic
 
 import (
+	"github.com/tsinghua-io/api-server/resource"
+	"net/http"
 	"testing"
 )
 
 const (
-	Username = ""
 	Password = ""
+	Username = "lisihan13"
 )
 
 func TestLoginSuccuss(t *testing.T) {
@@ -37,11 +39,25 @@ func TestPersonalInfo(t *testing.T) {
 	}
 
 	adapter := New(cookies)
-	user, err := adapter.PersonalInfo()
-	if err != nil {
-		t.Errorf("Unable to get personal data: ", err)
+	user, status := adapter.PersonalInfo()
+	if status != http.StatusOK {
+		t.Errorf("Unable to get personal data: %s", err)
 		return
 	}
 
-	t.Log("Personal info received: ", user)
+	// Check fetched data.
+	expectedUser := resource.User{
+		Id:         "2013011187",
+		Name:       "李思涵",
+		Type:       "",
+		Department: "电子系",
+		Class:      "无36 ",
+		Gender:     "男",
+		Email:      "lisihan969@gmail.com",
+		Phone:      "18800183697",
+	}
+	if *user != expectedUser {
+		t.Errorf("Incorrect data: %s", user)
+		return
+	}
 }
