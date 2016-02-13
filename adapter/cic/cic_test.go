@@ -43,5 +43,5 @@ func TestPersonalInfo(t *testing.T) {
 		return
 	}
 
-	t.Log(user)
+	t.Log("Personal info received: ", user)
 }
