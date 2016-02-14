@@ -1,20 +1,18 @@
 package agent
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"crypto/sha256"
 	"github.com/golang/glog"
 	"github.com/gorilla/context"
 	"github.com/tsinghua-io/api-server/adapter/old"
-	"github.com/tsinghua-io/api-server/adapter/cic"
 	"gopkg.in/redis.v3"
 	"net/http"
 )
 
 const (
-	OldSessionTimeout = 0
-	CicSessionTimeout = 0
+	SessionTimeout = 0
 )
 
 func GetMD5Tag(h http.Handler) http.Handler {
@@ -52,90 +50,54 @@ func GetUserSession(h http.Handler) http.Handler {
 			DB:       0, // use default DB
 		})
 
-		oldKey := userKey + ":old"
-		cicKey := userKey + ":cic"
-
-		oldSession, err := client.Get(oldKey).Result()
-		if err == redis.Nil {
-			oldSession = ""
-		} else if err != nil {
-			glog.Warningln("Error when fetching session from redis: \n", err)
-			oldSession = ""
-		}
-
-		if oldSession == "" {
-			cookies, err := old.Login(loginName, loginPass)
-			if err != nil {
-				if err.Error() == "Bad credentials." {
-					w.WriteHeader(http.StatusUnauthorized)
-				} else {
-					w.WriteHeader(http.StatusBadGateway)
-				}
-				return
-			}
-			// save the cookies
-			j, _ := json.Marshal(cookies)
-			err = client.Set(oldKey, string(j), OldSessionTimeout).Err()
-			if err != nil {
-				glog.Warningln("Error when setting session to redis: \n", err)
-			}
-			context.Set(r, "oldSession", cookies)
-		} else {
-			var cookies []*http.Cookie
-			if err := json.Unmarshal([]byte(oldSession), &cookies); err != nil {
-				panic(err)
-			}
-			context.Set(r, "oldSession", cookies)
-		}
-
-		cicSession, err := client.Get(cicKey).Result()
-		if err == redis.Nil {
-			cicSession = ""
-		} else if err != nil {
-			glog.Warningln("Error when fetching session from redis: \n", err)
-			cicSession = ""
-		}
-
-
-		if cicSession == "" {
-			cookies, err := cic.Login(loginName, loginPass)
-			if err != nil {
-				if err.Error() == "Bad credentials." {
-					w.WriteHeader(http.StatusUnauthorized)
-				} else {
-					w.WriteHeader(http.StatusBadGateway)
-				}
-				return
-			}
-			// save the cookies
-			j, _ := json.Marshal(cookies)
-			err = client.Set(cicKey, string(j), CicSessionTimeout).Err()
-			if err != nil {
-				glog.Warningln("Error when setting session to redis: \n", err)
-			}
-			context.Set(r, "cicSession", cookies)
-		} else {
-			var cookies []*http.Cookie
-			if err := json.Unmarshal([]byte(oldSession), &cookies); err != nil {
-				panic(err)
-			}
-			context.Set(r, "cicSession", cookies)
-		}
-
-		context.Set(r, "clearSession", func(cic bool) bool {
+		var clearSessionFunc = func() bool {
 			var err error
-			if cic {
-				err = client.Set(cicKey, "", 0).Err()
-			} else {
-				err = client.Set(oldKey, "", 0).Err()
-			}
+			err = client.Set(userKey, "", 0).Err()
 
 			if err != nil {
-				glog.Warningln("Error when setting session to redis: \n", err)
+				glog.Warningln("Error when clear session to redis: \n", err)
 				return false
 			}
 			return true
-		})
+		}
+
+		sessionJson, err := client.Get(userKey).Result()
+		if err == redis.Nil {
+			sessionJson = ""
+		} else if err != nil {
+			glog.Warningln("Error when fetching session from redis: \n", err)
+			sessionJson = ""
+		}
+
+		var session []*http.Cookie
+		if sessionJson == "" {
+			session, err = old.Login(loginName, loginPass)
+			if err != nil {
+				if err.Error() == "Bad credentials." {
+					w.WriteHeader(http.StatusUnauthorized)
+				} else {
+					w.WriteHeader(http.StatusBadGateway)
+				}
+				return
+			}
+			if j, err := json.Marshal(session); err != nil {
+				glog.Warningf("Failed marshaling session: %s : %s \n", session, err)
+			} else {
+				if err := client.Set(userKey, j, SessionTimeout).Err(); err != nil {
+					glog.Warningln("Error when setting session to redis: \n", err)
+				}
+			}
+		} else {
+			if err := json.Unmarshal([]byte(sessionJson), &session); err != nil {
+				// TODO: Session cached in redis error, clear the cache
+				glog.Warningf("Failed to unmarshal session: %s : %s\n", sessionJson, err)
+				clearSessionFunc()
+			}
+		}
+		context.Set(r, "session", session)
+
+		context.Set(r, "clearSession", clearSessionFunc)
+
 		// Call the original handler
 		h.ServeHTTP(w, r)
 	})

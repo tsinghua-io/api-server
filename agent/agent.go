@@ -23,23 +23,24 @@ func (useragent userAgent) BindRoute(app *webapp.WebApp) {
 
 // GetInfo of userAgent get and update the Info field of this user
 func (useragent *userAgent) GetInfo(w http.ResponseWriter, r *http.Request) {
-	oldSession, ok := context.GetOk(r, "oldSession")
+	session, ok := context.GetOk(r, "session")
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	oldAda := old.New(oldSession.([]*http.Cookie))
-	res, status := oldAda.PersonalInfo()
+	ada := old.New(session.([]*http.Cookie))
+
+	res, status := ada.PersonalInfo()
 
 	if status != http.StatusOK {
 		// clear the cookie
 		clearSession, ok := context.GetOk(r, "clearSession")
-		clearSessionFunc := clearSession.(func(bool) bool)
+		clearSessionFunc := clearSession.(func() bool)
 		if !ok {
 			glog.Warningln("No clearSession func in the request context.")
 		}
-		clearSessionFunc(false) // clear session of old learning web
+		clearSessionFunc() // clear session of learning web
 	}
 
 	w.WriteHeader(status)

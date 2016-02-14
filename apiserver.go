@@ -5,11 +5,11 @@ Api server in go
 package main
 
 import (
+	"github.com/NYTimes/gziphandler"
 	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/agent"
 	"github.com/tsinghua-io/api-server/webapp"
 	"net/http"
-	"github.com/NYTimes/gziphandler"
 )
 
 const (

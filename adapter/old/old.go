@@ -1,20 +1,20 @@
 package old
 
 import (
+	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/resource"
 	"golang.org/x/net/html"
-	"github.com/golang/glog"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"strings"
-	"fmt"
 )
 
 const (
-	BaseURL = "https://learn.tsinghua.edu.cn"
+	BaseURL  = "https://learn.tsinghua.edu.cn"
 	LoginURL = "https://learn.tsinghua.edu.cn/MultiLanguage/lesson/teacher/loginteacher.jsp"
 )
 
@@ -22,7 +22,6 @@ const (
 type OldAdapter struct {
 	client http.Client
 }
-
 
 func Login(name string, pass string) (cookies []*http.Cookie, err error) {
 	form := url.Values{}
@@ -99,14 +98,15 @@ func (ada *OldAdapter) PersonalInfo() (*resource.User, int) {
 			}
 
 		})
+
 		if len(infos) < 15 {
 			glog.Errorf("User information parsing error: cannot parse all the informations from %s", infos)
 			return nil, http.StatusBadGateway
 		} else {
 			return &resource.User{
-				Id:        infos[0],
-				Name:      infos[1],
-				Type: infos[14],
+				Id:     infos[0],
+				Name:   infos[1],
+				Type:   infos[14],
 				Gender: infos[13],
 				Email:  infos[6],
 				Phone:  infos[7]}, http.StatusOK
