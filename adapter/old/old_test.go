@@ -83,7 +83,7 @@ func testEq(a, b []string) bool {
 	return true
 }
 
-func TestAttendingIds(t *testing.T) {
+func TestCourseIds(t *testing.T) {
 	cookies, err := Login(Username, Password)
 	if err != nil {
 		t.Error(err)
@@ -91,7 +91,7 @@ func TestAttendingIds(t *testing.T) {
 	}
 
 	adapter := New(cookies)
-	attendingIdList, err := adapter.attendingIds()
+	attendingIdList, err := adapter.courseIds(1)
 	if err != nil {
 		t.Errorf("Unable to get attending course id list: %s", err)
 		return

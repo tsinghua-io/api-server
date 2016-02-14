@@ -10,72 +10,55 @@ import (
 	//"github.com/tsinghua-io/api-server/adapter/cic"
 	"github.com/tsinghua-io/api-server/webapp"
 	"net/http"
+	"reflect"
 )
 
 type userAgent struct {
+	URLMap map[string]string
 }
 
-var UserAgent = userAgent{}
+var UserAgent = userAgent{
+	URLMap: map[string]string{
+		"/users/me":           "PersonalInfo",
+		"/users/me/attending": "Attending",
+		"/users/me/attended":  "Attended",
+	},
+}
 
 func (useragent userAgent) BindRoute(app *webapp.WebApp) {
-	app.HandleFunc("/users/me", useragent.GetInfo)
-	app.HandleFunc("/users/me/attending", useragent.GetAttending)
-}
-
-// GetAttending of userAgent get the attending courses list of current user "me".
-func (useragent *userAgent) GetAttending(w http.ResponseWriter, r *http.Request) {
-	session, ok := context.GetOk(r, "session")
-	if !ok {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-
-	ada := old.New(session.([]*http.Cookie))
-
-	res, status := ada.Attending()
-
-	if status != http.StatusOK {
-		// clear the cookie
-		clearSession, ok := context.GetOk(r, "clearSession")
-		clearSessionFunc := clearSession.(func() bool)
-		if !ok {
-			glog.Warningln("No clearSession func in the request context.")
-		}
-		clearSessionFunc() // clear session of learning web
-	}
-
-	w.WriteHeader(status)
-	if res != nil {
-		j, _ := json.Marshal(res)
-		w.Write(j)
+	for path, methodName := range useragent.URLMap {
+		app.HandleFunc(path, useragent.GenerateHandler(methodName))
 	}
 }
 
-// GetInfo of userAgent get the personal information of current user "me".
-func (useragent *userAgent) GetInfo(w http.ResponseWriter, r *http.Request) {
-	session, ok := context.GetOk(r, "session")
-	if !ok {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-
-	ada := old.New(session.([]*http.Cookie))
-
-	res, status := ada.PersonalInfo()
-
-	if status != http.StatusOK {
-		// clear the cookie
-		clearSession, ok := context.GetOk(r, "clearSession")
-		clearSessionFunc := clearSession.(func() bool)
+func (useragent *userAgent) GenerateHandler(methodName string) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		session, ok := context.GetOk(r, "session")
 		if !ok {
-			glog.Warningln("No clearSession func in the request context.")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
 		}
-		clearSessionFunc() // clear session of learning web
-	}
 
-	w.WriteHeader(status)
-	if res != nil {
-		j, _ := json.Marshal(res)
-		w.Write(j)
-	}
+		ada := old.New(session.([]*http.Cookie))
+
+		returnVals := reflect.ValueOf(ada).MethodByName(methodName).Call([]reflect.Value{})
+		res := returnVals[0].Interface()
+		status := returnVals[1].Interface().(int)
+		if status != http.StatusOK {
+			// clear the cookie
+			clearSession, ok := context.GetOk(r, "clearSession")
+			clearSessionFunc := clearSession.(func() bool)
+			if !ok {
+				glog.Warningln("No clearSession func in the request context.")
+			}
+			clearSessionFunc() // clear session of learning web
+		}
+
+		w.WriteHeader(status)
+		if res != nil {
+			j, _ := json.Marshal(res)
+			w.Write(j)
+		}
+
+	})
 }

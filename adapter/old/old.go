@@ -135,8 +135,8 @@ func (adapter *OldAdapter) PersonalInfo() (*resource.User, int) {
 	}
 }
 
-func (adapter *OldAdapter) attendingIds() (courseIdList []string, err error) {
-	path := "/MultiLanguage/lesson/student/MyCourse.jsp?typepage=1&language=cn"
+func (adapter *OldAdapter) courseIds(typepage int) (courseIdList []string, err error) {
+	path := "/MultiLanguage/lesson/student/MyCourse.jsp?typepage=" + strconv.Itoa(typepage)
 	doc, err := adapter.getOldResponse(path, make(map[string]string))
 
 	if err != nil {
@@ -214,7 +214,7 @@ func (adapter *OldAdapter) courseInfo(courseId string) (course *resource.Course,
 }
 
 func (adapter *OldAdapter) Attending() (courses []*resource.Course, status int) {
-	courseIdList, err := adapter.attendingIds()
+	courseIdList, err := adapter.courseIds(1)
 	if err != nil {
 		glog.Errorf("Failed to get attending course list: %s", err)
 		status = http.StatusBadGateway
@@ -235,6 +235,23 @@ func (adapter *OldAdapter) Attending() (courses []*resource.Course, status int) 
 }
 
 func (adapter *OldAdapter) Attended() (courses []*resource.Course, status int) {
+	courseIdList, err := adapter.courseIds(2)
+	if err != nil {
+		glog.Errorf("Failed to get attended course list: %s", err)
+		status = http.StatusBadGateway
+		return
+	}
+
+	for _, courseId := range courseIdList {
+		course, err := adapter.courseInfo(courseId)
+		if err != nil {
+			glog.Errorf("Failed to get course info of course %s: %s\n", courseId, err)
+			status = http.StatusBadGateway
+			return
+		}
+		courses = append(courses, course)
+	}
+	status = http.StatusOK
 	return
 }
 
