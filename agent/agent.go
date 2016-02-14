@@ -19,9 +19,39 @@ var UserAgent = userAgent{}
 
 func (useragent userAgent) BindRoute(app *webapp.WebApp) {
 	app.HandleFunc("/users/me", useragent.GetInfo)
+	app.HandleFunc("/users/me/attending", useragent.GetAttending)
 }
 
-// GetInfo of userAgent get and update the Info field of this user
+// GetAttending of userAgent get the attending courses list of current user "me".
+func (useragent *userAgent) GetAttending(w http.ResponseWriter, r *http.Request) {
+	session, ok := context.GetOk(r, "session")
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	ada := old.New(session.([]*http.Cookie))
+
+	res, status := ada.Attending()
+
+	if status != http.StatusOK {
+		// clear the cookie
+		clearSession, ok := context.GetOk(r, "clearSession")
+		clearSessionFunc := clearSession.(func() bool)
+		if !ok {
+			glog.Warningln("No clearSession func in the request context.")
+		}
+		clearSessionFunc() // clear session of learning web
+	}
+
+	w.WriteHeader(status)
+	if res != nil {
+		j, _ := json.Marshal(res)
+		w.Write(j)
+	}
+}
+
+// GetInfo of userAgent get the personal information of current user "me".
 func (useragent *userAgent) GetInfo(w http.ResponseWriter, r *http.Request) {
 	session, ok := context.GetOk(r, "session")
 	if !ok {

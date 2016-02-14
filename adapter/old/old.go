@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -46,8 +47,8 @@ func Login(name string, pass string) (cookies []*http.Cookie, err error) {
 	return
 }
 
-func (ada *OldAdapter) getOldResponse(url string, headers map[string]string) (doc *goquery.Document, err error) {
-	url = BaseURL + url
+func (adapter *OldAdapter) getOldResponse(path string, headers map[string]string) (doc *goquery.Document, err error) {
+	url := BaseURL + path
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		err = fmt.Errorf("Failed to create the request: %s", err)
@@ -59,7 +60,7 @@ func (ada *OldAdapter) getOldResponse(url string, headers map[string]string) (do
 		req.Header.Add(name, value)
 	}
 	// Do the request
-	resp, err := ada.client.Do(req)
+	resp, err := adapter.client.Do(req)
 	if err != nil {
 		err = fmt.Errorf("Request Error: %s", err)
 		return
@@ -74,9 +75,29 @@ func (ada *OldAdapter) getOldResponse(url string, headers map[string]string) (do
 	return
 }
 
-func (ada *OldAdapter) PersonalInfo() (*resource.User, int) {
+func New(cookies []*http.Cookie) *OldAdapter {
+	adapter := &OldAdapter{}
+
+	baseURL, err := url.Parse(BaseURL)
+	if err != nil {
+		glog.Errorf("Unable to parse base URL: %s", BaseURL)
+		return adapter
+	}
+
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		glog.Errorf("Unable to create cookie jar: %s", err)
+		return adapter
+	}
+
+	jar.SetCookies(baseURL, cookies)
+	adapter.client.Jar = jar
+	return adapter
+}
+
+func (adapter *OldAdapter) PersonalInfo() (*resource.User, int) {
 	url := "/MultiLanguage/vspace/vspace_userinfo1.jsp"
-	doc, err := ada.getOldResponse(url, make(map[string]string))
+	doc, err := adapter.getOldResponse(url, make(map[string]string))
 
 	if err != nil {
 		glog.Errorf("Failed to get response from learning web: %s", err)
@@ -114,22 +135,117 @@ func (ada *OldAdapter) PersonalInfo() (*resource.User, int) {
 	}
 }
 
-func New(cookies []*http.Cookie) *OldAdapter {
-	adapter := &OldAdapter{}
+func (adapter *OldAdapter) attendingIds() (courseIdList []string, err error) {
+	path := "/MultiLanguage/lesson/student/MyCourse.jsp?typepage=1&language=cn"
+	doc, err := adapter.getOldResponse(path, make(map[string]string))
 
-	baseURL, err := url.Parse(BaseURL)
 	if err != nil {
-		glog.Errorf("Unable to parse base URL: %s", BaseURL)
-		return adapter
+		err = fmt.Errorf("Failed to get response from learning web: %s", err)
+	} else {
+		// parsing the response body
+		courseLinkList := doc.Find("#info_1 tr a")
+		courseLinkList.Each(func(i int, s *goquery.Selection) {
+			var href string
+			var hrefUrl *url.URL
+			var courseId string
+			href, _ = s.Attr("href")
+			if hrefUrl, err = url.Parse(href); err != nil {
+				return
+			}
+			if courseId = hrefUrl.Query().Get("course_id"); courseId != "" {
+				courseIdList = append(courseIdList, courseId)
+			}
+		})
+	}
+	return
+}
+
+func (adapter *OldAdapter) courseInfo(courseId string) (course *resource.Course, err error) {
+	path := "/MultiLanguage/lesson/student/course_info.jsp?course_id=" + courseId
+	doc, err := adapter.getOldResponse(path, make(map[string]string))
+
+	if err != nil {
+		err = fmt.Errorf("Failed to get response from learning web: %s", err)
+	} else {
+		tds := doc.Find("table#table_box td")
+
+		infos := tds.Map(func(i int, s *goquery.Selection) string {
+			firstChild := s.Nodes[0].FirstChild
+			if firstChild == nil {
+				return ""
+			}
+			switch s.Nodes[0].FirstChild.Type {
+			case html.TextNode:
+				info, _ := s.Html()
+				return info
+			case html.ElementNode:
+				info, _ := s.Children().Html()
+				return info
+			default:
+				info, _ := s.Html()
+				return info
+			}
+		})
+		if len(infos) < 23 {
+			err = fmt.Errorf("Course information parsing error: cannot parse all the informations from %s", infos)
+			return
+		}
+		course = &resource.Course{
+			Id:   courseId,
+			Name: infos[5],
+			Teacher: resource.User{
+				Name:  infos[16],
+				Email: infos[18],
+				Phone: infos[20],
+			},
+			CourseNumber:   infos[1],
+			CourseSequence: infos[3],
+			Description:    infos[22],
+		}
+
+		if credit, err := strconv.Atoi(strings.TrimSpace(infos[7])); err == nil {
+			course.Credit = credit
+		}
+		if hour, err := strconv.Atoi(strings.TrimSpace(infos[9])); err == nil {
+			course.Hour = hour
+		}
+	}
+	return
+}
+
+func (adapter *OldAdapter) Attending() (courses []*resource.Course, status int) {
+	courseIdList, err := adapter.attendingIds()
+	if err != nil {
+		glog.Errorf("Failed to get attending course list: %s", err)
+		status = http.StatusBadGateway
+		return
 	}
 
-	jar, err := cookiejar.New(nil)
-	if err != nil {
-		glog.Errorf("Unable to create cookie jar: %s", err)
-		return adapter
+	for _, courseId := range courseIdList {
+		course, err := adapter.courseInfo(courseId)
+		if err != nil {
+			glog.Errorf("Failed to get course info of course %s: %s\n", courseId, err)
+			status = http.StatusBadGateway
+			return
+		}
+		courses = append(courses, course)
 	}
+	status = http.StatusOK
+	return
+}
 
-	jar.SetCookies(baseURL, cookies)
-	adapter.client.Jar = jar
-	return adapter
+func (adapter *OldAdapter) Attended() (courses []*resource.Course, status int) {
+	return
+}
+
+func (adapter *OldAdapter) Announcements(courseId string) (courses []*resource.Announcement, status int) {
+	return
+}
+
+func (adapter *OldAdapter) Files(courseId string) (courses []*resource.File, status int) {
+	return
+}
+
+func (adapter *OldAdapter) Homeworks(course_id string) (courses []*resource.Homework, status int) {
+	return
 }
