@@ -51,7 +51,7 @@ type File struct {
 	Owner       User     `json:"owner,omitempty"`
 }
 
-type attachment struct {
+type Attachment struct {
 	Filename    string `json:"filename,omitempty"`
 	Size        string `json:"size,omitempty"`
 	DownloadUrl string `json:"download_url,omitempty"`
@@ -68,7 +68,7 @@ type Homework struct {
 	MarkCount       int        `json:"mark_count,omitempty"`
 	MaxScore        string     `json:"max_score,omitempty"`
 	Body            string     `json:"body,omitempty"`
-	Attachment      attachment `json:"attachment,omitempty"`
+	Attachment      Attachment `json:"attachment,omitempty"`
 }
 
 type Submission struct {
@@ -80,7 +80,7 @@ type Submission struct {
 	Score             string     `json:"score,omitempty"`
 	MaxScore          string     `json:"max_score,omitempty"`
 	Body              string     `json:"body,omitempty"`
-	Attachment        attachment `json:"attachment,omitempty"`
+	Attachment        Attachment `json:"attachment,omitempty"`
 	Comment           string     `json:"comment,omitempty"`
-	CommentAttachment attachment `json:"comment_attachment,omitempty"`
+	CommentAttachment Attachment `json:"comment_attachment,omitempty"`
 }
