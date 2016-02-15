@@ -47,7 +47,7 @@ type File struct {
 	Filename    string   `json:"filename,omitempty"`
 	Size        int      `json:"size,omitempty"`
 	DownloadUrl string   `json:"download_url,omitempty"`
-	Created_at  string   `json:"created_at,omitempty"`
+	CreatedAt   string   `json:"created_at,omitempty"`
 	Owner       User     `json:"owner,omitempty"`
 }
 
@@ -61,7 +61,7 @@ type Homework struct {
 	Id              string     `json:"id,omitempty"`
 	CourseId        string     `json:"course_id,omitempty"`
 	Title           string     `json:"title,omitempty"`
-	Created_at      string     `json:"created_at,omitempty"`
+	CreatedAt       string     `json:"created_at,omitempty"`
 	BeginAt         string     `json:"begin_at,omitempty"`
 	DueAt           string     `json:"due_at,omitempty"`
 	SubmissionCount int        `json:"submission_count,omitempty"`
