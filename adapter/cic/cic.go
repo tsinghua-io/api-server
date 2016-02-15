@@ -77,6 +77,8 @@ func getAuth(username string, password string) (location string, err error) {
 		err = nil
 	} else if strings.Contains(location, "status=BAD_CREDENTIALS") {
 		err = fmt.Errorf("Bad credentials.")
+	} else if location == "" {
+		err = fmt.Errorf("No new location provided.")
 	} else {
 		err = fmt.Errorf("Unknown new location: %s", location)
 	}
