@@ -16,6 +16,7 @@ const (
 	BaseURL         = "http://learn.cic.tsinghua.edu.cn"
 	AuthURL         = "https://id.tsinghua.edu.cn/do/off/ui/auth/login/post/fa8077873a7a80b1cd6b185d5a796617/0?/j_spring_security_thauth_roaming_entry"
 	PersonalInfoURL = BaseURL + "/b/m/getStudentById"
+	AttendedURL     = BaseURL + "/b/myCourse/courseList/loadCourse4Student/-1"
 )
 
 type UserParser struct {
@@ -27,6 +28,76 @@ type UserParser struct {
 	Gender     string
 	Email      string
 	Phone      string
+}
+
+type CourseParser struct {
+	Id             string
+	Name           string
+	Teacher        UserParser
+	Coteachers     UserParser
+	SchoolYear     string
+	Semester       string
+	CourseNumber   string
+	CourseSequence string
+	Credit         string
+	Hour           string
+	Description    string
+	StudentCount   string
+}
+
+type AnnouncementParser struct {
+	Id        string
+	CourseId  string
+	Title     string
+	Owner     UserParser
+	CreatedAt string
+	Important string
+	Body      string
+}
+
+type FileParser struct {
+	Id          string
+	CourseId    string
+	Category    string
+	Title       string
+	Description string
+	Filename    string
+	Size        string
+	DownloadUrl string
+	Created_at  string
+	Owner       UserParser
+}
+
+type AttachmentParser struct {
+	Filename    string
+	Size        string
+	DownloadUrl string
+}
+
+type HomeworkParser struct {
+	Id              string
+	CourseId        string
+	Title           string
+	CreatedAt       string
+	BeginAt         string
+	DueAt           string
+	SubmissionCount string
+	MarkCount       string
+	Body            string
+	Attachment      AttachmentParser
+}
+
+type SubmissionParser struct {
+	CourseId          string
+	HomeworkId        string
+	Student           UserParser
+	CreatedAt         string
+	MarkedAt          string
+	Score             string
+	Body              string
+	Attachment        AttachmentParser
+	Comment           string
+	CommentAttachment AttachmentParser
 }
 
 // CicAdapter is the adapter for learn.cic.tsinghua.edu.cn
@@ -189,4 +260,19 @@ func (adapter *CicAdapter) PersonalInfo() (user *resource.User, status int) {
 
 	status = http.StatusOK
 	return
+}
+
+func (adapter *CicAdapter) Attending() (courses []*resource.Course, status int) {
+}
+
+func (adapter *CicAdapter) Attended() (courses []*resource.Course, status int) {
+}
+
+func (adapter *CicAdapter) Announcements(course_id string) (courses []*resource.Announcement, status int) {
+}
+
+func (adapter *CicAdapter) Files(course_id string) (courses []*resource.File, status int) {
+}
+
+func (adapter *CicAdapter) Homeworks(course_id string) (courses []*resource.Homework, status int) {
 }
