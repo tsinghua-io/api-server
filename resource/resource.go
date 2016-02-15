@@ -66,7 +66,6 @@ type Homework struct {
 	DueAt           string     `json:"due_at,omitempty"`
 	SubmissionCount int        `json:"submission_count,omitempty"`
 	MarkCount       int        `json:"mark_count,omitempty"`
-	MaxScore        string     `json:"max_score,omitempty"`
 	Body            string     `json:"body,omitempty"`
 	Attachment      Attachment `json:"attachment,omitempty"`
 }
@@ -78,7 +77,6 @@ type Submission struct {
 	CreatedAt         string     `json:"created_at,omitempty"`
 	MarkedAt          string     `json:"marked_at,omitempty"`
 	Score             string     `json:"score,omitempty"`
-	MaxScore          string     `json:"max_score,omitempty"`
 	Body              string     `json:"body,omitempty"`
 	Attachment        Attachment `json:"attachment,omitempty"`
 	Comment           string     `json:"comment,omitempty"`
