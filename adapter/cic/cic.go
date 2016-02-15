@@ -35,21 +35,18 @@ type CicAdapter struct {
 }
 
 func Login(username string, password string) (cookies []*http.Cookie, err error) {
-	location, err := getAuth(username, password)
-	if err != nil {
+	if location, err := getAuth(username, password); err != nil {
 		err = fmt.Errorf("Failed to get auth: %s", err)
 		return
 	}
 
 	// Do not follow 302 redirect.
-	req, err := http.NewRequest("GET", location, nil)
-	if err != nil {
+	if req, err := http.NewRequest("GET", location, nil); err != nil {
 		err = fmt.Errorf("Invalid location: %s", err)
 		return
 	}
 
-	resp, err := http.DefaultTransport.RoundTrip(req)
-	if err != nil {
+	if resp, err := http.DefaultTransport.RoundTrip(req); err != nil {
 		err = fmt.Errorf("Failed to login using auth: %s", err)
 		return
 	}
@@ -66,16 +63,14 @@ func getAuth(username string, password string) (location string, err error) {
 	data := form.Encode()
 
 	// Do not follow 302 redirect.
-	req, err := http.NewRequest("POST", AuthURL, strings.NewReader(data))
-	if err != nil {
+	if req, err := http.NewRequest("POST", AuthURL, strings.NewReader(data)); err != nil {
 		err = fmt.Errorf("Failed to create the request: %s", err)
 		return
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Content-Length", strconv.Itoa(len(data)))
 
-	resp, err := http.DefaultTransport.RoundTrip(req)
-	if err != nil {
+	if resp, err := http.DefaultTransport.RoundTrip(req); err != nil {
 		err = fmt.Errorf("Request error: %s", err)
 		return
 	}
@@ -99,14 +94,12 @@ func getAuth(username string, password string) (location string, err error) {
 func New(cookies []*http.Cookie) *CicAdapter {
 	adapter := &CicAdapter{}
 
-	baseURL, err := url.Parse(BaseURL)
-	if err != nil {
+	if baseURL, err := url.Parse(BaseURL); err != nil {
 		glog.Errorf("Unable to parse base URL: %s", BaseURL)
 		return adapter
 	}
 
-	jar, err := cookiejar.New(nil)
-	if err != nil {
+	if jar, err := cookiejar.New(nil); err != nil {
 		glog.Errorf("Unable to create cookie jar: %s", err)
 		return adapter
 	}
@@ -119,7 +112,6 @@ func New(cookies []*http.Cookie) *CicAdapter {
 
 // readUser reads a User from a json, using the given paths.
 func readUser(j *simplejson.Json, parser *UserParser) (user *resource.User, err error) {
-
 	tempUser := &resource.User{}
 	if parser.Id != "" {
 		if tempUser.Id, err = j.GetPath(parser.Id).String(); err != nil {
@@ -163,8 +155,7 @@ func readUser(j *simplejson.Json, parser *UserParser) (user *resource.User, err 
 }
 
 func (adapter *CicAdapter) PersonalInfo() (user *resource.User, status int) {
-	resp, err := adapter.client.Post(PersonalInfoURL, "application/x-www-form-urlencoded", nil)
-	if err != nil {
+	if resp, err := adapter.client.Post(PersonalInfoURL, "application/x-www-form-urlencoded", nil); err != nil {
 		glog.Errorf("Unable to fetch personal info: %s", err)
 		status = http.StatusBadGateway
 		return
@@ -172,8 +163,7 @@ func (adapter *CicAdapter) PersonalInfo() (user *resource.User, status int) {
 	defer resp.Body.Close()
 
 	// Parse into JSON.
-	j, err := simplejson.NewFromReader(resp.Body)
-	if err != nil {
+	if j, err := simplejson.NewFromReader(resp.Body); err != nil {
 		glog.Errorf("Unable to parse the response to JSON: %s", err)
 		status = http.StatusBadGateway
 		return
