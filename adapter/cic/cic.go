@@ -16,7 +16,7 @@ const (
 	BaseURL         = "http://learn.cic.tsinghua.edu.cn"
 	AuthURL         = "https://id.tsinghua.edu.cn/do/off/ui/auth/login/post/fa8077873a7a80b1cd6b185d5a796617/0?/j_spring_security_thauth_roaming_entry"
 	PersonalInfoURL = BaseURL + "/b/m/getStudentById"
-	AttendedURL     = BaseURL + "/b/myCourse/courseList/loadCourse4Student/-1"
+	// AttendedURL     = BaseURL + "/b/myCourse/courseList/loadCourse4Student/-1"
 )
 
 type UserParser struct {
@@ -188,9 +188,8 @@ func New(cookies []*http.Cookie) *CicAdapter {
 	return adapter
 }
 
-// readUser reads a User from a json, using the given paths.
-func readUser(j *simplejson.Json, parser *UserParser) (user *resource.User, err error) {
-
+// parseUser reads a User from a json, using the given paths.
+func (parser *UserParser) parse(j *simplejson.Json) (user *resource.User, err error) {
 	tempUser := &resource.User{}
 	if parser.Id != "" {
 		if tempUser.Id, err = j.GetPath(parser.Id).String(); err != nil {
@@ -261,7 +260,7 @@ func (adapter *CicAdapter) PersonalInfo() (user *resource.User, status int) {
 		Email:      "email",
 		Phone:      "phone",
 	}
-	if user, err = readUser(j.Get("dataSingle"), parser); err != nil {
+	if user, err = parser.parse(j.Get("dataSingle")); err != nil {
 		// Failed.
 		glog.Errorf("Unable to parse all the fields: %s", err)
 		status = http.StatusBadGateway
@@ -273,16 +272,21 @@ func (adapter *CicAdapter) PersonalInfo() (user *resource.User, status int) {
 }
 
 func (adapter *CicAdapter) Attending() (courses []*resource.Course, status int) {
+	return
 }
 
 func (adapter *CicAdapter) Attended() (courses []*resource.Course, status int) {
+	return
 }
 
 func (adapter *CicAdapter) Announcements(course_id string) (courses []*resource.Announcement, status int) {
+	return
 }
 
 func (adapter *CicAdapter) Files(course_id string) (courses []*resource.File, status int) {
+	return
 }
 
 func (adapter *CicAdapter) Homeworks(course_id string) (courses []*resource.Homework, status int) {
+	return
 }
