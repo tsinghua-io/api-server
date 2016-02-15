@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	Password = ""
+	Password = "a&bc@d123"
 	Username = "nxf12"
 )
 
@@ -143,4 +143,41 @@ func TestAttending(t *testing.T) {
 	j, _ := json.Marshal(courseList)
 	t.Logf("%s", j)
 	t.Errorf("") // for debugging now
+}
+
+var fileinfos = []struct{
+	path string
+	filename string
+	size int
+}{
+	{
+		"/uploadFile/downloadFile_student.jsp?module_id=322&filePath=8arceFhSxZBoBwJb7082UV/mmNcbSN5xUe%2BpThzkK0IghF0tyxn1nKHr%2BweqOzjVD6CQMKx3SA0bx5oDxp0I024ASseHlIo8md5F3eHl5tc%3D&course_id=127759&file_id=1432738",
+		"Talk_Through_533_I2S_540201987.rar",
+		5254,
+	},
+	// Chinese characters in filename
+	{
+		"/uploadFile/downloadFile_student.jsp?module_id=322&filePath=0lX7YLaBEmv2fQWoiFktl6dYnDkJpaPNEM4NfmjKBHbxkaGTKEsDOQKu1bOOZIR/O36V/rEbgRs%3D&course_id=129497&file_id=1461692",
+		"3.文件系统_371305032.pptx",
+		436394,
+	},
+}
+func TestParseFileInfo(t *testing.T) {
+	cookies, err := Login(Username, Password)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	adapter := New(cookies)
+	for _, tc := range fileinfos {
+		filename, size := adapter.parseFileInfo(tc.path)
+
+		if filename != tc.filename {
+			t.Errorf("Incorrect data: excpected %s, get %s", tc.filename, filename)
+		}
+		if size != tc.size {
+			t.Errorf("Incorrect data: excpected %d, get %d", tc.size, size)
+		}
+	}
 }

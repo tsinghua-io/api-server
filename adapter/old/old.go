@@ -3,6 +3,7 @@ package old
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/axgle/mahonia"
 	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/resource"
 	"golang.org/x/net/html"
@@ -12,6 +13,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"mime"
 )
 
 const (
@@ -105,19 +107,16 @@ func (adapter *OldAdapter) PersonalInfo() (*resource.User, int) {
 	} else {
 		// parsing the response body
 		docTable := doc.Find("form")
-		infos := docTable.Find(".tr_l,.tr_l2").Map(func(i int, valueTR *goquery.Selection) string {
+		infos := docTable.Find(".tr_l,.tr_l2").Map(func(i int, valueTR *goquery.Selection) (info string) {
 			switch valueTR.Nodes[0].FirstChild.Type {
 			case html.TextNode:
-				info, _ := valueTR.Html()
-				return info
+				info, _ = valueTR.Html()
 			case html.ElementNode:
-				info, _ := valueTR.Children().Attr("value")
-				return info
+				info, _ = valueTR.Children().Attr("value")
 			default:
-				info, _ := valueTR.Html()
-				return info
+				info, _ = valueTR.Html()
 			}
-
+			return
 		})
 
 		if len(infos) < 15 {
@@ -169,22 +168,19 @@ func (adapter *OldAdapter) courseInfo(courseId string) (course *resource.Course,
 	} else {
 		tds := doc.Find("table#table_box td")
 
-		infos := tds.Map(func(i int, s *goquery.Selection) string {
+		infos := tds.Map(func(i int, s *goquery.Selection) (info string) {
 			firstChild := s.Nodes[0].FirstChild
-			if firstChild == nil {
-				return ""
+			if firstChild != nil {
+				switch s.Nodes[0].FirstChild.Type {
+				case html.TextNode:
+					info, _ = s.Html()
+				case html.ElementNode:
+					info, _ = s.Children().Html()
+				default:
+					info, _ = s.Html()
+				}
 			}
-			switch s.Nodes[0].FirstChild.Type {
-			case html.TextNode:
-				info, _ := s.Html()
-				return info
-			case html.ElementNode:
-				info, _ := s.Children().Html()
-				return info
-			default:
-				info, _ := s.Html()
-				return info
-			}
+			return
 		})
 		if len(infos) < 23 {
 			err = fmt.Errorf("Course information parsing error: cannot parse all the informations from %s", infos)
@@ -278,9 +274,9 @@ func (adapter *OldAdapter) Announcements(courseId string) (announcements []*reso
 	} else {
 		trs := doc.Find("tr.tr1, tr.tr2")
 		trs.Each(func(i int, s *goquery.Selection) {
-			infos := s.Find("td").Map(func(i int, tdSelection *goquery.Selection) string {
-				info, _ := tdSelection.Html()
-				return info
+			infos := s.Find("td").Map(func(i int, tdSelection *goquery.Selection) (info string) {
+				info, _ = tdSelection.Html()
+				return
 			})
 
 			hrefSelection := s.Find("td a")
@@ -319,18 +315,102 @@ func (adapter *OldAdapter) Announcements(courseId string) (announcements []*reso
 					Important: important,
 					Body:      body,
 				})
-				status = http.StatusOK
 			}
-
 		})
+		if len(announcements) > 0 {
+			status = http.StatusOK
+		}
 	}
 	return
 }
 
-func (adapter *OldAdapter) Files(courseId string) (courses []*resource.File, status int) {
+func (adapter *OldAdapter) Files(courseId string) (files []*resource.File, status int) {
+	path := "/MultiLanguage/lesson/student/download.jsp?course_id=" + courseId
+	doc, err := adapter.getOldResponse(path, make(map[string]string))
+
+	status = http.StatusBadGateway
+
+	if err != nil {
+		glog.Errorf("Failed to get response from learning web: %s", err)
+	} else {
+		// Find all categories
+		categories := doc.Find("td.textTD").Map(func (i int, s *goquery.Selection) (info string) {
+			info, _ = s.Html()
+			return
+		})
+
+		categoryDivs := doc.Find("div.layerbox")
+		categoryDivs.Each(func (i int, div *goquery.Selection) {
+			category := categories[i]
+			trs := div.Find("#table_box tr~tr")
+			trs.Each(func(i int, s *goquery.Selection) {
+				infos := s.Find("td").Map(func(i int, tdSelection *goquery.Selection) (info string) {
+					info, _ = tdSelection.Html()
+					return
+				})
+
+				hrefSelection := s.Find("td a")
+
+				var href string
+				var hrefUrl *url.URL
+				var err error
+				if href, _ = hrefSelection.Attr("href"); href == "" {
+					return
+				}
+				if hrefUrl, err = url.Parse(href); err != nil {
+					return
+				}
+
+				if fileId := hrefUrl.Query().Get("file_id"); fileId != "" {
+					title, _ := hrefSelection.Html()
+					title = strings.TrimSpace(title)
+					file := &resource.File{
+						Id: fileId,
+						CourseId: courseId,
+						Category: []string{category},
+						Title: title,
+						Description: infos[2],
+						DownloadUrl: href,
+						Created_at: infos[4],
+					}
+
+					file.Filename, file.Size = adapter.parseFileInfo(href)
+					files = append(files, file)
+				}
+			})
+		})
+		if len(files) > 0 {
+			status = http.StatusOK
+		}
+	}
 	return
 }
 
-func (adapter *OldAdapter) Homeworks(course_id string) (courses []*resource.Homework, status int) {
+func (adapter *OldAdapter) parseFileInfo(path string) (filename string, size int) {
+	resp, err := adapter.client.Head(BaseURL + path)
+	if err != nil {
+		glog.Errorf("Failed to get header information of file %s: %s", path, err)
+		return
+	}
+
+	// file size
+	size, _ = strconv.Atoi(resp.Header.Get("Content-Length"))
+
+	// file name
+	disposition := resp.Header.Get("Content-Disposition")
+	// decode from gbk
+	disposition = mahonia.NewDecoder("GBK").ConvertString(disposition)
+
+	// parse disposition header
+	disposition, params, err := mime.ParseMediaType(disposition)
+	if err != nil {
+		glog.Errorf("Failed to parse header Content-Disposition of file %s", path)
+		return
+	}
+	filename = params["filename"]
+	return
+}
+
+func (adapter *OldAdapter) Homeworks(course_id string) (homeworks []*resource.Homework, status int) {
 	return
 }
