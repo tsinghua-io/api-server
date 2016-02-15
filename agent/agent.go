@@ -30,8 +30,8 @@ var UserAgent = userAgent{
 		"/users/me/attending":               handlerSpec{"Attending", "GET", getArgsMe},
 		"/users/me/attended":                handlerSpec{"Attended", "GET", getArgsMe},
 		"/courses/{courseId}/announcements": handlerSpec{"Announcements", "GET", getArgsCourse},
+		"/courses/{courseId}/files":         handlerSpec{"Files", "GET", getArgsCourse},
 		//"/courses/{courseId}/homeworks":   handlerSpec{"Homeworks", "GET", getArgsCourse},
-		"/courses/{courseId}/files":   handlerSpec{"Files", "GET", getArgsCourse},
 	},
 }
 

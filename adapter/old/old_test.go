@@ -145,10 +145,10 @@ func TestAttending(t *testing.T) {
 	t.Errorf("") // for debugging now
 }
 
-var fileinfos = []struct{
-	path string
+var fileinfos = []struct {
+	path     string
 	filename string
-	size int
+	size     int
 }{
 	{
 		"/uploadFile/downloadFile_student.jsp?module_id=322&filePath=8arceFhSxZBoBwJb7082UV/mmNcbSN5xUe%2BpThzkK0IghF0tyxn1nKHr%2BweqOzjVD6CQMKx3SA0bx5oDxp0I024ASseHlIo8md5F3eHl5tc%3D&course_id=127759&file_id=1432738",
@@ -162,6 +162,7 @@ var fileinfos = []struct{
 		436394,
 	},
 }
+
 func TestParseFileInfo(t *testing.T) {
 	cookies, err := Login(Username, Password)
 	if err != nil {
