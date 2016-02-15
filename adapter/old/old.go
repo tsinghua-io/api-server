@@ -281,7 +281,7 @@ func (adapter *OldAdapter) Files(courseId string) (files []*resource.File, statu
 						Title:       title,
 						Description: infos[2],
 						DownloadUrl: href,
-						Created_at:  infos[4],
+						CreatedAt:  infos[4],
 					}
 
 					file.Filename, file.Size = adapter.parseFileInfo(href)
