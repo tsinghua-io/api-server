@@ -19,7 +19,7 @@ const (
 	// AttendedURL     = BaseURL + "/b/myCourse/courseList/loadCourse4Student/-1"
 )
 
-type UserParser struct {
+type userParser struct {
 	Id         string
 	Name       string
 	Type       string
@@ -30,11 +30,11 @@ type UserParser struct {
 	Phone      string
 }
 
-type CourseParser struct {
+type courseParser struct {
 	Id             string
 	Name           string
-	Teacher        UserParser
-	Coteachers     UserParser
+	Teacher        userParser
+	Coteachers     userParser
 	SchoolYear     string
 	Semester       string
 	CourseNumber   string
@@ -45,17 +45,17 @@ type CourseParser struct {
 	StudentCount   string
 }
 
-type AnnouncementParser struct {
+type announcementParser struct {
 	Id        string
 	CourseId  string
 	Title     string
-	Owner     UserParser
+	Owner     userParser
 	CreatedAt string
 	Important string
 	Body      string
 }
 
-type FileParser struct {
+type fileParser struct {
 	Id          string
 	CourseId    string
 	Category    string
@@ -65,10 +65,10 @@ type FileParser struct {
 	Size        string
 	DownloadUrl string
 	Created_at  string
-	Owner       UserParser
+	Owner       userParser
 }
 
-type AttachmentParser struct {
+type attachmentParser struct {
 	Filename    string
 	Size        string
 	DownloadUrl string
@@ -84,20 +84,20 @@ type HomeworkParser struct {
 	SubmissionCount string
 	MarkCount       string
 	Body            string
-	Attachment      AttachmentParser
+	Attachment      attachmentParser
 }
 
-type SubmissionParser struct {
+type submissionParser struct {
 	CourseId          string
 	HomeworkId        string
-	Student           UserParser
+	Student           userParser
 	CreatedAt         string
 	MarkedAt          string
 	Score             string
 	Body              string
-	Attachment        AttachmentParser
+	Attachment        attachmentParser
 	Comment           string
-	CommentAttachment AttachmentParser
+	CommentAttachment attachmentParser
 }
 
 // CicAdapter is the adapter for learn.cic.tsinghua.edu.cn
@@ -189,7 +189,7 @@ func New(cookies []*http.Cookie) *CicAdapter {
 }
 
 // parseUser reads a User from a json, using the given paths.
-func (parser *UserParser) parse(j *simplejson.Json) (user *resource.User, err error) {
+func (parser *userParser) parse(j *simplejson.Json) (user *resource.User, err error) {
 	tempUser := &resource.User{}
 	if parser.Id != "" {
 		if tempUser.Id, err = j.GetPath(parser.Id).String(); err != nil {
@@ -250,7 +250,7 @@ func (adapter *CicAdapter) PersonalInfo() (user *resource.User, status int) {
 	}
 
 	// Fill data into User.
-	parser := &UserParser{
+	parser := &userParser{
 		Id:         "id",
 		Name:       "name",
 		Type:       "",
