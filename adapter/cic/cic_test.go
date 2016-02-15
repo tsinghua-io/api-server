@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	Password = ""
 	Username = "lisihan13"
+	Password = ""
 )
 
 func TestLoginSuccuss(t *testing.T) {

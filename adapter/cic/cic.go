@@ -18,6 +18,17 @@ const (
 	PersonalInfoURL = BaseURL + "/b/m/getStudentById"
 )
 
+type UserParser struct {
+	Id         string
+	Name       string
+	Type       string
+	Department string
+	Class      string
+	Gender     string
+	Email      string
+	Phone      string
+}
+
 // CicAdapter is the adapter for learn.cic.tsinghua.edu.cn
 type CicAdapter struct {
 	client http.Client
@@ -106,6 +117,51 @@ func New(cookies []*http.Cookie) *CicAdapter {
 	return adapter
 }
 
+// readUser reads a User from a json, using the given paths.
+func readUser(j *simplejson.Json, parser *UserParser) (user *resource.User, err error) {
+
+	tempUser := &resource.User{}
+	if parser.Id != "" {
+		if tempUser.Id, err = j.GetPath(parser.Id).String(); err != nil {
+			return
+		}
+	}
+	if parser.Name != "" {
+		if tempUser.Name, err = j.GetPath(parser.Name).String(); err != nil {
+			return
+		}
+	}
+	if parser.Department != "" {
+		if tempUser.Department, err = j.GetPath(parser.Department).String(); err != nil {
+			return
+		}
+	}
+	if parser.Class != "" {
+		if tempUser.Class, err = j.GetPath(parser.Class).String(); err != nil {
+			return
+		}
+	}
+	if parser.Gender != "" {
+		if tempUser.Gender, err = j.GetPath(parser.Gender).String(); err != nil {
+			return
+		}
+	}
+	if parser.Email != "" {
+		if tempUser.Email, err = j.GetPath(parser.Email).String(); err != nil {
+			return
+		}
+	}
+	if parser.Phone != "" {
+		if tempUser.Phone, err = j.GetPath(parser.Phone).String(); err != nil {
+			return
+		}
+	}
+
+	// Safe, we are done.
+	user = tempUser
+	return
+}
+
 func (adapter *CicAdapter) PersonalInfo() (user *resource.User, status int) {
 	resp, err := adapter.client.Post(PersonalInfoURL, "application/x-www-form-urlencoded", nil)
 	if err != nil {
@@ -124,40 +180,23 @@ func (adapter *CicAdapter) PersonalInfo() (user *resource.User, status int) {
 	}
 
 	// Fill data into User.
-	j = j.Get("dataSingle")
-	tempUser := resource.User{}
-
-	for {
-		if tempUser.Id, err = j.Get("id").String(); err != nil {
-			break
-		}
-		if tempUser.Name, err = j.Get("name").String(); err != nil {
-			break
-		}
-		if tempUser.Department, err = j.Get("majorName").String(); err != nil {
-			break
-		}
-		if tempUser.Class, err = j.Get("classname").String(); err != nil {
-			break
-		}
-		if tempUser.Gender, err = j.Get("gender").String(); err != nil {
-			break
-		}
-		if tempUser.Email, err = j.Get("email").String(); err != nil {
-			break
-		}
-		if tempUser.Phone, err = j.Get("phone").String(); err != nil {
-			break
-		}
-
-		// Safe.
-		user = &tempUser
-		status = http.StatusOK
+	parser := &UserParser{
+		Id:         "id",
+		Name:       "name",
+		Type:       "",
+		Department: "majorName",
+		Class:      "classname",
+		Gender:     "gender",
+		Email:      "email",
+		Phone:      "phone",
+	}
+	if user, err = readUser(j.Get("dataSingle"), parser); err != nil {
+		// Failed.
+		glog.Errorf("Unable to parse all the fields: %s", err)
+		status = http.StatusBadGateway
 		return
 	}
 
-	// Failed.
-	glog.Errorf("Unable to parse all the fields: %s", err)
-	status = http.StatusBadGateway
+	status = http.StatusOK
 	return
 }
