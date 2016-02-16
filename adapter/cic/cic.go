@@ -15,7 +15,7 @@ const (
 	BaseURL         = "http://learn.cic.tsinghua.edu.cn"
 	AuthURL         = "https://id.tsinghua.edu.cn/do/off/ui/auth/login/post/fa8077873a7a80b1cd6b185d5a796617/0?/j_spring_security_thauth_roaming_entry"
 	PersonalInfoURL = BaseURL + "/b/m/getStudentById"
-	// AttendedURL     = BaseURL + "/b/myCourse/courseList/loadCourse4Student/-1"
+	AttendedURL     = BaseURL + "/b/myCourse/courseList/loadCourse4Student/-1"
 )
 
 // CicAdapter is the adapter for learn.cic.tsinghua.edu.cn
@@ -136,17 +136,18 @@ func (adapter *CicAdapter) FetchInfo(url string, method string, p parser, info i
 }
 
 func (adapter *CicAdapter) PersonalInfo() (user *resource.User, status int) {
-	// Fill data into User.
 	user = &resource.User{}
 	status = adapter.FetchInfo(PersonalInfoURL, "POST", &personalInfoParser{}, user)
 	return
 }
 
-func (adapter *CicAdapter) Attending() (courses []*resource.Course, status int) {
-	return
-}
+// func (adapter *CicAdapter) Attending() (courses []*resource.Course, status int) {
+// 	status = adapter.FetchInfo(PersonalInfoURL, "POST", &attendingParser{}, &courses)
+// 	return
+// }
 
 func (adapter *CicAdapter) Attended() (courses []*resource.Course, status int) {
+	status = adapter.FetchInfo(AttendedURL, "GET", &courseListParser{}, &courses)
 	return
 }
 

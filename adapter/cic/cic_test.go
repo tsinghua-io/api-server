@@ -61,3 +61,18 @@ func TestPersonalInfo(t *testing.T) {
 		return
 	}
 }
+
+func TestAttended(t *testing.T) {
+	cookies, err := Login(Username, Password)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	adapter := New(cookies)
+	courses, status := adapter.Attended()
+	if status != http.StatusOK {
+		t.Errorf("Unable to get attended courses: %s", err)
+		return
+	}
+}

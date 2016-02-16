@@ -24,25 +24,39 @@ type personalInfoParser struct {
 	}
 }
 
-type courseParser struct {
+type courseListParser struct {
+	ResultList []struct {
+		CourseId      string
+		Course_no     string
+		Course_seq    string
+		Course_name   string
+		E_course_name string
+		TeacherInfo   struct {
+			Id     string
+			Name   string
+			Email  string
+			Phone  string
+			Gender string
+			Title  string
+		}
+		CodeDepartmentInfo struct {
+			Dwjc string
+		}
+		Detail_c    string
+		Credit      int
+		Course_time int
+	}
 }
 
-type announcementParser struct {
+type announcementsParser struct {
 }
 
-type fileParser struct {
+type filesParser struct {
 }
 
-type attachmentParser struct {
+type homeworksParser struct {
 }
 
-type homeworkParser struct {
-}
-
-type submissionParser struct {
-}
-
-// parseUser reads a User from a json, using the given paths.
 func (p *personalInfoParser) parse(r io.Reader, info interface{}) error {
 	user, ok := info.(*resource.User)
 	if !ok {
@@ -66,6 +80,41 @@ func (p *personalInfoParser) parse(r io.Reader, info interface{}) error {
 	return nil
 }
 
-// // parseUser reads a User from a json, using the given paths.
-// func (parser *courseParser) parse(reader *io.Reader) (course *resource.Course, err error) {
-// }
+func (p *courseListParser) parse(r io.Reader, info interface{}) error {
+	courses, ok := info.(*[]*resource.Course)
+	if !ok {
+		return fmt.Errorf("The parser and the destination type do not match.")
+	}
+
+	// s, _ := ioutil.ReadAll(r)
+	// fmt.Println(string(s))
+
+	dec := json.NewDecoder(r)
+	if err := dec.Decode(p); err != nil {
+		return err
+	}
+
+	for _, result := range p.ResultList {
+		course := &resource.Course{
+			Id:   result.CourseId,
+			Name: result.Course_name,
+			Teacher: resource.User{
+				Id:         result.TeacherInfo.Id,
+				Name:       result.TeacherInfo.Name,
+				Type:       result.TeacherInfo.Title,
+				Department: result.CodeDepartmentInfo.Dwjc,
+				Gender:     result.TeacherInfo.Gender,
+				Email:      result.TeacherInfo.Email,
+				Phone:      result.TeacherInfo.Phone,
+			},
+			CourseNumber:   result.Course_no,
+			CourseSequence: result.Course_seq,
+			Credit:         result.Credit,
+			Hour:           result.Course_time,
+			Description:    result.Detail_c,
+		}
+		*courses = append(*courses, course)
+	}
+
+	return nil
+}
