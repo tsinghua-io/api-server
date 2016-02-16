@@ -25,8 +25,8 @@ type OldAdapter struct {
 
 func Login(name string, pass string) (cookies []*http.Cookie, err error) {
 	form := url.Values{}
-	form.Add("userid", name)
-	form.Add("userpass", pass)
+	form.Set("userid", name)
+	form.Set("userpass", pass)
 	resp, err := http.PostForm(LoginURL, form)
 	if err != nil {
 		err = fmt.Errorf("Failed to create the request: %s", err)
@@ -341,6 +341,60 @@ func (adapter *OldAdapter) Homeworks(courseId string) (homeworks []*resource.Hom
 		if len(homeworks) > 0 {
 			status = http.StatusOK
 		}
+	}
+	return
+}
+
+func (adapter *OldAdapter) Submission(courseId string, homeworkId string) (submission *resource.Submission, status int) {
+	query := url.Values{}
+	query.Set("course_id", courseId)
+	query.Set("id", homeworkId)
+	path := "/MultiLanguage/lesson/student/hom_wk_view.jsp?" + query.Encode()
+	doc, err := adapter.getOldResponse(path, make(map[string]string))
+
+	status = http.StatusBadGateway
+
+	if err != nil {
+		glog.Errorf("Failed to get response from learning web: %s", err)
+	} else {
+		submission = &resource.Submission{
+			CourseId:   courseId,
+			HomeworkId: homeworkId,
+		}
+		// Body
+		infoTr := doc.Find("#table_box tr:nth-child(2)")
+		submission.Body, _ = infoTr.Find("td.title+td").Children().Html()
+		// Attachment
+		infoTr = infoTr.Next()
+		hrefSelection := infoTr.Find("td a")
+		if fileHref, _ := hrefSelection.Attr("href"); fileHref != "" {
+			submission.Attachment = adapter.parseAttachmentInfo(fileHref)
+		}
+		// Markuser and Markedat
+		infoTr = infoTr.Next().Next()
+		infos := infoTr.Find("td.title+td").Map(func(i int, s *goquery.Selection) (info string) {
+			info, _ = s.Html()
+			return
+		})
+		submission.MarkUser = resource.User{
+			Name: strings.TrimSpace(infos[0]),
+		}
+		submission.MarkedAt = strings.TrimSpace(infos[1])
+		// Score
+		infoTr = infoTr.Next()
+		score, _ := infoTr.Find("td.title+td").Html()
+		submission.Score = strings.TrimSpace(score)
+		// Comment
+		infoTr = infoTr.Next()
+		comment, _ := infoTr.Find("td.title+td").Children().Html()
+		submission.Comment = strings.TrimSpace(comment)
+		// CommentAttachment
+		infoTr = infoTr.Next()
+		hrefSelection = infoTr.Find("td a")
+		if fileHref, _ := hrefSelection.Attr("href"); fileHref != "" {
+			submission.CommentAttachment = adapter.parseAttachmentInfo(fileHref)
+		}
+		status = http.StatusOK
 	}
 	return
 }

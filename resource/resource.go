@@ -75,6 +75,7 @@ type Submission struct {
 	HomeworkId        string     `json:"homework_id,omitempty"`
 	Student           User       `json:"student,omitempty"`
 	CreatedAt         string     `json:"created_at,omitempty"`
+	MarkUser          User       `json:"mark_user,omitempty"`
 	MarkedAt          string     `json:"marked_at,omitempty"`
 	Score             string     `json:"score,omitempty"`
 	Body              string     `json:"body,omitempty"`

@@ -138,14 +138,19 @@ func (adapter *OldAdapter) parseHomeworkInfo(href string) (body string, attachme
 		// attachment
 		hrefSelection := bodyTr.Next().Find("td a")
 		if fileHref, _ := hrefSelection.Attr("href"); fileHref != "" {
-			filename, size := adapter.parseFileInfo(fileHref)
-			attachment = resource.Attachment{
-				Filename:    filename,
-				Size:        size,
-				DownloadUrl: href,
-			}
+			attachment = adapter.parseAttachmentInfo(fileHref)
 		}
 
+	}
+	return
+}
+
+func (adapter *OldAdapter) parseAttachmentInfo(fileHref string) (attachment resource.Attachment) {
+	filename, size := adapter.parseFileInfo(fileHref)
+	attachment = resource.Attachment{
+		Filename:    filename,
+		Size:        size,
+		DownloadUrl: fileHref,
 	}
 	return
 }

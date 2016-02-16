@@ -26,24 +26,28 @@ type userAgent struct {
 
 var UserAgent = userAgent{
 	UrlMap: map[string]handlerSpec{
-		"/users/me":                         handlerSpec{"PersonalInfo", "GET", getArgsMe},
-		"/users/me/attending":               handlerSpec{"Attending", "GET", getArgsMe},
-		"/users/me/attended":                handlerSpec{"Attended", "GET", getArgsMe},
-		"/courses/{courseId}/announcements": handlerSpec{"Announcements", "GET", getArgsCourse},
-		"/courses/{courseId}/files":         handlerSpec{"Files", "GET", getArgsCourse},
-		"/courses/{courseId}/homeworks":     handlerSpec{"Homeworks", "GET", getArgsCourse},
+		"/users/me":                                                 handlerSpec{"PersonalInfo", "GET", getArgsMe},
+		"/users/me/attending":                                       handlerSpec{"Attending", "GET", getArgsMe},
+		"/users/me/attended":                                        handlerSpec{"Attended", "GET", getArgsMe},
+		"/courses/{courseId}/announcements":                         handlerSpec{"Announcements", "GET", getArgsCourse},
+		"/courses/{courseId}/files":                                 handlerSpec{"Files", "GET", getArgsCourse},
+		"/courses/{courseId}/homeworks":                             handlerSpec{"Homeworks", "GET", getArgsCourse},
+		"/courses/{courseId}/homeworks/{homeworkId}/submissions/me": handlerSpec{"Submission", "GET", argsFromUrl("courseId", "homeworkId")},
 	},
 }
 
-func getArgsMe(w http.ResponseWriter, r *http.Request) []interface{} {
-	return []interface{}{}
+func argsFromUrl(argNames ...string) func(http.ResponseWriter, *http.Request) []interface{} {
+	return func(w http.ResponseWriter, r *http.Request) (args []interface{}) {
+		vars := mux.Vars(r)
+		for _, argName := range argNames {
+			args = append(args, vars[argName])
+		}
+		return
+	}
 }
 
-func getArgsCourse(w http.ResponseWriter, r *http.Request) []interface{} {
-	vars := mux.Vars(r)
-	courseId := vars["courseId"]
-	return []interface{}{courseId}
-}
+var getArgsCourse = argsFromUrl("courseId")
+var getArgsMe = argsFromUrl()
 
 func (useragent *userAgent) BindRoute(app *webapp.WebApp) {
 	for path, handlerSpec := range useragent.UrlMap {
@@ -71,8 +75,15 @@ func (useragent *userAgent) GenerateHandler(methodName string,
 		}
 
 		// call the actual handler in the adapter
-		returnVals := reflect.ValueOf(ada).MethodByName(methodName).Call(values)
+		methodVal := reflect.ValueOf(ada).MethodByName(methodName)
+		if !methodVal.IsValid() {
+			glog.Errorf("The current in-use adapter is not a receiver of method named '%s': Please check the url mapping.", methodName)
+			status := http.StatusInternalServerError
+			w.WriteHeader(status)
+			return
+		}
 
+		returnVals := methodVal.Call(values)
 		res := returnVals[0].Interface()
 		status := returnVals[1].Interface().(int)
 
