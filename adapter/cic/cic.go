@@ -2,7 +2,6 @@ package cic
 
 import (
 	"fmt"
-	"github.com/bitly/go-simplejson"
 	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/resource"
 	"net/http"
@@ -116,26 +115,9 @@ func (adapter *CicAdapter) PersonalInfo() (user *resource.User, status int) {
 	}
 	defer resp.Body.Close()
 
-	// Parse into JSON.
-	j, err := simplejson.NewFromReader(resp.Body)
-	if err != nil {
-		glog.Errorf("Unable to parse the response to JSON: %s", err)
-		status = http.StatusBadGateway
-		return
-	}
-
 	// Fill data into User.
-	parser := &userParser{
-		Id:         "id",
-		Name:       "name",
-		Type:       "",
-		Department: "majorName",
-		Class:      "classname",
-		Gender:     "gender",
-		Email:      "email",
-		Phone:      "phone",
-	}
-	if user, err = parser.parse(j.Get("dataSingle")); err != nil {
+	parser := &personalInfoParser{}
+	if user, err = parser.parse(resp.Body); err != nil {
 		// Failed.
 		glog.Errorf("Unable to parse all the fields: %s", err)
 		status = http.StatusBadGateway
