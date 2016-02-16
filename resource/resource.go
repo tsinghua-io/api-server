@@ -53,7 +53,7 @@ type File struct {
 
 type Attachment struct {
 	Filename    string `json:"filename,omitempty"`
-	Size        string `json:"size,omitempty"`
+	Size        int    `json:"size,omitempty"`
 	DownloadUrl string `json:"download_url,omitempty"`
 }
 
