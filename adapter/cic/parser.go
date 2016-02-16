@@ -2,9 +2,14 @@ package cic
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/tsinghua-io/api-server/resource"
 	"io"
 )
+
+type parser interface {
+	parse(reader io.Reader, info interface{}) error
+}
 
 type personalInfoParser struct {
 	DataSingle struct {
@@ -38,20 +43,29 @@ type submissionParser struct {
 }
 
 // parseUser reads a User from a json, using the given paths.
-func (parser *personalInfoParser) parse(reader io.Reader) (user *resource.User, err error) {
-	dec := json.NewDecoder(reader)
-	if err = dec.Decode(parser); err != nil {
-		return nil, err
+func (p *personalInfoParser) parse(r io.Reader, info interface{}) error {
+	user, ok := info.(*resource.User)
+	if !ok {
+		return fmt.Errorf("The parser and the destination type do not match.")
 	}
 
-	return &resource.User{
-		Id:         parser.DataSingle.Id,
-		Name:       parser.DataSingle.Name,
-		Type:       parser.DataSingle.Title,
-		Department: parser.DataSingle.MajorName,
-		Class:      parser.DataSingle.Classname,
-		Gender:     parser.DataSingle.Gender,
-		Email:      parser.DataSingle.Email,
-		Phone:      parser.DataSingle.Phone,
-	}, nil
+	dec := json.NewDecoder(r)
+	if err := dec.Decode(p); err != nil {
+		return err
+	}
+
+	user.Id = p.DataSingle.Id
+	user.Name = p.DataSingle.Name
+	user.Type = p.DataSingle.Title
+	user.Department = p.DataSingle.MajorName
+	user.Class = p.DataSingle.Classname
+	user.Gender = p.DataSingle.Gender
+	user.Email = p.DataSingle.Email
+	user.Phone = p.DataSingle.Phone
+
+	return nil
 }
+
+// // parseUser reads a User from a json, using the given paths.
+// func (parser *courseParser) parse(reader *io.Reader) (course *resource.Course, err error) {
+// }

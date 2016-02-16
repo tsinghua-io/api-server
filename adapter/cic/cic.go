@@ -106,25 +106,39 @@ func New(cookies []*http.Cookie) *CicAdapter {
 	return adapter
 }
 
-func (adapter *CicAdapter) PersonalInfo() (user *resource.User, status int) {
-	resp, err := adapter.client.Post(PersonalInfoURL, "application/x-www-form-urlencoded", nil)
+func (adapter *CicAdapter) FetchInfo(url string, method string, p parser, info interface{}) (status int) {
+	// Fetch data from url.
+	var resp *http.Response
+	var err error
+
+	switch method {
+	case "GET":
+		resp, err = adapter.client.Get(url)
+	case "POST":
+		resp, err = adapter.client.Post(url, "application/x-www-form-urlencoded", nil)
+	default:
+		glog.Errorf("Unknown method to fetch info: %s", method)
+		return http.StatusInternalServerError
+	}
 	if err != nil {
-		glog.Errorf("Unable to fetch personal info: %s", err)
-		status = http.StatusBadGateway
-		return
+		glog.Errorf("Unable to fetch info from %s: %s", url, err)
+		return http.StatusBadGateway
 	}
 	defer resp.Body.Close()
 
-	// Fill data into User.
-	parser := &personalInfoParser{}
-	if user, err = parser.parse(resp.Body); err != nil {
-		// Failed.
-		glog.Errorf("Unable to parse all the fields: %s", err)
-		status = http.StatusBadGateway
-		return
+	if err := p.parse(resp.Body, info); err != nil {
+		glog.Errorf("Unable to parse data received from %s: %s", url, err)
+		return http.StatusBadGateway
 	}
 
-	status = http.StatusOK
+	// We are safe.
+	return http.StatusOK
+}
+
+func (adapter *CicAdapter) PersonalInfo() (user *resource.User, status int) {
+	// Fill data into User.
+	user = &resource.User{}
+	status = adapter.FetchInfo(PersonalInfoURL, "POST", &personalInfoParser{}, user)
 	return
 }
 
