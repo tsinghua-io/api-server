@@ -281,7 +281,7 @@ func (adapter *OldAdapter) Files(courseId string) (files []*resource.File, statu
 						Title:       title,
 						Description: infos[2],
 						DownloadUrl: href,
-						CreatedAt:  infos[4],
+						CreatedAt:   infos[4],
 					}
 
 					file.Filename, file.Size = adapter.parseFileInfo(href)
@@ -296,6 +296,51 @@ func (adapter *OldAdapter) Files(courseId string) (files []*resource.File, statu
 	return
 }
 
-func (adapter *OldAdapter) Homeworks(course_id string) (homeworks []*resource.Homework, status int) {
+func (adapter *OldAdapter) Homeworks(courseId string) (homeworks []*resource.Homework, status int) {
+	path := "/MultiLanguage/lesson/student/hom_wk_brw.jsp?course_id=" + courseId
+	doc, err := adapter.getOldResponse(path, make(map[string]string))
+
+	status = http.StatusBadGateway
+
+	if err != nil {
+		glog.Errorf("Failed to get response from learning web: %s", err)
+	} else {
+		trs := doc.Find("tr.tr1, tr.tr2")
+		trs.Each(func(i int, s *goquery.Selection) {
+			infos := s.Find("td").Map(func(i int, tdSelection *goquery.Selection) (info string) {
+				info, _ = tdSelection.Html()
+				return
+			})
+
+			hrefSelection := s.Find("td a")
+
+			var href string
+			var hrefUrl *url.URL
+			var err error
+			href, _ = hrefSelection.Attr("href")
+
+			if hrefUrl, err = url.Parse(href); err != nil {
+				return
+			}
+
+			if homeworkId := hrefUrl.Query().Get("id"); homeworkId != "" {
+				title, _ := hrefSelection.Html()
+
+				homework := &resource.Homework{
+					Id:        homeworkId,
+					CourseId:  courseId,
+					Title:     title,
+					CreatedAt: infos[1],
+					BeginAt:   infos[1],
+					DueAt:     infos[2],
+				}
+				homework.Body, homework.Attachment = adapter.parseHomeworkInfo(href)
+				homeworks = append(homeworks, homework)
+			}
+		})
+		if len(homeworks) > 0 {
+			status = http.StatusOK
+		}
+	}
 	return
 }

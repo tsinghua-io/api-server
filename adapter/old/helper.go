@@ -124,3 +124,28 @@ func (adapter *OldAdapter) parseFileInfo(path string) (filename string, size int
 	filename = params["filename"]
 	return
 }
+
+func (adapter *OldAdapter) parseHomeworkInfo(href string) (body string, attachment resource.Attachment) {
+	path := "/MultiLanguage/lesson/student/" + href
+	doc, err := adapter.getOldResponse(path, make(map[string]string))
+
+	if err != nil {
+		glog.Errorf("Failed to get response from learning web: %s", err)
+	} else {
+		bodyTr := doc.Find("table#table_box tr:nth-child(2)")
+		body, _ = bodyTr.Find("td ~ td").First().Children().Html()
+
+		// attachment
+		hrefSelection := bodyTr.Next().Find("td a")
+		if fileHref, _ := hrefSelection.Attr("href"); fileHref != "" {
+			filename, size := adapter.parseFileInfo(fileHref)
+			attachment = resource.Attachment{
+				Filename:    filename,
+				Size:        size,
+				DownloadUrl: href,
+			}
+		}
+
+	}
+	return
+}
