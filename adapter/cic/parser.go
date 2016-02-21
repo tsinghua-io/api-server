@@ -84,6 +84,43 @@ func (p *timeLocationParser) parse(r io.Reader, info interface{}, _ string) erro
 	return nil
 }
 
+type assistantsParser struct {
+	ResultList []struct {
+		id     string
+		dwmc   string
+		phone  string
+		email  string
+		name   string
+		gender string
+	}
+}
+
+func (p *assistantsParser) parse(r io.Reader, info interface{}, _ string) error {
+	users, ok := info.(*[]*resource.User)
+	if !ok {
+		return fmt.Errorf("The parser and the destination type do not match.")
+	}
+
+	dec := json.NewDecoder(r)
+	if err := dec.Decode(p); err != nil {
+		return err
+	}
+
+	for _, result := range p.ResultList {
+		user := &resource.User{
+			Id:         result.id,
+			Name:       result.name,
+			Department: result.dwmc,
+			Gender:     result.gender,
+			Email:      result.email,
+			Phone:      result.phone,
+		}
+		*users = append(*users, user)
+	}
+
+	return nil
+}
+
 type courseListParser struct {
 	ResultList []struct {
 		CourseId      string
@@ -154,8 +191,8 @@ func (p *courseListParser) parse(r io.Reader, info interface{}, langCode string)
 			Hour:           result.Course_time,
 			Description:    description,
 
-			Teachers: []resource.User{
-				resource.User{
+			Teachers: []*resource.User{
+				&resource.User{
 					Id:         result.TeacherInfo.Id,
 					Name:       result.TeacherInfo.Name,
 					Type:       result.TeacherInfo.Title,

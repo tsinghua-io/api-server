@@ -33,8 +33,9 @@ type Course struct {
 	Location    string `json:"location,omitempty"`
 
 	// Staff.
-	Teachers   []User `json:"teachers,omitempty"`
-	Assistants []User `json:"assistants,omitempty"`
+	// TODO: Pointer slice?
+	Teachers   []*User `json:"teachers,omitempty"`
+	Assistants []*User `json:"assistants,omitempty"`
 }
 
 type Announcement struct {
