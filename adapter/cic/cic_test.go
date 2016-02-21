@@ -41,7 +41,7 @@ func TestPersonalInfo(t *testing.T) {
 	adapter := New(cookies)
 	user, status := adapter.PersonalInfo("zh-CN")
 	if status != http.StatusOK {
-		t.Errorf("Unable to get personal data: %s", err)
+		t.Errorf("Unable to get personal data: %s", status)
 		return
 	}
 
@@ -70,9 +70,13 @@ func TestAttended(t *testing.T) {
 	}
 
 	adapter := New(cookies)
-	_, status := adapter.Attended("zh-CN")
+	courses, status := adapter.Attended("zh-CN")
 	if status != http.StatusOK {
-		t.Errorf("Unable to get attended courses: %s", err)
+		t.Errorf("Unable to get attended courses: %s", status)
 		return
+	}
+
+	for _, course := range courses {
+		t.Log(*course)
 	}
 }
