@@ -68,7 +68,7 @@ func (p *timeLocationParser) parse(r io.Reader, info interface{}, _ string) erro
 		return err
 	}
 	if len(p.ResultList) == 0 {
-		return fmt.Errorf("resultList is empty.")
+		return nil // No time location info
 	}
 
 	var err error

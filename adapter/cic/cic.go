@@ -16,6 +16,7 @@ const (
 	AuthURL         = "https://id.tsinghua.edu.cn/do/off/ui/auth/login/post/fa8077873a7a80b1cd6b185d5a796617/0?/j_spring_security_thauth_roaming_entry"
 	PersonalInfoURL = BaseURL + "/b/m/getStudentById"
 	AttendedURL     = BaseURL + "/b/myCourse/courseList/loadCourse4Student/-1"
+	TimePlaceURL    = BaseURL + "/b/course/info/timePlace/{course_id}"
 )
 
 // CicAdapter is the adapter for learn.cic.tsinghua.edu.cn
@@ -141,7 +142,17 @@ func (adapter *CicAdapter) PersonalInfo(langCode string) (user *resource.User, s
 // }
 
 func (adapter *CicAdapter) Attended(langCode string) (courses []*resource.Course, status int) {
-	status = adapter.FetchInfo(AttendedURL, "GET", langCode, &courseListParser{}, &courses)
+	if status = adapter.FetchInfo(AttendedURL, "GET", langCode, &courseListParser{}, &courses); status != http.StatusOK {
+		return nil, status
+	}
+
+	for _, course := range courses {
+		url := strings.Replace(TimePlaceURL, "{course_id}", course.Id, -1)
+		if status = adapter.FetchInfo(url, "GET", langCode, &timeLocationParser{}, course); status != http.StatusOK {
+			return nil, status
+		}
+	}
+
 	return
 }
 
