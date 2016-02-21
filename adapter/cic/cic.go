@@ -26,21 +26,18 @@ type CicAdapter struct {
 func Login(username string, password string) (cookies []*http.Cookie, err error) {
 	location, err := getAuth(username, password)
 	if err != nil {
-		err = fmt.Errorf("Failed to get auth: %s", err)
-		return
+		return nil, fmt.Errorf("Failed to get auth: %s", err)
 	}
 
 	// Do not follow 302 redirect.
 	req, err := http.NewRequest("GET", location, nil)
 	if err != nil {
-		err = fmt.Errorf("Invalid location: %s", err)
-		return
+		return nil, fmt.Errorf("Invalid location: %s", err)
 	}
 
 	resp, err := http.DefaultTransport.RoundTrip(req)
 	if err != nil {
-		err = fmt.Errorf("Failed to login using auth: %s", err)
-		return
+		return nil, fmt.Errorf("Failed to login using auth: %s", err)
 	}
 	defer resp.Body.Close()
 
@@ -57,16 +54,14 @@ func getAuth(username string, password string) (location string, err error) {
 	// Do not follow 302 redirect.
 	req, err := http.NewRequest("POST", AuthURL, strings.NewReader(data))
 	if err != nil {
-		err = fmt.Errorf("Failed to create the request: %s", err)
-		return
+		return "", fmt.Errorf("Failed to create the request: %s", err)
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Content-Length", strconv.Itoa(len(data)))
 
 	resp, err := http.DefaultTransport.RoundTrip(req)
 	if err != nil {
-		err = fmt.Errorf("Request error: %s", err)
-		return
+		return "", fmt.Errorf("Request error: %s", err)
 	}
 	defer resp.Body.Close()
 
@@ -86,21 +81,20 @@ func getAuth(username string, password string) (location string, err error) {
 }
 
 func New(cookies []*http.Cookie) *CicAdapter {
-	adapter := &CicAdapter{}
-
 	baseURL, err := url.Parse(BaseURL)
 	if err != nil {
 		glog.Errorf("Unable to parse base URL: %s", BaseURL)
-		return adapter
+		return nil
 	}
 
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		glog.Errorf("Unable to create cookie jar: %s", err)
-		return adapter
+		return nil
 	}
 
 	jar.SetCookies(baseURL, cookies)
+	adapter := &CicAdapter{}
 	adapter.client.Jar = jar
 
 	return adapter
