@@ -14,18 +14,27 @@ type User struct {
 }
 
 type Course struct {
+	// Identifiers.
 	Id             string `json:"id,omitempty"`
-	Name           string `json:"name,omitempty"`
-	Teacher        User   `json:"teacher,omitempty"`
-	Coteachers     []User `json:"coteachers,omitempty"`
-	SchoolYear     string `json:"school_year,omitempty"`
 	Semester       string `json:"semester,omitempty"`
 	CourseNumber   string `json:"course_number,omitempty"`
 	CourseSequence string `json:"course_sequence,omitempty"`
-	Credit         int    `json:"credit,omitempty"`
-	Hour           int    `json:"hour,omitempty"`
-	Description    string `json:"description,omitempty"`
-	StudentCount   int    `json:"student_count,omitempty"`
+
+	// Basic information.
+	Name        string `json:"name,omitempty"`
+	Credit      int    `json:"credit,omitempty"`
+	Hour        int    `json:"hour,omitempty"`
+	Description string `json:"description,omitempty"`
+
+	// Time & location.
+	Weeks       string `json:"weeks,omitempty"`
+	DayOfWeek   int    `json:"day_of_week,omitempty"`
+	PeriodOfDay int    `json:"period_of_day,omitempty"`
+	Location    string `json:"location,omitempty"`
+
+	// Staff.
+	Teachers   []User `json:"teachers,omitempty"`
+	Assistants []User `json:"assistants,omitempty"`
 }
 
 type Announcement struct {

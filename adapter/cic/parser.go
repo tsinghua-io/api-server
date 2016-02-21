@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"github.com/tsinghua-io/api-server/resource"
 	"io"
+	"strconv"
 )
 
 type parser interface {
-	parse(reader io.Reader, info interface{}) error
+	parse(reader io.Reader, info interface{}, langCode string) error
 }
 
 type personalInfoParser struct {
@@ -24,40 +25,7 @@ type personalInfoParser struct {
 	}
 }
 
-type courseListParser struct {
-	ResultList []struct {
-		CourseId      string
-		Course_no     string
-		Course_seq    string
-		Course_name   string
-		E_course_name string
-		TeacherInfo   struct {
-			Id     string
-			Name   string
-			Email  string
-			Phone  string
-			Gender string
-			Title  string
-		}
-		CodeDepartmentInfo struct {
-			Dwjc string
-		}
-		Detail_c    string
-		Credit      int
-		Course_time int
-	}
-}
-
-type announcementsParser struct {
-}
-
-type filesParser struct {
-}
-
-type homeworksParser struct {
-}
-
-func (p *personalInfoParser) parse(r io.Reader, info interface{}) error {
+func (p *personalInfoParser) parse(r io.Reader, info interface{}, _ string) error {
 	user, ok := info.(*resource.User)
 	if !ok {
 		return fmt.Errorf("The parser and the destination type do not match.")
@@ -80,41 +48,155 @@ func (p *personalInfoParser) parse(r io.Reader, info interface{}) error {
 	return nil
 }
 
-func (p *courseListParser) parse(r io.Reader, info interface{}) error {
-	courses, ok := info.(*[]*resource.Course)
+type timeLocationParser struct {
+	ResultList []struct {
+		Skzc string
+		Skxq string
+		Skjc string
+		Skdd string
+	}
+}
+
+func (p *timeLocationParser) parse(r io.Reader, info interface{}, _ string) error {
+	course, ok := info.(*resource.Course)
 	if !ok {
 		return fmt.Errorf("The parser and the destination type do not match.")
 	}
 
-	// s, _ := ioutil.ReadAll(r)
-	// fmt.Println(string(s))
+	dec := json.NewDecoder(r)
+	if err := dec.Decode(p); err != nil {
+		return err
+	}
+	if len(p.ResultList) == 0 {
+		return fmt.Errorf("resultList is empty.")
+	}
+
+	var err error
+	course.Weeks = p.ResultList[0].Skzc
+	if course.DayOfWeek, err = strconv.Atoi(p.ResultList[0].Skxq); err != nil {
+		return fmt.Errorf("Failed to parse DayOfWeek to int: %s", err)
+	}
+	if course.PeriodOfDay, err = strconv.Atoi(p.ResultList[0].Skjc); err != nil {
+		return fmt.Errorf("Failed to parse PeriodOfDay to int: %s", err)
+	}
+	course.Location = p.ResultList[0].Skdd
+
+	return nil
+}
+
+type courseListParser struct {
+	ResultList []struct {
+		CourseId      string
+		Course_no     string
+		Course_seq    string
+		Course_name   string
+		E_course_name string
+		TeacherInfo   struct {
+			Id     string
+			Name   string
+			Email  string
+			Phone  string
+			Gender string
+			Title  string
+		}
+		CodeDepartmentInfo struct {
+			Dwmc   string
+			Dwywmc string
+		}
+		SemesterInfo struct {
+			SemesterName  string
+			SemesterEname string
+		}
+		Detail_c    string
+		Detail_e    string
+		Credit      int
+		Course_time int
+	}
+}
+
+func (p *courseListParser) parse(r io.Reader, info interface{}, langCode string) error {
+	courses, ok := info.(*[]*resource.Course)
+	if !ok {
+		return fmt.Errorf("The parser and the destination type do not match.")
+	}
 
 	dec := json.NewDecoder(r)
 	if err := dec.Decode(p); err != nil {
 		return err
 	}
 
+	// TODO: Here we loop through a struct array. Will Go copy every struct?
+	// Try some benchmarks.
 	for _, result := range p.ResultList {
+		// Language specific fields.
+		// TODO: Move out of loop?
+		var semester, name, description, department string
+		switch langCode {
+		case "zh-CN":
+			semester = result.SemesterInfo.SemesterName
+			name = result.Course_name
+			description = result.Detail_c
+			department = result.CodeDepartmentInfo.Dwmc
+		case "en":
+			semester = result.SemesterInfo.SemesterEname
+			name = result.E_course_name
+			description = result.Detail_e
+			department = result.CodeDepartmentInfo.Dwywmc
+		}
+
 		course := &resource.Course{
-			Id:   result.CourseId,
-			Name: result.Course_name,
-			Teacher: resource.User{
-				Id:         result.TeacherInfo.Id,
-				Name:       result.TeacherInfo.Name,
-				Type:       result.TeacherInfo.Title,
-				Department: result.CodeDepartmentInfo.Dwjc,
-				Gender:     result.TeacherInfo.Gender,
-				Email:      result.TeacherInfo.Email,
-				Phone:      result.TeacherInfo.Phone,
-			},
+			Id:             result.CourseId,
+			Semester:       semester,
 			CourseNumber:   result.Course_no,
 			CourseSequence: result.Course_seq,
+			Name:           name,
 			Credit:         result.Credit,
 			Hour:           result.Course_time,
-			Description:    result.Detail_c,
+			Description:    description,
+
+			Teachers: []resource.User{
+				resource.User{
+					Id:         result.TeacherInfo.Id,
+					Name:       result.TeacherInfo.Name,
+					Type:       result.TeacherInfo.Title,
+					Department: department,
+					Gender:     result.TeacherInfo.Gender,
+					Email:      result.TeacherInfo.Email,
+					Phone:      result.TeacherInfo.Phone,
+				},
+			},
 		}
 		*courses = append(*courses, course)
 	}
 
 	return nil
 }
+
+// type announcementsParser struct {
+// 	paginationList struct {
+// 		recordList []struct {
+// 			status       string
+// 			courseNotice struct {
+// 				id          string
+// 				title       string
+// 				owner       string
+// 				regDate     string
+// 				courseId    string
+// 				msgPriority string
+// 				detail      string
+// 			}
+// 		}
+// 	}
+// }
+
+// type filesParser struct {
+// }
+
+// type homeworksParser struct {
+// 	resultList []struct {
+// 		courseHomeworkRecord struct {
+// 		}
+// 		courseHomeworkInfo struct {
+// 		}
+// 	}
+// }

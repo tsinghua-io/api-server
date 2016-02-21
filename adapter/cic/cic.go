@@ -100,7 +100,7 @@ func New(cookies []*http.Cookie) *CicAdapter {
 	return adapter
 }
 
-func (adapter *CicAdapter) FetchInfo(url string, method string, p parser, info interface{}) (status int) {
+func (adapter *CicAdapter) FetchInfo(url string, method string, langCode string, p parser, info interface{}) (status int) {
 	// Fetch data from url.
 	var resp *http.Response
 	var err error
@@ -120,7 +120,7 @@ func (adapter *CicAdapter) FetchInfo(url string, method string, p parser, info i
 	}
 	defer resp.Body.Close()
 
-	if err := p.parse(resp.Body, info); err != nil {
+	if err := p.parse(resp.Body, info, langCode); err != nil {
 		glog.Errorf("Unable to parse data received from %s: %s", url, err)
 		return http.StatusBadGateway
 	}
@@ -129,9 +129,9 @@ func (adapter *CicAdapter) FetchInfo(url string, method string, p parser, info i
 	return http.StatusOK
 }
 
-func (adapter *CicAdapter) PersonalInfo() (user *resource.User, status int) {
+func (adapter *CicAdapter) PersonalInfo(langCode string) (user *resource.User, status int) {
 	user = &resource.User{}
-	status = adapter.FetchInfo(PersonalInfoURL, "POST", &personalInfoParser{}, user)
+	status = adapter.FetchInfo(PersonalInfoURL, "POST", langCode, &personalInfoParser{}, user)
 	return
 }
 
@@ -140,8 +140,8 @@ func (adapter *CicAdapter) PersonalInfo() (user *resource.User, status int) {
 // 	return
 // }
 
-func (adapter *CicAdapter) Attended() (courses []*resource.Course, status int) {
-	status = adapter.FetchInfo(AttendedURL, "GET", &courseListParser{}, &courses)
+func (adapter *CicAdapter) Attended(langCode string) (courses []*resource.Course, status int) {
+	status = adapter.FetchInfo(AttendedURL, "GET", langCode, &courseListParser{}, &courses)
 	return
 }
 
