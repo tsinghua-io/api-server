@@ -46,7 +46,7 @@ func TestLoginFail(t *testing.T) {
 func TestPersonalInfo(t *testing.T) {
 	user, status := adapter.PersonalInfo("zh-CN")
 	if status != http.StatusOK {
-		t.Errorf("Unable to get personal data: %s", status)
+		t.Errorf("Unable to get personal data: %d", status)
 		return
 	}
 
@@ -70,7 +70,7 @@ func TestPersonalInfo(t *testing.T) {
 func TestAttended(t *testing.T) {
 	courses, status := adapter.Attended("zh-CN")
 	if status != http.StatusOK {
-		t.Errorf("Unable to get attended courses: %s", status)
+		t.Errorf("Unable to get attended courses: %d", status)
 		return
 	}
 
