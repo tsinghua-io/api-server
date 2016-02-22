@@ -17,6 +17,7 @@ const (
 	PersonalInfoURL = BaseURL + "/b/m/getStudentById"
 	AttendedURL     = BaseURL + "/b/myCourse/courseList/loadCourse4Student/-1"
 	TimePlaceURL    = BaseURL + "/b/course/info/timePlace/{course_id}"
+	AssistantsURL   = BaseURL + "/b/mycourse/AssistTeacher/list/{course_id}"
 )
 
 // CicAdapter is the adapter for learn.cic.tsinghua.edu.cn
@@ -145,10 +146,32 @@ func (adapter *CicAdapter) Attended(langCode string) (courses []*resource.Course
 	if status = adapter.FetchInfo(AttendedURL, "GET", langCode, &courseListParser{}, &courses); status != http.StatusOK {
 		return nil, status
 	}
+	chan_size := len(courses) * 2
+	statuses := make(chan int, chan_size)
 
 	for _, course := range courses {
-		url := strings.Replace(TimePlaceURL, "{course_id}", course.Id, -1)
-		if status = adapter.FetchInfo(url, "GET", langCode, &timeLocationParser{}, course); status != http.StatusOK {
+		course := course // Avoid variable reusing.
+
+		// Time & Place.
+		go func() {
+			fmt.Print("Getting time/place for ", course.Id)
+			url := strings.Replace(TimePlaceURL, "{course_id}", course.Id, -1)
+			statuses <- adapter.FetchInfo(url, "GET", langCode, &timeLocationParser{}, course)
+			fmt.Print("Got time/place for ", course.Id)
+		}()
+
+		// Assistants.
+		go func() {
+			fmt.Print("Getting assistants for ", course.Id)
+			url := strings.Replace(AssistantsURL, "{course_id}", course.Id, -1)
+			statuses <- adapter.FetchInfo(url, "GET", langCode, &assistantsParser{}, &course.Assistants)
+			fmt.Print("Got assistants for ", course.Id)
+		}()
+	}
+
+	// Drain the channel.
+	for i := 0; i < chan_size; i++ {
+		if status = <-statuses; status != http.StatusOK {
 			return nil, status
 		}
 	}
