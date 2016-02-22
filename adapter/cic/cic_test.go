@@ -1,24 +1,36 @@
 package cic
 
 import (
+	"flag"
+	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/resource"
 	"net/http"
+	"os"
 	"testing"
 )
 
 const (
 	Username = "lisihan13"
-	Password = ""
+	Password = "1L2S3H@th"
 )
 
-func TestLoginSuccuss(t *testing.T) {
+var (
+	adapter *CicAdapter
+)
+
+func TestMain(m *testing.M) {
+	flag.Parse()
+
+	// Login.
 	cookies, err := Login(Username, Password)
 	if err != nil {
-		t.Error(err)
-		return
+		glog.Error("Failed to login: ", err)
+		os.Exit(1)
 	}
+	glog.Info("Cookies received: ", cookies)
+	adapter = New(cookies)
 
-	t.Log("Cookies received: ", cookies)
+	os.Exit(m.Run())
 }
 
 func TestLoginFail(t *testing.T) {
@@ -32,13 +44,6 @@ func TestLoginFail(t *testing.T) {
 }
 
 func TestPersonalInfo(t *testing.T) {
-	cookies, err := Login(Username, Password)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	adapter := New(cookies)
 	user, status := adapter.PersonalInfo("zh-CN")
 	if status != http.StatusOK {
 		t.Errorf("Unable to get personal data: %s", status)
@@ -63,13 +68,6 @@ func TestPersonalInfo(t *testing.T) {
 }
 
 func TestAttended(t *testing.T) {
-	cookies, err := Login(Username, Password)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	adapter := New(cookies)
 	courses, status := adapter.Attended("zh-CN")
 	if status != http.StatusOK {
 		t.Errorf("Unable to get attended courses: %s", status)
