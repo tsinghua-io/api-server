@@ -209,31 +209,117 @@ func (p *coursesParser) parse(r io.Reader, info interface{}, langCode string) er
 	return nil
 }
 
-// type announcementsParser struct {
-// 	paginationList struct {
-// 		recordList []struct {
-// 			status       string
-// 			courseNotice struct {
-// 				id          string
-// 				title       string
-// 				owner       string
-// 				regDate     string
-// 				courseId    string
-// 				msgPriority string
-// 				detail      string
-// 			}
-// 		}
-// 	}
-// }
+type announcementsParser struct {
+	PaginationList struct {
+		RecordList []struct {
+			// Status       string
+			CourseNotice struct {
+				Id          int64
+				Title       string
+				Owner       string
+				RegDate     string
+				CourseId    string
+				MsgPriority int
+				Detail      string
+			}
+		}
+	}
+}
 
-// type filesParser struct {
-// }
+func (p *announcementsParser) parse(r io.Reader, info interface{}, _ string) error {
+	announcements, ok := info.(*[]*resource.Announcement)
+	if !ok {
+		return fmt.Errorf("The parser and the destination type do not match.")
+	}
 
-// type homeworksParser struct {
-// 	resultList []struct {
-// 		courseHomeworkRecord struct {
-// 		}
-// 		courseHomeworkInfo struct {
-// 		}
-// 	}
-// }
+	dec := json.NewDecoder(r)
+	if err := dec.Decode(p); err != nil {
+		return err
+	}
+
+	for _, result := range p.PaginationList.RecordList {
+		announcement := &resource.Announcement{
+			Id:        string(result.CourseNotice.Id),
+			CourseId:  result.CourseNotice.CourseId,
+			Title:     result.CourseNotice.Title,
+			Owner:     resource.User{Name: result.CourseNotice.Owner},
+			CreatedAt: result.CourseNotice.RegDate,
+			Priority:  result.CourseNotice.MsgPriority,
+			Body:      result.CourseNotice.Detail,
+		}
+		*announcements = append(*announcements, announcement)
+	}
+
+	return nil
+}
+
+type filesParser struct {
+	resultList map[string]struct {
+		teacherInfoView struct {
+			nodeName     string
+			childMapData map[string]struct {
+				title                string
+				courseCoursewareList []struct {
+					resourcesMappingByFileId struct {
+						fileId   string
+						regDate  int64
+						fileName string
+						fileSize string
+						userCode string
+					}
+					regUser string
+					title   string
+					detail  string
+				}
+			}
+		}
+	}
+}
+
+type homeworksParser struct {
+	ResultList []struct {
+		courseHomeworkRecord struct {
+			studentId                     string
+			teacherId                     string
+			homewkId                      string
+			regDate                       int64
+			homewkDetail                  string
+			resourcesMappingByHomewkAffix struct {
+				fileId   string
+				regDate  string
+				fileName string
+				fileSize string
+				courseId string
+				userCode string
+			}
+			replyDetail string
+			// TODO: Add this:
+			// resourcesMappingByReplyAffix struct {
+			// }
+			mark      int
+			replyDate int64
+			status    string
+			ifDelay   string
+			gradeUser string
+		}
+		courseHomeworkInfo struct {
+			regDate             int64
+			beginDate           int64
+			endDate             int64
+			title               string
+			detail              string
+			homewkAffix         string // File ID.
+			homewkAffixFilename string
+			// answerDetail
+			// answerLink
+			// answerLinkFilename
+			// answerDate
+			courseId string
+			weiJiao  int
+			// yiJiao
+			// yiYue
+			yiPi   int
+			jiaoed int
+		}
+	}
+}
