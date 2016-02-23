@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -104,8 +105,11 @@ func New(cookies []*http.Cookie) *CicAdapter {
 
 func (adapter *CicAdapter) FetchInfo(url string, method string, langCode string, p parser, info interface{}) (status int) {
 	// Fetch data from url.
+	glog.Infof("Fetching data from %s", url)
+
 	var resp *http.Response
 	var err error
+	t_send := time.Now()
 
 	switch method {
 	case "GET":
@@ -122,10 +126,16 @@ func (adapter *CicAdapter) FetchInfo(url string, method string, langCode string,
 	}
 	defer resp.Body.Close()
 
+	t_receive := time.Now()
+	glog.Infof("Fetched data from %s (%s)", url, t_receive.Sub(t_send))
+
+	// Parse the data.
 	if err := p.parse(resp.Body, info, langCode); err != nil {
 		glog.Errorf("Unable to parse data received from %s: %s", url, err)
 		return http.StatusBadGateway
 	}
+
+	glog.Infof("Parsed data from %s (%s)", url, time.Since(t_receive))
 
 	// We are safe.
 	return http.StatusOK

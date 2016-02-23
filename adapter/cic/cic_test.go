@@ -19,6 +19,8 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	flag.Set("alsologtostderr", "true")
+	flag.Set("v", "3")
 	flag.Parse()
 
 	// Login.
