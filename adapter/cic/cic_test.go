@@ -43,6 +43,15 @@ func TestLoginFail(t *testing.T) {
 	t.Log("Error received: ", err)
 }
 
+func BenchmarkLogin(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		cookies, err := Login(Username, Password)
+		_ = cookies
+		_ = err
+	}
+}
+
 func TestPersonalInfo(t *testing.T) {
 	user, status := adapter.PersonalInfo("zh-CN")
 	if status != http.StatusOK {
@@ -67,6 +76,15 @@ func TestPersonalInfo(t *testing.T) {
 	}
 }
 
+func BenchmarkPersonalInfo(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		user, status := adapter.PersonalInfo("zh-CN")
+		_ = user
+		_ = status
+	}
+}
+
 func TestAttended(t *testing.T) {
 	courses, status := adapter.Attended("zh-CN")
 	if status != http.StatusOK {
@@ -74,7 +92,14 @@ func TestAttended(t *testing.T) {
 		return
 	}
 
-	for _, course := range courses {
-		t.Log(*course)
+	_ = courses
+}
+
+func BenchmarkAttended(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		courses, status := adapter.Attended("zh-CN")
+		_ = courses
+		_ = status
 	}
 }
