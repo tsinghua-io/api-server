@@ -121,7 +121,7 @@ func (p *assistantsParser) parse(r io.Reader, info interface{}, _ string) error 
 	return nil
 }
 
-type courseListParser struct {
+type coursesParser struct {
 	ResultList []struct {
 		CourseId      string
 		Course_no     string
@@ -151,7 +151,7 @@ type courseListParser struct {
 	}
 }
 
-func (p *courseListParser) parse(r io.Reader, info interface{}, langCode string) error {
+func (p *coursesParser) parse(r io.Reader, info interface{}, langCode string) error {
 	courses, ok := info.(*[]*resource.Course)
 	if !ok {
 		return fmt.Errorf("The parser and the destination type do not match.")

@@ -143,7 +143,7 @@ func (adapter *CicAdapter) PersonalInfo(langCode string) (user *resource.User, s
 // }
 
 func (adapter *CicAdapter) Attended(langCode string) (courses []*resource.Course, status int) {
-	if status = adapter.FetchInfo(AttendedURL, "GET", langCode, &courseListParser{}, &courses); status != http.StatusOK {
+	if status = adapter.FetchInfo(AttendedURL, "GET", langCode, &coursesParser{}, &courses); status != http.StatusOK {
 		return nil, status
 	}
 	chan_size := len(courses) * 2
