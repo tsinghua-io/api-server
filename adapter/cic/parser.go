@@ -251,10 +251,10 @@ func (p *announcementsParser) parse(r io.Reader, info interface{}, _ string) err
 		announcement := &resource.Announcement{
 			Id:        string(result.CourseNotice.Id),
 			CourseId:  result.CourseNotice.CourseId,
-			Title:     result.CourseNotice.Title,
 			Owner:     resource.User{Name: result.CourseNotice.Owner},
 			CreatedAt: result.CourseNotice.RegDate,
 			Priority:  result.CourseNotice.MsgPriority,
+			Title:     result.CourseNotice.Title,
 			Body:      result.CourseNotice.Detail,
 		}
 		*announcements = append(*announcements, announcement)
