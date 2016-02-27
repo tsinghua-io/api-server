@@ -77,41 +77,45 @@ type Attachment struct {
 	DownloadUrl string `json:"download_url,omitempty"`
 }
 
+type Submission struct {
+	// Metadata.
+	Owner     User   `json:"student,omitempty"`
+	CreatedAt string `json:"created_at,omitempty"`
+	Late      bool   `json:"late,omitempty"`
+
+	// Content.
+	Body       string      `json:"body,omitempty"`
+	Attachment *Attachment `json:"attachment,omitempty"`
+
+	// Scoring metadata.
+	MarkedBy User   `json:"marked_by,omitempty"`
+	MarkedAt string `json:"marked_at,omitempty"`
+
+	// Scoring content.
+	Mark              float32     `json:"mark,omitempty"` // NaN for seen.
+	Comment           string      `json:"comment,omitempty"`
+	CommentAttachment *Attachment `json:"comment_attachment,omitempty"`
+}
+
 type Homework struct {
 	// Identifiers.
 	Id       string `json:"id,omitempty"`
 	CourseId string `json:"course_id,omitempty"`
 
 	// Metadata.
-	Owner     User   `json:"owner,omitempty"`
-	CreatedAt string `json:"created_at,omitempty"`
-	BeginAt   string `json:"begin_at,omitempty"`
-	DueAt     string `json:"due_at,omitempty"`
+	CreatedAt         string `json:"created_at,omitempty"`
+	BeginAt           string `json:"begin_at,omitempty"`
+	DueAt             string `json:"due_at,omitempty"`
+	SubmittedCount    int    `json:"submitted_count,omitempty"`
+	NotSubmittedCount int    `json:"not_submitted_count,omitempty"`
+	SeenCount         int    `json:"seen_count,omitempty"`
+	MarkedCount       int    `json:"marked_count,omitempty"`
 
 	// Content.
-	Title      string     `json:"title,omitempty"`
-	Body       string     `json:"body,omitempty"`
-	Attachment Attachment `json:"attachment,omitempty"`
+	Title      string      `json:"title,omitempty"`
+	Body       string      `json:"body,omitempty"`
+	Attachment *Attachment `json:"attachment,omitempty"`
 
 	// Submissions.
 	Submissions []*Submission `json:"submissions,omitempty"`
-}
-
-type Submission struct {
-	// Metadata.
-	Owner     User   `json:"student,omitempty"`
-	CreatedAt string `json:"created_at,omitempty"`
-
-	// Content.
-	Body       string     `json:"body,omitempty"`
-	Attachment Attachment `json:"attachment,omitempty"`
-
-	// Scoring metadata.
-	ScoredBy User   `json:"scored_by,omitempty"`
-	ScoredAt string `json:"scored_at,omitempty"`
-
-	// Scoring content.
-	Score             string     `json:"score,omitempty"`
-	Comment           string     `json:"comment,omitempty"`
-	CommentAttachment Attachment `json:"comment_attachment,omitempty"`
 }
