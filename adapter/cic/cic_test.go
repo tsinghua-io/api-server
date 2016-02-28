@@ -1,9 +1,11 @@
 package cic
 
 import (
+	"encoding/json"
 	"flag"
 	"github.com/golang/glog"
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -15,6 +17,16 @@ const (
 var (
 	adapter *CicAdapter
 )
+
+func AssertDeepEqual(t *testing.T, actual, expected interface{}) bool {
+	if !reflect.DeepEqual(actual, expected) {
+		actualJson, _ := json.Marshal(actual)
+		expectedJson, _ := json.Marshal(expected)
+		t.Errorf("Actual: %s, Expected: %s", actualJson, expectedJson)
+		return false
+	}
+	return true
+}
 
 func TestMain(m *testing.M) {
 	// flag.Set("alsologtostderr", "true")

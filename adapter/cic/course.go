@@ -26,7 +26,7 @@ type timeLocationParser struct {
 }
 
 func (p *timeLocationParser) parse(r io.Reader, info interface{}, _ string) error {
-	course, ok := info.(*resource.Course)
+	timeLocations, ok := info.(*[]*resource.TimeLocation)
 	if !ok {
 		return fmt.Errorf("The parser and the destination type do not match.")
 	}
@@ -35,19 +35,25 @@ func (p *timeLocationParser) parse(r io.Reader, info interface{}, _ string) erro
 	if err := dec.Decode(p); err != nil {
 		return err
 	}
-	if len(p.ResultList) == 0 {
-		return nil // No time location info
-	}
 
-	var err error
-	course.Weeks = p.ResultList[0].Skzc
-	if course.DayOfWeek, err = strconv.Atoi(p.ResultList[0].Skxq); err != nil {
-		return fmt.Errorf("Failed to parse DayOfWeek to int: %s", err)
+	for _, result := range p.ResultList {
+		dayOfWeek, err := strconv.Atoi(result.Skxq)
+		if err != nil {
+			return fmt.Errorf("Failed to parse DayOfWeek to int: %s", err)
+		}
+		periodOfDay, err := strconv.Atoi(result.Skjc)
+		if err != nil {
+			return fmt.Errorf("Failed to parse PeriodOfDay to int: %s", err)
+		}
+
+		timeLocation := &resource.TimeLocation{
+			Weeks:       result.Skzc,
+			DayOfWeek:   dayOfWeek,
+			PeriodOfDay: periodOfDay,
+			Location:    result.Skdd,
+		}
+		*timeLocations = append(*timeLocations, timeLocation)
 	}
-	if course.PeriodOfDay, err = strconv.Atoi(p.ResultList[0].Skjc); err != nil {
-		return fmt.Errorf("Failed to parse PeriodOfDay to int: %s", err)
-	}
-	course.Location = p.ResultList[0].Skdd
 
 	return nil
 }
@@ -182,8 +188,8 @@ func (p *coursesParser) parse(r io.Reader, info interface{}, langCode string) er
 //  return
 // }
 
-func (adapter *CicAdapter) Attended(langCode string) (courses []*resource.Course, status int) {
-	if status = adapter.FetchInfo(AttendedURL, "GET", langCode, &coursesParser{}, &courses); status != http.StatusOK {
+func (adapter *CicAdapter) Attended() (courses []*resource.Course, status int) {
+	if status = adapter.FetchInfo(AttendedURL, "GET", &coursesParser{}, &courses); status != http.StatusOK {
 		return nil, status
 	}
 	chan_size := len(courses) * 2
@@ -195,13 +201,13 @@ func (adapter *CicAdapter) Attended(langCode string) (courses []*resource.Course
 		// Time & Place.
 		go func() {
 			url := strings.Replace(TimePlaceURL, "{course_id}", course.Id, -1)
-			statuses <- adapter.FetchInfo(url, "GET", langCode, &timeLocationParser{}, course)
+			statuses <- adapter.FetchInfo(url, "GET", &timeLocationParser{}, &course.TimeLocations)
 		}()
 
 		// Assistants.
 		go func() {
 			url := strings.Replace(AssistantsURL, "{course_id}", course.Id, -1)
-			statuses <- adapter.FetchInfo(url, "GET", langCode, &assistantsParser{}, &course.Assistants)
+			statuses <- adapter.FetchInfo(url, "GET", &assistantsParser{}, &course.Assistants)
 		}()
 	}
 
