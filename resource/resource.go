@@ -13,6 +13,13 @@ type User struct {
 	Phone      string `json:"phone,omitempty"`
 }
 
+type TimeLocation struct {
+	Weeks       string `json:"weeks,omitempty"`
+	DayOfWeek   int    `json:"day_of_week,omitempty"`
+	PeriodOfDay int    `json:"period_of_day,omitempty"`
+	Location    string `json:"location,omitempty"`
+}
+
 type Course struct {
 	// Identifiers.
 	Id             string `json:"id,omitempty"`
@@ -27,13 +34,9 @@ type Course struct {
 	Description string `json:"description,omitempty"`
 
 	// Time & location.
-	Weeks       string `json:"weeks,omitempty"`
-	DayOfWeek   int    `json:"day_of_week,omitempty"`
-	PeriodOfDay int    `json:"period_of_day,omitempty"`
-	Location    string `json:"location,omitempty"`
+	TimeLocations []*TimeLocation `json:"time_locations,omitempty"`
 
 	// Staff.
-	// TODO: Pointer slice?
 	Teachers   []*User `json:"teachers,omitempty"`
 	Assistants []*User `json:"assistants,omitempty"`
 }
