@@ -40,17 +40,18 @@ type Course struct {
 
 type Announcement struct {
 	// Identifiers.
-	Id       string `json:"id,omitempty"`
-	CourseId string `json:"course_id,omitempty"`
+	Id       string `json:"id"`
+	CourseId string `json:"course_id"`
 
 	// Metadata.
-	Owner     User   `json:"owner,omitempty"`
-	CreatedAt string `json:"created_at,omitempty"`
-	Priority  int    `json:"priority,omitempty"`
+	Owner     User   `json:"owner"`
+	CreatedAt string `json:"created_at"`
+	Priority  int    `json:"priority"`
+	Read      bool   `json:"read"`
 
 	// Content.
-	Title string `json:"title,omitempty"`
-	Body  string `json:"body,omitempty"`
+	Title string `json:"title"`
+	Body  string `json:"body"`
 }
 
 type File struct {
@@ -64,6 +65,7 @@ type File struct {
 	Title       string   `json:"title,omitempty"`
 	Description string   `json:"description,omitempty"`
 	Category    []string `json:"category,omitempty"`
+	Read        bool     `json:"read,omitempty"`
 
 	// Content.
 	Filename    string `json:"filename,omitempty"`
