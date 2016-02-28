@@ -17,7 +17,6 @@ type homeworksParser struct {
 	ResultList []struct {
 		CourseHomeworkRecord struct {
 			StudentId                     string
-			TeacherId                     string
 			RegDate                       int64
 			HomewkDetail                  string
 			ResourcesMappingByHomewkAffix struct {
@@ -116,7 +115,6 @@ func (p *homeworksParser) parse(r io.Reader, info interface{}, _ string) error {
 				Attachment: attach,
 				Mark:       mark,
 				MarkedBy: &resource.User{
-					Id:   result.CourseHomeworkRecord.TeacherId,
 					Name: result.CourseHomeworkRecord.GradeUser,
 				},
 				MarkedAt: parseRegDate(result.CourseHomeworkRecord.ReplyDate),
