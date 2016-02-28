@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	FilesURL    = BaseURL + "/b/myCourse/tree/getCoursewareTreeData/{course_id}"
+	FilesURL    = BaseURL + "/b/myCourse/tree/getCoursewareTreeData/{course_id}/0"
 	DownloadURL = BaseURL + "/b/resource/downloadFileStream/{file_id}"
 )
 
@@ -20,23 +20,23 @@ func fileID2DownloadUrl(fileID string) string {
 
 type filesParser struct {
 	ResultList map[string]struct {
-		TeacherInfoView struct {
-			NodeName     string
-			ChildMapData map[string]struct {
-				Title                string
-				CourseCoursewareList []struct {
-					ResourcesMappingByFileId struct {
-						FileId   string
-						RegDate  int64
-						FileName string
-						FileSize string
-						CourseId string
-						UserCode string
-					}
-					RegUser string
-					Title   string
-					Detail  string
+		NodeName     string
+		ChildMapData map[string]struct {
+			CourseOutlines struct {
+				Title string
+			}
+			CourseCoursewareList []struct {
+				ResourcesMappingByFileId struct {
+					FileId   string
+					RegDate  int64
+					FileName string
+					FileSize string
+					CourseId string
+					UserCode string
 				}
+				RegUser string
+				Title   string
+				Detail  string
 			}
 		}
 	}
@@ -54,8 +54,8 @@ func (p *filesParser) parse(r io.Reader, info interface{}, _ string) error {
 	}
 
 	for _, node1 := range p.ResultList {
-		for _, node2 := range node1.TeacherInfoView.ChildMapData {
-			category := []string{node1.TeacherInfoView.NodeName, node2.Title}
+		for _, node2 := range node1.ChildMapData {
+			category := []string{node1.NodeName, node2.CourseOutlines.Title}
 
 			for _, item := range node2.CourseCoursewareList {
 				fileId := item.ResourcesMappingByFileId.FileId
@@ -87,6 +87,6 @@ func (p *filesParser) parse(r io.Reader, info interface{}, _ string) error {
 func (adapter *CicAdapter) Files(course_id string) (files []*resource.File, status int) {
 	files = []*resource.File{}
 	url := strings.Replace(FilesURL, "{course_id}", course_id, -1)
-	status = adapter.FetchInfo(url, "POST", &filesParser{}, files)
+	status = adapter.FetchInfo(url, "GET", &filesParser{}, &files)
 	return files, status
 }
