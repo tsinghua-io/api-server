@@ -9,7 +9,7 @@ import (
 func TestSelfProfile(t *testing.T) {
 	user, status := adapter.Profile("")
 	if status != http.StatusOK {
-		t.Errorf("Unable to get self profile: %d", status)
+		t.Errorf("Unable to get self profile: %s", http.StatusText(status))
 		return
 	}
 

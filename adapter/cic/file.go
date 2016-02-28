@@ -10,11 +10,12 @@ import (
 )
 
 const (
-	downloadURL = "http://learn.cic.tsinghua.edu.cn/b/resource/downloadFileStream/{file_id}"
+	FilesURL    = BaseURL + "/b/myCourse/tree/getCoursewareTreeData/{course_id}"
+	DownloadURL = BaseURL + "/b/resource/downloadFileStream/{file_id}"
 )
 
 func fileID2DownloadUrl(fileID string) string {
-	return strings.Replace(downloadURL, "{file_id}", fileID, -1)
+	return strings.Replace(DownloadURL, "{file_id}", fileID, -1)
 }
 
 type filesParser struct {
@@ -63,7 +64,7 @@ func (p *filesParser) parse(r io.Reader, info interface{}, _ string) error {
 				file := &resource.File{
 					Id:       fileId,
 					CourseId: item.ResourcesMappingByFileId.CourseId,
-					Owner: resource.User{
+					Owner: &resource.User{
 						Id:   item.ResourcesMappingByFileId.UserCode,
 						Name: item.RegUser,
 					},
@@ -83,6 +84,9 @@ func (p *filesParser) parse(r io.Reader, info interface{}, _ string) error {
 	return nil
 }
 
-func (adapter *CicAdapter) Files(course_id string) (courses []*resource.File, status int) {
-	return
+func (adapter *CicAdapter) Files(course_id string) (files []*resource.File, status int) {
+	files = []*resource.File{}
+	url := strings.Replace(FilesURL, "{course_id}", course_id, -1)
+	status = adapter.FetchInfo(url, "POST", &filesParser{}, files)
+	return files, status
 }

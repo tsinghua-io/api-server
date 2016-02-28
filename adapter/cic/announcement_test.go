@@ -9,16 +9,16 @@ import (
 func TestAnnouncements(t *testing.T) {
 	actual, status := adapter.Announcements("2014-2015-1-20750021-97")
 	if status != http.StatusOK {
-		t.Errorf("Unable to get announcements: %d", status)
+		t.Errorf("Unable to get announcements: %s", http.StatusText(status))
 		return
 	}
 
 	// Check fetched data.
-	expected := &[]*resource.Announcement{
+	expected := []*resource.Announcement{
 		{
 			Id:        "1414652412222",
 			CourseId:  "2014-2015-1-20750021-97",
-			Owner:     resource.User{Name: "王媛"},
+			Owner:     &resource.User{Name: "王媛"},
 			CreatedAt: "2014-10-30",
 			Priority:  0,
 			Read:      true,
@@ -28,7 +28,7 @@ func TestAnnouncements(t *testing.T) {
 		{
 			Id:        "1413708226270",
 			CourseId:  "2014-2015-1-20750021-97",
-			Owner:     resource.User{Name: "王媛"},
+			Owner:     &resource.User{Name: "王媛"},
 			CreatedAt: "2014-10-19",
 			Priority:  1,
 			Read:      true,
@@ -38,7 +38,7 @@ func TestAnnouncements(t *testing.T) {
 		{
 			Id:        "1413257641943",
 			CourseId:  "2014-2015-1-20750021-97",
-			Owner:     resource.User{Name: "王媛"},
+			Owner:     &resource.User{Name: "王媛"},
 			CreatedAt: "2014-10-14",
 			Priority:  1,
 			Read:      true,
@@ -48,7 +48,7 @@ func TestAnnouncements(t *testing.T) {
 		{
 			Id:        "1411868112836",
 			CourseId:  "2014-2015-1-20750021-97",
-			Owner:     resource.User{Name: "王媛"},
+			Owner:     &resource.User{Name: "王媛"},
 			CreatedAt: "2014-09-28",
 			Priority:  1,
 			Read:      true,
@@ -58,7 +58,7 @@ func TestAnnouncements(t *testing.T) {
 		{
 			Id:        "1411378457399",
 			CourseId:  "2014-2015-1-20750021-97",
-			Owner:     resource.User{Name: "王媛"},
+			Owner:     &resource.User{Name: "王媛"},
 			CreatedAt: "2014-09-22",
 			Priority:  1,
 			Read:      true,

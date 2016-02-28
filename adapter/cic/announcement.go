@@ -53,7 +53,7 @@ func (p *announcementsParser) parse(r io.Reader, info interface{}, _ string) err
 		announcement := &resource.Announcement{
 			Id:        strconv.FormatInt(result.CourseNotice.Id, 10),
 			CourseId:  result.CourseNotice.CourseId,
-			Owner:     resource.User{Name: result.CourseNotice.Owner},
+			Owner:     &resource.User{Name: result.CourseNotice.Owner},
 			CreatedAt: result.CourseNotice.RegDate,
 			Priority:  result.CourseNotice.MsgPriority,
 			Read:      status != 0,
@@ -66,9 +66,9 @@ func (p *announcementsParser) parse(r io.Reader, info interface{}, _ string) err
 	return nil
 }
 
-func (adapter *CicAdapter) Announcements(course_id string) (announcements *[]*resource.Announcement, status int) {
-	announcements = &[]*resource.Announcement{}
+func (adapter *CicAdapter) Announcements(course_id string) (announcements []*resource.Announcement, status int) {
+	announcements = []*resource.Announcement{}
 	url := strings.Replace(AnnouncementsURL, "{course_id}", course_id, -1)
-	status = adapter.FetchInfo(url, "GET", &announcementsParser{}, announcements)
+	status = adapter.FetchInfo(url, "GET", &announcementsParser{}, &announcements)
 	return announcements, status
 }

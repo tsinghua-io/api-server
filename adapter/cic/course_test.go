@@ -9,7 +9,7 @@ import (
 func TestAttended(t *testing.T) {
 	courses, status := adapter.Attended()
 	if status != http.StatusOK {
-		t.Errorf("Unable to get attended courses: %d", status)
+		t.Errorf("Unable to get attended courses: %s", http.StatusText(status))
 		return
 	}
 

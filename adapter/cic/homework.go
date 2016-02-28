@@ -92,8 +92,10 @@ func (p *homeworksParser) parse(r io.Reader, info interface{}, _ string) error {
 			}
 		}
 
+		mark := float32(result.courseHomeworkRecord.mark)
+
 		homework := &resource.Homework{
-			Id:                string(result.courseHomeworkInfo.homewkId),
+			Id:                strconv.Itoa(result.courseHomeworkInfo.homewkId),
 			CourseId:          result.courseHomeworkInfo.courseId,
 			CreatedAt:         parseRegDate(result.courseHomeworkInfo.regDate),
 			BeginAt:           parseRegDate(result.courseHomeworkInfo.beginDate),
@@ -107,15 +109,15 @@ func (p *homeworksParser) parse(r io.Reader, info interface{}, _ string) error {
 			Attachment:        attach,
 			Submissions: []*resource.Submission{
 				&resource.Submission{
-					Owner: resource.User{
+					Owner: &resource.User{
 						Id: result.courseHomeworkRecord.studentId,
 					},
 					CreatedAt:  parseRegDate(result.courseHomeworkRecord.regDate),
 					Late:       result.courseHomeworkRecord.ifDelay == "1",
 					Body:       result.courseHomeworkRecord.homewkDetail,
 					Attachment: submissionAttach,
-					Mark:       float32(result.courseHomeworkRecord.mark),
-					MarkedBy: resource.User{
+					Mark:       &mark,
+					MarkedBy: &resource.User{
 						Id:   result.courseHomeworkRecord.teacherId,
 						Name: result.courseHomeworkRecord.gradeUser,
 					},
