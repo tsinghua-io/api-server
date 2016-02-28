@@ -15,22 +15,22 @@ type User struct {
 
 type TimeLocation struct {
 	Weeks       string `json:"weeks,omitempty"`
-	DayOfWeek   int    `json:"day_of_week,omitempty"`
-	PeriodOfDay int    `json:"period_of_day,omitempty"`
+	DayOfWeek   int    `json:"day_of_week"`
+	PeriodOfDay int    `json:"period_of_day"`
 	Location    string `json:"location,omitempty"`
 }
 
 type Course struct {
 	// Identifiers.
-	Id             string `json:"id,omitempty"`
-	Semester       string `json:"semester,omitempty"`
-	CourseNumber   string `json:"course_number,omitempty"`
-	CourseSequence string `json:"course_sequence,omitempty"`
+	Id             string `json:"id"`
+	Semester       string `json:"semester"`
+	CourseNumber   string `json:"course_number"`
+	CourseSequence string `json:"course_sequence"`
 
 	// Metadata.
-	Name        string `json:"name,omitempty"`
-	Credit      int    `json:"credit,omitempty"`
-	Hour        int    `json:"hour,omitempty"`
+	Name        string `json:"name"`
+	Credit      int    `json:"credit"`
+	Hour        int    `json:"hour"`
 	Description string `json:"description,omitempty"`
 
 	// Time & location.
@@ -47,70 +47,70 @@ type Announcement struct {
 	CourseId string `json:"course_id"`
 
 	// Metadata.
-	Owner     User   `json:"owner"`
+	Owner     *User  `json:"owner,omitempty"`
 	CreatedAt string `json:"created_at"`
 	Priority  int    `json:"priority"`
 	Read      bool   `json:"read"`
 
 	// Content.
-	Title string `json:"title"`
-	Body  string `json:"body"`
+	Title string `json:"title,omitempty"`
+	Body  string `json:"body,omitempty"`
 }
 
 type File struct {
 	// Identifiers.
-	Id       string `json:"id,omitempty"`
-	CourseId string `json:"course_id,omitempty"`
+	Id       string `json:"id"`
+	CourseId string `json:"course_id"`
 
 	// Metadata.
-	Owner       User     `json:"owner,omitempty"`
-	CreatedAt   string   `json:"created_at,omitempty"`
+	Owner       *User    `json:"owner,omitempty"`
+	CreatedAt   string   `json:"created_at"`
 	Title       string   `json:"title,omitempty"`
 	Description string   `json:"description,omitempty"`
 	Category    []string `json:"category,omitempty"`
-	Read        bool     `json:"read,omitempty"`
+	Read        bool     `json:"read"`
 
 	// Content.
-	Filename    string `json:"filename,omitempty"`
-	Size        int    `json:"size,omitempty"`
-	DownloadUrl string `json:"download_url,omitempty"`
+	Filename    string `json:"filename"`
+	Size        int    `json:"size"`
+	DownloadUrl string `json:"download_url"`
 }
 
 type Attachment struct {
-	Filename    string `json:"filename,omitempty"`
-	Size        int    `json:"size,omitempty"`
-	DownloadUrl string `json:"download_url,omitempty"`
+	Filename    string `json:"filename"`
+	Size        int    `json:"size"`
+	DownloadUrl string `json:"download_url"`
 }
 
 type Submission struct {
 	// Metadata.
-	Owner     User   `json:"student,omitempty"`
-	CreatedAt string `json:"created_at,omitempty"`
-	Late      bool   `json:"late,omitempty"`
+	Owner     *User  `json:"student,omitempty"`
+	CreatedAt string `json:"created_at"`
+	Late      bool   `json:"late"`
 
 	// Content.
 	Body       string      `json:"body,omitempty"`
 	Attachment *Attachment `json:"attachment,omitempty"`
 
 	// Scoring metadata.
-	MarkedBy User   `json:"marked_by,omitempty"`
+	MarkedBy *User  `json:"marked_by,omitempty"`
 	MarkedAt string `json:"marked_at,omitempty"`
 
 	// Scoring content.
-	Mark              float32     `json:"mark,omitempty"` // NaN for seen.
+	Mark              *float32    `json:"mark,omitempty"`
 	Comment           string      `json:"comment,omitempty"`
 	CommentAttachment *Attachment `json:"comment_attachment,omitempty"`
 }
 
 type Homework struct {
 	// Identifiers.
-	Id       string `json:"id,omitempty"`
-	CourseId string `json:"course_id,omitempty"`
+	Id       string `json:"id"`
+	CourseId string `json:"course_id"`
 
 	// Metadata.
 	CreatedAt         string `json:"created_at,omitempty"`
-	BeginAt           string `json:"begin_at,omitempty"`
-	DueAt             string `json:"due_at,omitempty"`
+	BeginAt           string `json:"begin_at"`
+	DueAt             string `json:"due_at"`
 	SubmittedCount    int    `json:"submitted_count,omitempty"`
 	NotSubmittedCount int    `json:"not_submitted_count,omitempty"`
 	SeenCount         int    `json:"seen_count,omitempty"`
