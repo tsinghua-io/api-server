@@ -6,6 +6,11 @@ import (
 	"github.com/tsinghua-io/api-server/resource"
 	"io"
 	"strconv"
+	"strings"
+)
+
+const (
+	HomeworksURL = BaseURL + "/b/myCourse/homework/list4Student/{course_id}/0"
 )
 
 type homeworksParser struct {
@@ -26,7 +31,7 @@ type homeworksParser struct {
 			// TODO: Add this:
 			// resourcesMappingByReplyAffix struct {
 			// }
-			mark      int
+			mark      *int
 			replyDate int64
 			status    string // 0 for 未交, 1 for 未批, 2 for 已阅, 3 for 已批
 			ifDelay   string // 1 for late, 2 for 代交
@@ -67,8 +72,8 @@ func (p *homeworksParser) parse(r io.Reader, info interface{}, _ string) error {
 	}
 
 	for _, result := range p.ResultList {
-		// Fetch attachments, if existed.
-		var attach, submissionAttach *resource.Attachment
+		// Fetch homework attachment, if exists.
+		var attach *resource.Attachment
 
 		if fileID := result.courseHomeworkInfo.homewkAffix; fileID != "" {
 			attach = &resource.Attachment{
@@ -78,21 +83,50 @@ func (p *homeworksParser) parse(r io.Reader, info interface{}, _ string) error {
 			}
 		}
 
-		if status := result.courseHomeworkRecord.status; status == "0" {
-			// Not submitted.
+		// Fetch submission, if exists.
+		var submission *resource.Submission
 
-		}
-		if fileID := result.courseHomeworkRecord.resourcesMappingByHomewkAffix.fileId; fileID != "" {
-			size, _ := strconv.Atoi(result.courseHomeworkRecord.resourcesMappingByHomewkAffix.fileSize)
+		if result.courseHomeworkRecord.status != "0" {
+			// Fetch submission attachment, if exists.
+			var attach *resource.Attachment
 
-			submissionAttach = &resource.Attachment{
-				Filename:    result.courseHomeworkRecord.resourcesMappingByHomewkAffix.fileName,
-				Size:        size,
-				DownloadUrl: fileID2DownloadUrl(fileID),
+			if affix := result.courseHomeworkRecord.resourcesMappingByHomewkAffix; affix.fileId != "" {
+				size, _ := strconv.Atoi(affix.fileSize)
+
+				attach = &resource.Attachment{
+					Filename:    affix.fileName,
+					Size:        size,
+					DownloadUrl: fileID2DownloadUrl(affix.fileId),
+				}
+			}
+
+			// Fetch mark, if exists.
+			var mark *float32
+			if intMark := result.courseHomeworkRecord.mark; intMark != nil {
+				mark = new(float32)
+				*mark = float32(*intMark)
+			}
+
+			submission = &resource.Submission{
+				Owner: &resource.User{
+					Id: result.courseHomeworkRecord.studentId,
+				},
+				CreatedAt:  parseRegDate(result.courseHomeworkRecord.regDate),
+				Late:       result.courseHomeworkRecord.ifDelay == "1",
+				Body:       result.courseHomeworkRecord.homewkDetail,
+				Attachment: attach,
+				Mark:       mark,
+				MarkedBy: &resource.User{
+					Id:   result.courseHomeworkRecord.teacherId,
+					Name: result.courseHomeworkRecord.gradeUser,
+				},
+				MarkedAt: parseRegDate(result.courseHomeworkRecord.replyDate),
+				Comment:  result.courseHomeworkRecord.replyDetail,
+				// TODO: Add this.
+				// CommentAttachment: resource.Attachment{
+				// }
 			}
 		}
-
-		mark := float32(result.courseHomeworkRecord.mark)
 
 		homework := &resource.Homework{
 			Id:                strconv.Itoa(result.courseHomeworkInfo.homewkId),
@@ -108,25 +142,7 @@ func (p *homeworksParser) parse(r io.Reader, info interface{}, _ string) error {
 			Body:              result.courseHomeworkInfo.detail,
 			Attachment:        attach,
 			Submissions: []*resource.Submission{
-				&resource.Submission{
-					Owner: &resource.User{
-						Id: result.courseHomeworkRecord.studentId,
-					},
-					CreatedAt:  parseRegDate(result.courseHomeworkRecord.regDate),
-					Late:       result.courseHomeworkRecord.ifDelay == "1",
-					Body:       result.courseHomeworkRecord.homewkDetail,
-					Attachment: submissionAttach,
-					Mark:       &mark,
-					MarkedBy: &resource.User{
-						Id:   result.courseHomeworkRecord.teacherId,
-						Name: result.courseHomeworkRecord.gradeUser,
-					},
-					MarkedAt: parseRegDate(result.courseHomeworkRecord.replyDate),
-					Comment:  result.courseHomeworkRecord.replyDetail,
-					// TODO: Add this.
-					// CommentAttachment: resource.Attachment{
-					// }
-				},
+				submission,
 			},
 		}
 		*homeworks = append(*homeworks, homework)
@@ -135,6 +151,9 @@ func (p *homeworksParser) parse(r io.Reader, info interface{}, _ string) error {
 	return nil
 }
 
-func (adapter *CicAdapter) Homeworks(course_id string) (courses []*resource.Homework, status int) {
-	return
+func (adapter *CicAdapter) Homeworks(course_id string) (homeworks []*resource.Homework, status int) {
+	homeworks = []*resource.Homework{}
+	url := strings.Replace(HomeworksURL, "{course_id}", course_id, -1)
+	status = adapter.FetchInfo(url, "GET", &homeworksParser{}, &homeworks)
+	return homeworks, status
 }
