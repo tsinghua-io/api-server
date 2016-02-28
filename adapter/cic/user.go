@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/tsinghua-io/api-server/resource"
 	"io"
+	"net/http"
 )
 
 const (
@@ -47,8 +48,14 @@ func (p *personalInfoParser) parse(r io.Reader, info interface{}, _ string) erro
 	return nil
 }
 
-func (adapter *CicAdapter) PersonalInfo(langCode string) (user *resource.User, status int) {
-	user = &resource.User{}
-	status = adapter.FetchInfo(PersonalInfoURL, "POST", langCode, &personalInfoParser{}, user)
-	return
+func (adapter *CicAdapter) Profile(username string) (user *resource.User, status int) {
+	if username == "" {
+		// Self Profile.
+		user = &resource.User{}
+		status = adapter.FetchInfo(PersonalInfoURL, "POST", &personalInfoParser{}, user)
+		return user, status
+	} else {
+		// User Profile, not implemented yet.
+		return nil, http.StatusBadRequest
+	}
 }

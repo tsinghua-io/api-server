@@ -9,7 +9,8 @@ import (
 )
 
 type CicAdapter struct {
-	client http.Client
+	client   http.Client
+	LangCode string
 }
 
 const (
@@ -18,7 +19,7 @@ const (
 
 var parsedBaseURL, _ = url.Parse(BaseURL)
 
-func New(cookies []*http.Cookie) *CicAdapter {
+func New(cookies []*http.Cookie, langCode string) *CicAdapter {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		glog.Errorf("Unable to create cookie jar: %s", err)
@@ -27,14 +28,15 @@ func New(cookies []*http.Cookie) *CicAdapter {
 	jar.SetCookies(parsedBaseURL, cookies)
 
 	return &CicAdapter{
-		client: http.Client{Jar: jar},
+		client:   http.Client{Jar: jar},
+		LangCode: langCode,
 	}
 }
 
 // FetchInfo fetches info from url using HTTP GET/POST, and then parse it
 // using the given parser. A HTTP status code is returned to indicate the
 // result.
-func (adapter *CicAdapter) FetchInfo(url string, method string, langCode string, p parser, info interface{}) (status int) {
+func (adapter *CicAdapter) FetchInfo(url string, method string, p parser, info interface{}) (status int) {
 	// Fetch data from url.
 	glog.Infof("Fetching data from %s", url)
 
@@ -61,7 +63,7 @@ func (adapter *CicAdapter) FetchInfo(url string, method string, langCode string,
 	glog.Infof("Fetched data from %s (%s)", url, t_receive.Sub(t_send))
 
 	// Parse the data.
-	if err := p.parse(resp.Body, info, langCode); err != nil {
+	if err := p.parse(resp.Body, info, adapter.LangCode); err != nil {
 		glog.Errorf("Unable to parse data received from %s: %s", url, err)
 		return http.StatusBadGateway
 	}
