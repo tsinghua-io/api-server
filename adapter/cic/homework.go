@@ -15,47 +15,46 @@ const (
 
 type homeworksParser struct {
 	ResultList []struct {
-		courseHomeworkRecord struct {
-			studentId                     string
-			teacherId                     string
-			regDate                       int64
-			homewkDetail                  string
-			resourcesMappingByHomewkAffix struct {
-				fileId   string
-				regDate  string
-				fileName string
-				fileSize string
-				userCode string
+		CourseHomeworkRecord struct {
+			StudentId                     string
+			TeacherId                     string
+			RegDate                       int64
+			HomewkDetail                  string
+			ResourcesMappingByHomewkAffix struct {
+				FileId   string
+				FileName string
+				FileSize string
+				UserCode string
 			}
-			replyDetail string
+			ReplyDetail string
 			// TODO: Add this:
-			// resourcesMappingByReplyAffix struct {
+			// ResourcesMappingByReplyAffix struct {
 			// }
-			mark      *int
-			replyDate int64
-			status    string // 0 for 未交, 1 for 未批, 2 for 已阅, 3 for 已批
-			ifDelay   string // 1 for late, 2 for 代交
-			gradeUser string
+			Mark      *int
+			ReplyDate int64
+			Status    string // 0 for 未交, 1 for 未批, 2 for 已阅, 3 for 已批
+			IfDelay   string // 1 for late, 2 for 代交
+			GradeUser string
 		}
-		courseHomeworkInfo struct {
-			homewkId            int
-			regDate             int64
-			beginDate           int64
-			endDate             int64
-			title               string
-			detail              string
-			homewkAffix         string // File ID.
-			homewkAffixFilename string
-			// answerDetail
-			// answerLink
-			// answerLinkFilename
-			// answerDate
-			courseId string
-			weiJiao  int
-			// yiJiao
-			yiYue  int
-			yiPi   int
-			jiaoed int
+		CourseHomeworkInfo struct {
+			HomewkId            int
+			RegDate             int64
+			BeginDate           int64
+			EndDate             int64
+			Title               string
+			Detail              string
+			HomewkAffix         string // File ID.
+			HomewkAffixFilename string
+			// AnswerDetail
+			// AnswerLink
+			// AnswerLinkFilename
+			// AnswerDate
+			CourseId string
+			WeiJiao  int
+			// YiJiao
+			YiYue  int
+			YiPi   int
+			Jiaoed int
 		}
 	}
 }
@@ -75,9 +74,9 @@ func (p *homeworksParser) parse(r io.Reader, info interface{}, _ string) error {
 		// Fetch homework attachment, if exists.
 		var attach *resource.Attachment
 
-		if fileID := result.courseHomeworkInfo.homewkAffix; fileID != "" {
+		if fileID := result.CourseHomeworkInfo.HomewkAffix; fileID != "" {
 			attach = &resource.Attachment{
-				Filename: result.courseHomeworkInfo.homewkAffixFilename,
+				Filename: result.CourseHomeworkInfo.HomewkAffixFilename,
 				// TODO: Get file size?
 				DownloadUrl: fileID2DownloadUrl(fileID),
 			}
@@ -86,42 +85,42 @@ func (p *homeworksParser) parse(r io.Reader, info interface{}, _ string) error {
 		// Fetch submission, if exists.
 		var submission *resource.Submission
 
-		if result.courseHomeworkRecord.status != "0" {
+		if result.CourseHomeworkRecord.Status != "0" {
 			// Fetch submission attachment, if exists.
 			var attach *resource.Attachment
 
-			if affix := result.courseHomeworkRecord.resourcesMappingByHomewkAffix; affix.fileId != "" {
-				size, _ := strconv.Atoi(affix.fileSize)
+			if affix := result.CourseHomeworkRecord.ResourcesMappingByHomewkAffix; affix.FileId != "" {
+				size, _ := strconv.Atoi(affix.FileSize)
 
 				attach = &resource.Attachment{
-					Filename:    affix.fileName,
+					Filename:    affix.FileName,
 					Size:        size,
-					DownloadUrl: fileID2DownloadUrl(affix.fileId),
+					DownloadUrl: fileID2DownloadUrl(affix.FileId),
 				}
 			}
 
 			// Fetch mark, if exists.
 			var mark *float32
-			if intMark := result.courseHomeworkRecord.mark; intMark != nil {
+			if intMark := result.CourseHomeworkRecord.Mark; intMark != nil {
 				mark = new(float32)
 				*mark = float32(*intMark)
 			}
 
 			submission = &resource.Submission{
 				Owner: &resource.User{
-					Id: result.courseHomeworkRecord.studentId,
+					Id: result.CourseHomeworkRecord.StudentId,
 				},
-				CreatedAt:  parseRegDate(result.courseHomeworkRecord.regDate),
-				Late:       result.courseHomeworkRecord.ifDelay == "1",
-				Body:       result.courseHomeworkRecord.homewkDetail,
+				CreatedAt:  parseRegDate(result.CourseHomeworkRecord.RegDate),
+				Late:       result.CourseHomeworkRecord.IfDelay == "1",
+				Body:       result.CourseHomeworkRecord.HomewkDetail,
 				Attachment: attach,
 				Mark:       mark,
 				MarkedBy: &resource.User{
-					Id:   result.courseHomeworkRecord.teacherId,
-					Name: result.courseHomeworkRecord.gradeUser,
+					Id:   result.CourseHomeworkRecord.TeacherId,
+					Name: result.CourseHomeworkRecord.GradeUser,
 				},
-				MarkedAt: parseRegDate(result.courseHomeworkRecord.replyDate),
-				Comment:  result.courseHomeworkRecord.replyDetail,
+				MarkedAt: parseRegDate(result.CourseHomeworkRecord.ReplyDate),
+				Comment:  result.CourseHomeworkRecord.ReplyDetail,
 				// TODO: Add this.
 				// CommentAttachment: resource.Attachment{
 				// }
@@ -129,17 +128,17 @@ func (p *homeworksParser) parse(r io.Reader, info interface{}, _ string) error {
 		}
 
 		homework := &resource.Homework{
-			Id:                strconv.Itoa(result.courseHomeworkInfo.homewkId),
-			CourseId:          result.courseHomeworkInfo.courseId,
-			CreatedAt:         parseRegDate(result.courseHomeworkInfo.regDate),
-			BeginAt:           parseRegDate(result.courseHomeworkInfo.beginDate),
-			DueAt:             parseRegDate(result.courseHomeworkInfo.endDate),
-			SubmittedCount:    result.courseHomeworkInfo.jiaoed,
-			NotSubmittedCount: result.courseHomeworkInfo.weiJiao,
-			SeenCount:         result.courseHomeworkInfo.yiYue,
-			MarkedCount:       result.courseHomeworkInfo.yiPi,
-			Title:             result.courseHomeworkInfo.title,
-			Body:              result.courseHomeworkInfo.detail,
+			Id:                strconv.Itoa(result.CourseHomeworkInfo.HomewkId),
+			CourseId:          result.CourseHomeworkInfo.CourseId,
+			CreatedAt:         parseRegDate(result.CourseHomeworkInfo.RegDate),
+			BeginAt:           parseRegDate(result.CourseHomeworkInfo.BeginDate),
+			DueAt:             parseRegDate(result.CourseHomeworkInfo.EndDate),
+			SubmittedCount:    result.CourseHomeworkInfo.Jiaoed,
+			NotSubmittedCount: result.CourseHomeworkInfo.WeiJiao,
+			SeenCount:         result.CourseHomeworkInfo.YiYue,
+			MarkedCount:       result.CourseHomeworkInfo.YiPi,
+			Title:             result.CourseHomeworkInfo.Title,
+			Body:              result.CourseHomeworkInfo.Detail,
 			Attachment:        attach,
 			Submissions: []*resource.Submission{
 				submission,
