@@ -10,13 +10,8 @@ import (
 )
 
 const (
-	FilesURL    = BaseURL + "/b/myCourse/tree/getCoursewareTreeData/{course_id}/0"
-	DownloadURL = BaseURL + "/b/resource/downloadFileStream/{file_id}"
+	FilesURL = BaseURL + "/b/myCourse/tree/getCoursewareTreeData/{course_id}/0"
 )
-
-func fileID2DownloadUrl(fileID string) string {
-	return strings.Replace(DownloadURL, "{file_id}", fileID, -1)
-}
 
 type filesParser struct {
 	ResultList map[string]struct {

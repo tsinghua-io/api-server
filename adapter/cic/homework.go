@@ -13,6 +13,11 @@ const (
 	HomeworksURL = BaseURL + "/b/myCourse/homework/list4Student/{course_id}/0"
 )
 
+func Int2Pfloat32(i int) *float32 {
+	f := float32(i)
+	return &f
+}
+
 type homeworksParser struct {
 	ResultList []struct {
 		CourseHomeworkRecord struct {
@@ -82,7 +87,7 @@ func (p *homeworksParser) parse(r io.Reader, info interface{}, _ string) error {
 		}
 
 		// Fetch submission, if exists.
-		var submission *resource.Submission
+		var submissions []*resource.Submission
 
 		if result.CourseHomeworkRecord.Status != "0" {
 			// Fetch submission attachment, if exists.
@@ -101,27 +106,28 @@ func (p *homeworksParser) parse(r io.Reader, info interface{}, _ string) error {
 			// Fetch mark, if exists.
 			var mark *float32
 			if intMark := result.CourseHomeworkRecord.Mark; intMark != nil {
-				mark = new(float32)
-				*mark = float32(*intMark)
+				mark = Int2Pfloat32(*intMark)
 			}
 
-			submission = &resource.Submission{
-				Owner: &resource.User{
-					Id: result.CourseHomeworkRecord.StudentId,
+			submissions = []*resource.Submission{
+				{
+					Owner: &resource.User{
+						Id: result.CourseHomeworkRecord.StudentId,
+					},
+					CreatedAt:  parseRegDate(result.CourseHomeworkRecord.RegDate),
+					Late:       result.CourseHomeworkRecord.IfDelay == "1",
+					Body:       result.CourseHomeworkRecord.HomewkDetail,
+					Attachment: attach,
+					Mark:       mark,
+					MarkedBy: &resource.User{
+						Name: result.CourseHomeworkRecord.GradeUser,
+					},
+					MarkedAt: parseRegDate(result.CourseHomeworkRecord.ReplyDate),
+					Comment:  result.CourseHomeworkRecord.ReplyDetail,
+					// TODO: Add this.
+					// CommentAttachment: resource.Attachment{
+					// }
 				},
-				CreatedAt:  parseRegDate(result.CourseHomeworkRecord.RegDate),
-				Late:       result.CourseHomeworkRecord.IfDelay == "1",
-				Body:       result.CourseHomeworkRecord.HomewkDetail,
-				Attachment: attach,
-				Mark:       mark,
-				MarkedBy: &resource.User{
-					Name: result.CourseHomeworkRecord.GradeUser,
-				},
-				MarkedAt: parseRegDate(result.CourseHomeworkRecord.ReplyDate),
-				Comment:  result.CourseHomeworkRecord.ReplyDetail,
-				// TODO: Add this.
-				// CommentAttachment: resource.Attachment{
-				// }
 			}
 		}
 
@@ -138,9 +144,7 @@ func (p *homeworksParser) parse(r io.Reader, info interface{}, _ string) error {
 			Title:             result.CourseHomeworkInfo.Title,
 			Body:              result.CourseHomeworkInfo.Detail,
 			Attachment:        attach,
-			Submissions: []*resource.Submission{
-				submission,
-			},
+			Submissions:       submissions,
 		}
 		*homeworks = append(*homeworks, homework)
 	}

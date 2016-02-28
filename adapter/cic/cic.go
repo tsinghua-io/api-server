@@ -65,7 +65,7 @@ func (adapter *CicAdapter) FetchInfo(url string, method string, p parser, info i
 	// Parse the data.
 	if err := p.parse(resp.Body, info, adapter.LangCode); err != nil {
 		glog.Errorf("Unable to parse data received from %s: %s", url, err)
-		return http.StatusBadGateway
+		return http.StatusInternalServerError
 	}
 
 	glog.Infof("Parsed data from %s (%s)", url, time.Since(t_receive))
