@@ -71,10 +71,14 @@ func (adapter *OldAdapter) getOldResponse(path string, headers map[string]string
 	if err != nil {
 		err = fmt.Errorf("Failed to parse response: %s", err)
 	}
+	// Check if the login time limit exceed
+	if doc.Find("div#err").Length() != 0 {
+		err = fmt.Errorf("Login time limit exceed.")
+	}
 	return
 }
 
-func New(cookies []*http.Cookie) *OldAdapter {
+func New(cookies []*http.Cookie, langCode string) *OldAdapter {
 	adapter := &OldAdapter{}
 
 	baseURL, err := url.Parse(BaseURL)
@@ -99,7 +103,7 @@ func (adapter *OldAdapter) PersonalInfo() (*resource.User, int) {
 	doc, err := adapter.getOldResponse(url, make(map[string]string))
 
 	if err != nil {
-		glog.Errorf("Failed to get response from learning web: %s", err)
+		glog.Warningf("Failed to get response from learning web: %s", err)
 		return nil, http.StatusBadGateway
 	} else {
 		// parsing the response body
@@ -203,33 +207,33 @@ func (adapter *OldAdapter) Announcements(courseId string) (announcements []*reso
 			if announcementId := hrefUrl.Query().Get("id"); announcementId != "" {
 				body := adapter.announcementBody(href)
 
-				var important bool
+				var priority int
 				var title string
 				switch hrefSelection.Nodes[0].FirstChild.Type {
 				case html.TextNode:
-					important = false
+					priority = 0
 					title, _ = hrefSelection.Html()
 				default:
-					important = true
+					priority = 1
 					title, _ = hrefSelection.Children().Html()
 				}
 
 				announcements = append(announcements, &resource.Announcement{
 					Id:       announcementId,
 					CourseId: courseId,
-					Title:    title,
-					Owner: resource.User{
+
+					Owner: &resource.User{
 						Name: infos[2],
 					},
 					CreatedAt: infos[3],
-					Important: important,
+					Priority: priority,
+
+					Title:    title,
 					Body:      body,
 				})
 			}
 		})
-		if len(announcements) > 0 {
-			status = http.StatusOK
-		}
+		status = http.StatusOK
 	}
 	return
 }
@@ -289,9 +293,7 @@ func (adapter *OldAdapter) Files(courseId string) (files []*resource.File, statu
 				}
 			})
 		})
-		if len(files) > 0 {
-			status = http.StatusOK
-		}
+		status = http.StatusOK
 	}
 	return
 }
@@ -335,65 +337,10 @@ func (adapter *OldAdapter) Homeworks(courseId string) (homeworks []*resource.Hom
 					DueAt:     infos[2],
 				}
 				homework.Body, homework.Attachment = adapter.parseHomeworkInfo(href)
+				homework.Submissions = adapter.parseSubmissions(courseId, homeworkId)
 				homeworks = append(homeworks, homework)
 			}
 		})
-		if len(homeworks) > 0 {
-			status = http.StatusOK
-		}
-	}
-	return
-}
-
-func (adapter *OldAdapter) Submission(courseId string, homeworkId string) (submission *resource.Submission, status int) {
-	query := url.Values{}
-	query.Set("course_id", courseId)
-	query.Set("id", homeworkId)
-	path := "/MultiLanguage/lesson/student/hom_wk_view.jsp?" + query.Encode()
-	doc, err := adapter.getOldResponse(path, make(map[string]string))
-
-	status = http.StatusBadGateway
-
-	if err != nil {
-		glog.Errorf("Failed to get response from learning web: %s", err)
-	} else {
-		submission = &resource.Submission{
-			CourseId:   courseId,
-			HomeworkId: homeworkId,
-		}
-		// Body
-		infoTr := doc.Find("#table_box tr:nth-child(2)")
-		submission.Body, _ = infoTr.Find("td.title+td").Children().Html()
-		// Attachment
-		infoTr = infoTr.Next()
-		hrefSelection := infoTr.Find("td a")
-		if fileHref, _ := hrefSelection.Attr("href"); fileHref != "" {
-			submission.Attachment = adapter.parseAttachmentInfo(fileHref)
-		}
-		// Markuser and Markedat
-		infoTr = infoTr.Next().Next()
-		infos := infoTr.Find("td.title+td").Map(func(i int, s *goquery.Selection) (info string) {
-			info, _ = s.Html()
-			return
-		})
-		submission.MarkUser = resource.User{
-			Name: strings.TrimSpace(infos[0]),
-		}
-		submission.MarkedAt = strings.TrimSpace(infos[1])
-		// Score
-		infoTr = infoTr.Next()
-		score, _ := infoTr.Find("td.title+td").Html()
-		submission.Score = strings.TrimSpace(score)
-		// Comment
-		infoTr = infoTr.Next()
-		comment, _ := infoTr.Find("td.title+td").Children().Html()
-		submission.Comment = strings.TrimSpace(comment)
-		// CommentAttachment
-		infoTr = infoTr.Next()
-		hrefSelection = infoTr.Find("td a")
-		if fileHref, _ := hrefSelection.Attr("href"); fileHref != "" {
-			submission.CommentAttachment = adapter.parseAttachmentInfo(fileHref)
-		}
 		status = http.StatusOK
 	}
 	return

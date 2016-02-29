@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	Password = "a&bc@d123"
+	Password = ""
 	Username = "nxf12"
 )
 
@@ -39,7 +39,7 @@ func TestPersonalInfo(t *testing.T) {
 		return
 	}
 
-	adapter := New(cookies)
+	adapter := New(cookies, "")
 	user, status := adapter.PersonalInfo()
 	if status != http.StatusOK {
 		t.Errorf("Unable to get personal data: %s", err)
@@ -90,7 +90,7 @@ func TestCourseIds(t *testing.T) {
 		return
 	}
 
-	adapter := New(cookies)
+	adapter := New(cookies, "")
 	attendingIdList, err := adapter.courseIds(1)
 	if err != nil {
 		t.Errorf("Unable to get attending course id list: %s", err)
@@ -114,7 +114,7 @@ func TestCourseInfo(t *testing.T) {
 		return
 	}
 
-	adapter := New(cookies)
+	adapter := New(cookies, "")
 	course, err := adapter.courseInfo("133593")
 	if err != nil {
 		t.Errorf("Unable to get course info: %s", err)
@@ -133,7 +133,7 @@ func TestAttending(t *testing.T) {
 		return
 	}
 
-	adapter := New(cookies)
+	adapter := New(cookies, "")
 	courseList, status := adapter.Attending()
 	if status != http.StatusOK {
 		t.Errorf("Unable to get attending course info: %s", err)
@@ -170,7 +170,7 @@ func TestParseFileInfo(t *testing.T) {
 		return
 	}
 
-	adapter := New(cookies)
+	adapter := New(cookies, "")
 	for _, tc := range fileinfos {
 		filename, size := adapter.parseFileInfo(tc.path)
 

@@ -32,7 +32,6 @@ var UserAgent = userAgent{
 		"/courses/{courseId}/announcements":                         handlerSpec{"Announcements", "GET", getArgsCourse},
 		"/courses/{courseId}/files":                                 handlerSpec{"Files", "GET", getArgsCourse},
 		"/courses/{courseId}/homeworks":                             handlerSpec{"Homeworks", "GET", getArgsCourse},
-		"/courses/{courseId}/homeworks/{homeworkId}/submissions/me": handlerSpec{"Submission", "GET", argsFromUrl("courseId", "homeworkId")},
 	},
 }
 
@@ -65,7 +64,7 @@ func (useragent *userAgent) GenerateHandler(methodName string,
 			return
 		}
 
-		ada := old.New(session.([]*http.Cookie))
+		ada := old.New(session.([]*http.Cookie), "")
 
 		// get the arguments
 		args := getArgs(w, r)

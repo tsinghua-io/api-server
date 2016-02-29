@@ -68,11 +68,11 @@ func (adapter *OldAdapter) courseInfo(courseId string) (course *resource.Course,
 		course = &resource.Course{
 			Id:   courseId,
 			Name: infos[5],
-			Teacher: resource.User{
+			Teachers: []*resource.User {&resource.User{
 				Name:  infos[16],
 				Email: infos[18],
 				Phone: infos[20],
-			},
+			}},
 			CourseNumber:   infos[1],
 			CourseSequence: infos[3],
 			Description:    infos[22],
@@ -125,7 +125,7 @@ func (adapter *OldAdapter) parseFileInfo(path string) (filename string, size int
 	return
 }
 
-func (adapter *OldAdapter) parseHomeworkInfo(href string) (body string, attachment resource.Attachment) {
+func (adapter *OldAdapter) parseHomeworkInfo(href string) (body string, attachment *resource.Attachment) {
 	path := "/MultiLanguage/lesson/student/" + href
 	doc, err := adapter.getOldResponse(path, make(map[string]string))
 
@@ -145,12 +145,67 @@ func (adapter *OldAdapter) parseHomeworkInfo(href string) (body string, attachme
 	return
 }
 
-func (adapter *OldAdapter) parseAttachmentInfo(fileHref string) (attachment resource.Attachment) {
+func (adapter *OldAdapter) parseAttachmentInfo(fileHref string) (attachment *resource.Attachment) {
 	filename, size := adapter.parseFileInfo(fileHref)
-	attachment = resource.Attachment{
+	attachment = &resource.Attachment{
 		Filename:    filename,
 		Size:        size,
 		DownloadUrl: fileHref,
+	}
+	return
+}
+
+func (adapter *OldAdapter) parseSubmissions(courseId string, homeworkId string) (submissions []*resource.Submission) {
+	query := url.Values{}
+	query.Set("course_id", courseId)
+	query.Set("id", homeworkId)
+	path := "/MultiLanguage/lesson/student/hom_wk_view.jsp?" + query.Encode()
+	doc, err := adapter.getOldResponse(path, make(map[string]string))
+
+	if err != nil {
+		glog.Errorf("Failed to get response from learning web: %s", err)
+	} else {
+		tableSelection := doc.Find("#table_box")
+		if tableSelection.Length() == 0 {
+			return
+		}
+		var submission = &resource.Submission{}
+		// Body
+		infoTr := tableSelection.Find("tr:nth-child(2)")
+		submission.Body, _ = infoTr.Find("td.title+td").Children().Html()
+		// Attachment
+		infoTr = infoTr.Next()
+		hrefSelection := infoTr.Find("td a")
+		if fileHref, _ := hrefSelection.Attr("href"); fileHref != "" {
+			submission.Attachment = adapter.parseAttachmentInfo(fileHref)
+		}
+		// Markuser and Markedat
+		infoTr = infoTr.Next().Next()
+		infos := infoTr.Find("td.title+td").Map(func(i int, s *goquery.Selection) (info string) {
+			info, _ = s.Html()
+			return
+		})
+		submission.MarkedBy = &resource.User{
+			Name: strings.TrimSpace(infos[0]),
+		}
+		if markedAt := strings.TrimSpace(infos[1]); markedAt != "null" {
+			submission.MarkedAt = markedAt
+		}
+		// Score
+		infoTr = infoTr.Next()
+		//score, _ := infoTr.Find("td.title+td").Html()
+		//submission.Mark = strings.TrimSpace(score)
+		// Comment
+		infoTr = infoTr.Next()
+		comment, _ := infoTr.Find("td.title+td").Children().Html()
+		submission.Comment = strings.TrimSpace(comment)
+		// CommentAttachment
+		infoTr = infoTr.Next()
+		hrefSelection = infoTr.Find("td a")
+		if fileHref, _ := hrefSelection.Attr("href"); fileHref != "" {
+			submission.CommentAttachment = adapter.parseAttachmentInfo(fileHref)
+		}
+		submissions = append(submissions, submission)
 	}
 	return
 }
