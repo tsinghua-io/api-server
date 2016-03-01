@@ -19,13 +19,14 @@ const (
 func BindRoute(app *webapp.WebApp) {
 	app.UseAgent(&agent.UserAgent)
 	app.UseMiddleware(agent.GetUserSession)
-	//app.UseMiddleware(agent.GetMD5Tag)
+	app.UseMiddleware(agent.SetContentType)
+	app.UseMiddleware(gziphandler.GzipHandler)
 }
 
 func main() {
 	app := webapp.NewWebApp()
 	BindRoute(app)
-	http.Handle("/", gziphandler.GzipHandler(app))
+	http.Handle("/", app)
 	err := http.ListenAndServe(ADDRESS, nil)
 	if err != nil {
 		glog.Fatalln("Error occured when lauching server: \n", err)

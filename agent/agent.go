@@ -86,16 +86,6 @@ func (useragent *userAgent) GenerateHandler(methodName string,
 		res := returnVals[0].Interface()
 		status := returnVals[1].Interface().(int)
 
-		if status != http.StatusOK {
-			// clear the cookie
-			clearSession, ok := context.GetOk(r, "clearSession")
-			clearSessionFunc := clearSession.(func() bool)
-			if !ok {
-				glog.Warningln("No clearSession func in the request context.")
-			}
-			clearSessionFunc() // clear session of learning web
-		}
-
 		w.WriteHeader(status)
 		if res != nil {
 			j, _ := json.Marshal(res)

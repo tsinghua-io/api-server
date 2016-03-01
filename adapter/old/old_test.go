@@ -8,14 +8,14 @@ import (
 )
 
 const (
-	password = ""
+	password = "a*bc#d001"
 	username = "nxf12"
 )
 
 func TestLoginSuccuss(t *testing.T) {
-	cookies, err := Login(username, password)
-	if err != nil {
-		t.Error(err)
+	cookies, status := Login(username, password)
+	if status != http.StatusOK {
+		t.Errorf("Login failed: %d", status)
 		return
 	}
 
@@ -23,26 +23,26 @@ func TestLoginSuccuss(t *testing.T) {
 }
 
 func TestLoginFail(t *testing.T) {
-	_, err := Login("Invalidusername", "Invalidpassword")
-	if err == nil {
+	_, status := Login("Invalidusername", "Invalidpassword")
+	if status != http.StatusUnauthorized {
 		t.Error("Logged in using invalid username/password.")
 		return
 	}
 
-	t.Log("Error received: ", err)
+	t.Log("Error received: ", status)
 }
 
 func TestPersonalInfo(t *testing.T) {
-	cookies, err := Login(username, password)
-	if err != nil {
-		t.Error(err)
+	cookies, status := Login(username, password)
+	if status != http.StatusOK {
+		t.Errorf("Login failed: %d", status)
 		return
 	}
 
 	adapter := New(cookies, "")
 	user, status := adapter.PersonalInfo()
 	if status != http.StatusOK {
-		t.Errorf("Unable to get personal data: %s", err)
+		t.Errorf("Unable to get personal data: %s", status)
 		return
 	}
 
@@ -84,9 +84,9 @@ func testEq(a, b []string) bool {
 }
 
 func TestCourseIds(t *testing.T) {
-	cookies, err := Login(username, password)
-	if err != nil {
-		t.Error(err)
+	cookies, status := Login(username, password)
+	if status != http.StatusOK {
+		t.Errorf("Login failed: %d", status)
 		return
 	}
 
@@ -108,9 +108,9 @@ func TestCourseIds(t *testing.T) {
 }
 
 func TestCourseInfo(t *testing.T) {
-	cookies, err := Login(username, password)
-	if err != nil {
-		t.Error(err)
+	cookies, status := Login(username, password)
+	if status != http.StatusOK {
+		t.Errorf("Login failed: %d", status)
 		return
 	}
 
@@ -122,27 +122,28 @@ func TestCourseInfo(t *testing.T) {
 	}
 
 	j, _ := json.Marshal(*course)
-	t.Logf("%s", j)
-	t.Errorf("") // for debuging now
+	_ = j
+	//t.Logf("%s", j)
 }
 
 func TestAttending(t *testing.T) {
-	cookies, err := Login(username, password)
-	if err != nil {
-		t.Error(err)
+	cookies, status := Login(username, password)
+	if status != http.StatusOK {
+		t.Errorf("Login failed: %d", status)
 		return
 	}
 
 	adapter := New(cookies, "")
 	courseList, status := adapter.Attending()
 	if status != http.StatusOK {
-		t.Errorf("Unable to get attending course info: %s", err)
+		t.Errorf("Unable to get attending course info: %s", status)
 		return
 	}
 
 	j, _ := json.Marshal(courseList)
-	t.Logf("%s", j)
-	t.Errorf("") // for debugging now
+	_ = j
+	//t.Logf("%s", j)
+	//t.Errorf("") // for debugging now
 }
 
 var fileinfos = []struct {
@@ -164,9 +165,9 @@ var fileinfos = []struct {
 }
 
 func TestParseFileInfo(t *testing.T) {
-	cookies, err := Login(username, password)
-	if err != nil {
-		t.Error(err)
+	cookies, status := Login(username, password)
+	if status != http.StatusOK {
+		t.Errorf("Login failed: %d", status)
 		return
 	}
 
@@ -186,8 +187,8 @@ func TestParseFileInfo(t *testing.T) {
 func BenchmarkLogin(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		cookies, err := Login(username, password)
+		cookies, status := Login(username, password)
 		_ = cookies
-		_ = err
+		_ = status
 	}
 }

@@ -23,25 +23,28 @@ type OldAdapter struct {
 	client http.Client
 }
 
-func Login(name string, pass string) (cookies []*http.Cookie, err error) {
+func Login(name string, pass string) (cookies []*http.Cookie, status int) {
 	form := url.Values{}
 	form.Set("userid", name)
 	form.Set("userpass", pass)
+
 	resp, err := http.PostForm(LoginURL, form)
 	if err != nil {
-		err = fmt.Errorf("Failed to create the request: %s", err)
+		glog.Errorf("Failed to create the request: %s", err)
+		status = http.StatusBadGateway
+		return
 	}
-	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
 
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
 	if strings.Contains(string(body), "用户名或密码错误，登录失败") ||
 		strings.Contains(string(body), "您没有登陆网络学堂的权限") {
-		cookies = []*http.Cookie{}
-		err = fmt.Errorf("Bad credentials.")
+		status = http.StatusUnauthorized
 	} else {
 		// Login success
 		cookies = resp.Cookies()
-		err = nil
+		status = http.StatusOK
 	}
 	return
 }
