@@ -8,12 +8,12 @@ import (
 )
 
 const (
-	Password = ""
-	Username = "nxf12"
+	password = ""
+	username = "nxf12"
 )
 
 func TestLoginSuccuss(t *testing.T) {
-	cookies, err := Login(Username, Password)
+	cookies, err := Login(username, password)
 	if err != nil {
 		t.Error(err)
 		return
@@ -23,7 +23,7 @@ func TestLoginSuccuss(t *testing.T) {
 }
 
 func TestLoginFail(t *testing.T) {
-	_, err := Login("InvalidUsername", "InvalidPassword")
+	_, err := Login("Invalidusername", "Invalidpassword")
 	if err == nil {
 		t.Error("Logged in using invalid username/password.")
 		return
@@ -33,7 +33,7 @@ func TestLoginFail(t *testing.T) {
 }
 
 func TestPersonalInfo(t *testing.T) {
-	cookies, err := Login(Username, Password)
+	cookies, err := Login(username, password)
 	if err != nil {
 		t.Error(err)
 		return
@@ -84,7 +84,7 @@ func testEq(a, b []string) bool {
 }
 
 func TestCourseIds(t *testing.T) {
-	cookies, err := Login(Username, Password)
+	cookies, err := Login(username, password)
 	if err != nil {
 		t.Error(err)
 		return
@@ -108,7 +108,7 @@ func TestCourseIds(t *testing.T) {
 }
 
 func TestCourseInfo(t *testing.T) {
-	cookies, err := Login(Username, Password)
+	cookies, err := Login(username, password)
 	if err != nil {
 		t.Error(err)
 		return
@@ -127,7 +127,7 @@ func TestCourseInfo(t *testing.T) {
 }
 
 func TestAttending(t *testing.T) {
-	cookies, err := Login(Username, Password)
+	cookies, err := Login(username, password)
 	if err != nil {
 		t.Error(err)
 		return
@@ -164,7 +164,7 @@ var fileinfos = []struct {
 }
 
 func TestParseFileInfo(t *testing.T) {
-	cookies, err := Login(Username, Password)
+	cookies, err := Login(username, password)
 	if err != nil {
 		t.Error(err)
 		return
@@ -180,5 +180,14 @@ func TestParseFileInfo(t *testing.T) {
 		if size != tc.size {
 			t.Errorf("Incorrect data: excpected %d, get %d", tc.size, size)
 		}
+	}
+}
+
+func BenchmarkLogin(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		cookies, err := Login(username, password)
+		_ = cookies
+		_ = err
 	}
 }
