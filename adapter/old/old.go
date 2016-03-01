@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/golang/glog"
-	"github.com/tsinghua-io/api-server/resource"
-	"golang.org/x/net/html"
-	"io/ioutil"
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"mime"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"strings"
+	"strconv"
 )
 
 const (
@@ -21,32 +20,6 @@ const (
 // OldAdapter is the adapter for learn.tsinghua.edu.cn
 type OldAdapter struct {
 	client http.Client
-}
-
-func Login(name string, pass string) (cookies []*http.Cookie, status int) {
-	form := url.Values{}
-	form.Set("userid", name)
-	form.Set("userpass", pass)
-
-	resp, err := http.PostForm(LoginURL, form)
-	if err != nil {
-		glog.Errorf("Failed to create the request: %s", err)
-		status = http.StatusBadGateway
-		return
-	}
-
-	defer resp.Body.Close()
-
-	body, _ := ioutil.ReadAll(resp.Body)
-	if strings.Contains(string(body), "用户名或密码错误，登录失败") ||
-		strings.Contains(string(body), "您没有登陆网络学堂的权限") {
-		status = http.StatusUnauthorized
-	} else {
-		// Login success
-		cookies = resp.Cookies()
-		status = http.StatusOK
-	}
-	return
 }
 
 func (adapter *OldAdapter) getOldResponse(path string, headers map[string]string) (doc *goquery.Document, err error) {
@@ -101,250 +74,27 @@ func New(cookies []*http.Cookie, langCode string) *OldAdapter {
 	return adapter
 }
 
-func (adapter *OldAdapter) PersonalInfo() (*resource.User, int) {
-	url := "/MultiLanguage/vspace/vspace_userinfo1.jsp"
-	doc, err := adapter.getOldResponse(url, make(map[string]string))
-
+func (adapter *OldAdapter) parseFileInfo(path string) (filename string, size int) {
+	resp, err := adapter.client.Head(BaseURL + path)
 	if err != nil {
-		glog.Warningf("Failed to get response from learning web: %s", err)
-		return nil, http.StatusBadGateway
-	} else {
-		// parsing the response body
-		docTable := doc.Find("form")
-		infos := docTable.Find(".tr_l,.tr_l2").Map(func(i int, valueTR *goquery.Selection) (info string) {
-			switch valueTR.Nodes[0].FirstChild.Type {
-			case html.TextNode:
-				info, _ = valueTR.Html()
-			case html.ElementNode:
-				info, _ = valueTR.Children().Attr("value")
-			default:
-				info, _ = valueTR.Html()
-			}
-			return
-		})
-
-		if len(infos) < 15 {
-			glog.Errorf("User information parsing error: cannot parse all the informations from %s", infos)
-			return nil, http.StatusBadGateway
-		} else {
-			return &resource.User{
-				Id:     infos[0],
-				Name:   infos[1],
-				Type:   infos[14],
-				Gender: infos[13],
-				Email:  infos[6],
-				Phone:  infos[7]}, http.StatusOK
-		}
-	}
-}
-
-func (adapter *OldAdapter) Attending() (courses []*resource.Course, status int) {
-	courseIdList, err := adapter.courseIds(1)
-	if err != nil {
-		glog.Errorf("Failed to get attending course list: %s", err)
-		status = http.StatusBadGateway
+		glog.Errorf("Failed to get header information of file %s: %s", path, err)
 		return
 	}
 
-	for _, courseId := range courseIdList {
-		course, err := adapter.courseInfo(courseId)
-		if err != nil {
-			glog.Errorf("Failed to get course info of course %s: %s\n", courseId, err)
-			status = http.StatusBadGateway
-			return
-		}
-		courses = append(courses, course)
-	}
-	status = http.StatusOK
-	return
-}
+	// file size
+	size, _ = strconv.Atoi(resp.Header.Get("Content-Length"))
 
-func (adapter *OldAdapter) Attended() (courses []*resource.Course, status int) {
-	courseIdList, err := adapter.courseIds(2)
+	// file name
+	disposition := resp.Header.Get("Content-Disposition")
+	// decode from gbk
+	disposition, _ = simplifiedchinese.GBK.NewDecoder().String(disposition)
+
+	// parse disposition header
+	disposition, params, err := mime.ParseMediaType(disposition)
 	if err != nil {
-		glog.Errorf("Failed to get attended course list: %s", err)
-		status = http.StatusBadGateway
+		glog.Errorf("Failed to parse header Content-Disposition of file %s", path)
 		return
 	}
-
-	for _, courseId := range courseIdList {
-		course, err := adapter.courseInfo(courseId)
-		if err != nil {
-			glog.Errorf("Failed to get course info of course %s: %s\n", courseId, err)
-			status = http.StatusBadGateway
-			return
-		}
-		courses = append(courses, course)
-	}
-	status = http.StatusOK
-	return
-}
-
-func (adapter *OldAdapter) Announcements(courseId string) (announcements []*resource.Announcement, status int) {
-	path := "/MultiLanguage/public/bbs/getnoteid_student.jsp?course_id=" + courseId
-	doc, err := adapter.getOldResponse(path, make(map[string]string))
-
-	status = http.StatusBadGateway
-
-	if err != nil {
-		glog.Errorf("Failed to get response from learning web: %s", err)
-	} else {
-		trs := doc.Find("tr.tr1, tr.tr2")
-		trs.Each(func(i int, s *goquery.Selection) {
-			infos := s.Find("td").Map(func(i int, tdSelection *goquery.Selection) (info string) {
-				info, _ = tdSelection.Html()
-				return
-			})
-
-			hrefSelection := s.Find("td a")
-
-			var href string
-			var hrefUrl *url.URL
-			var err error
-			href, _ = hrefSelection.Attr("href")
-
-			if hrefUrl, err = url.Parse(href); err != nil {
-				return
-			}
-
-			if announcementId := hrefUrl.Query().Get("id"); announcementId != "" {
-				body := adapter.announcementBody(href)
-
-				var priority int
-				var title string
-				switch hrefSelection.Nodes[0].FirstChild.Type {
-				case html.TextNode:
-					priority = 0
-					title, _ = hrefSelection.Html()
-				default:
-					priority = 1
-					title, _ = hrefSelection.Children().Html()
-				}
-
-				announcements = append(announcements, &resource.Announcement{
-					Id:       announcementId,
-					CourseId: courseId,
-
-					Owner: &resource.User{
-						Name: infos[2],
-					},
-					CreatedAt: infos[3],
-					Priority:  priority,
-
-					Title: title,
-					Body:  body,
-				})
-			}
-		})
-		status = http.StatusOK
-	}
-	return
-}
-
-func (adapter *OldAdapter) Files(courseId string) (files []*resource.File, status int) {
-	path := "/MultiLanguage/lesson/student/download.jsp?course_id=" + courseId
-	doc, err := adapter.getOldResponse(path, make(map[string]string))
-
-	status = http.StatusBadGateway
-
-	if err != nil {
-		glog.Errorf("Failed to get response from learning web: %s", err)
-	} else {
-		// Find all categories
-		categories := doc.Find("td.textTD").Map(func(i int, s *goquery.Selection) (info string) {
-			info, _ = s.Html()
-			return
-		})
-
-		categoryDivs := doc.Find("div.layerbox")
-		categoryDivs.Each(func(i int, div *goquery.Selection) {
-			category := categories[i]
-			trs := div.Find("#table_box tr~tr")
-			trs.Each(func(i int, s *goquery.Selection) {
-				infos := s.Find("td").Map(func(i int, tdSelection *goquery.Selection) (info string) {
-					info, _ = tdSelection.Html()
-					return
-				})
-
-				hrefSelection := s.Find("td a")
-
-				var href string
-				var hrefUrl *url.URL
-				var err error
-				if href, _ = hrefSelection.Attr("href"); href == "" {
-					return
-				}
-				if hrefUrl, err = url.Parse(href); err != nil {
-					return
-				}
-
-				if fileId := hrefUrl.Query().Get("file_id"); fileId != "" {
-					title, _ := hrefSelection.Html()
-					title = strings.TrimSpace(title)
-					file := &resource.File{
-						Id:          fileId,
-						CourseId:    courseId,
-						Category:    []string{category},
-						Title:       title,
-						Description: infos[2],
-						DownloadUrl: href,
-						CreatedAt:   infos[4],
-					}
-
-					file.Filename, file.Size = adapter.parseFileInfo(href)
-					files = append(files, file)
-				}
-			})
-		})
-		status = http.StatusOK
-	}
-	return
-}
-
-func (adapter *OldAdapter) Homeworks(courseId string) (homeworks []*resource.Homework, status int) {
-	path := "/MultiLanguage/lesson/student/hom_wk_brw.jsp?course_id=" + courseId
-	doc, err := adapter.getOldResponse(path, make(map[string]string))
-
-	status = http.StatusBadGateway
-
-	if err != nil {
-		glog.Errorf("Failed to get response from learning web: %s", err)
-	} else {
-		trs := doc.Find("tr.tr1, tr.tr2")
-		trs.Each(func(i int, s *goquery.Selection) {
-			infos := s.Find("td").Map(func(i int, tdSelection *goquery.Selection) (info string) {
-				info, _ = tdSelection.Html()
-				return
-			})
-
-			hrefSelection := s.Find("td a")
-
-			var href string
-			var hrefUrl *url.URL
-			var err error
-			href, _ = hrefSelection.Attr("href")
-
-			if hrefUrl, err = url.Parse(href); err != nil {
-				return
-			}
-
-			if homeworkId := hrefUrl.Query().Get("id"); homeworkId != "" {
-				title, _ := hrefSelection.Html()
-
-				homework := &resource.Homework{
-					Id:        homeworkId,
-					CourseId:  courseId,
-					Title:     title,
-					CreatedAt: infos[1],
-					BeginAt:   infos[1],
-					DueAt:     infos[2],
-				}
-				homework.Body, homework.Attachment = adapter.parseHomeworkInfo(href)
-				homework.Submissions = adapter.parseSubmissions(courseId, homeworkId)
-				homeworks = append(homeworks, homework)
-			}
-		})
-		status = http.StatusOK
-	}
+	filename = params["filename"]
 	return
 }
