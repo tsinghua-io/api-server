@@ -26,12 +26,12 @@ type userAgent struct {
 
 var UserAgent = userAgent{
 	UrlMap: map[string]handlerSpec{
-		"/users/me":                                                 handlerSpec{"PersonalInfo", "GET", getArgsMe},
-		"/users/me/attending":                                       handlerSpec{"Attending", "GET", getArgsMe},
-		"/users/me/attended":                                        handlerSpec{"Attended", "GET", getArgsMe},
-		"/courses/{courseId}/announcements":                         handlerSpec{"Announcements", "GET", getArgsCourse},
-		"/courses/{courseId}/files":                                 handlerSpec{"Files", "GET", getArgsCourse},
-		"/courses/{courseId}/homeworks":                             handlerSpec{"Homeworks", "GET", getArgsCourse},
+		"/users/me":                         handlerSpec{"PersonalInfo", "GET", getArgsMe},
+		"/users/me/attending":               handlerSpec{"Attending", "GET", getArgsMe},
+		"/users/me/attended":                handlerSpec{"Attended", "GET", getArgsMe},
+		"/courses/{courseId}/announcements": handlerSpec{"Announcements", "GET", getArgsCourse},
+		"/courses/{courseId}/files":         handlerSpec{"Files", "GET", getArgsCourse},
+		"/courses/{courseId}/homeworks":     handlerSpec{"Homeworks", "GET", getArgsCourse},
 	},
 }
 

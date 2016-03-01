@@ -68,7 +68,7 @@ func (adapter *OldAdapter) courseInfo(courseId string) (course *resource.Course,
 		course = &resource.Course{
 			Id:   courseId,
 			Name: infos[5],
-			Teachers: []*resource.User {&resource.User{
+			Teachers: []*resource.User{&resource.User{
 				Name:  infos[16],
 				Email: infos[18],
 				Phone: infos[20],

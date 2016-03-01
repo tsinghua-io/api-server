@@ -229,10 +229,10 @@ func (adapter *OldAdapter) Announcements(courseId string) (announcements []*reso
 						Name: infos[2],
 					},
 					CreatedAt: infos[3],
-					Priority: priority,
+					Priority:  priority,
 
-					Title:    title,
-					Body:      body,
+					Title: title,
+					Body:  body,
 				})
 			}
 		})
