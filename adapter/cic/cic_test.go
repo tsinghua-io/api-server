@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"github.com/golang/glog"
+	"net/http"
 	"os"
 	"reflect"
 	"testing"
@@ -34,9 +35,9 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	// Login.
-	cookies, err := Login(username, password)
-	if err != nil {
-		glog.Errorf("Failed to login to %s: %s", username, err)
+	cookies, status := Login(username, password)
+	if status != http.StatusOK {
+		glog.Errorf("Failed to login to %s: %s", username, http.StatusText(status))
 		os.Exit(1)
 	}
 	adapter = New(cookies, "zh-CN")

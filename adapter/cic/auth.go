@@ -1,7 +1,7 @@
 package cic
 
 import (
-	"fmt"
+	"github.com/golang/glog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -12,7 +12,7 @@ const (
 	AuthURL = "https://id.tsinghua.edu.cn/do/off/ui/auth/login/post/fa8077873a7a80b1cd6b185d5a796617/0?/j_spring_security_thauth_roaming_entry"
 )
 
-func getAuth(username string, password string) (location string, err error) {
+func getAuth(username string, password string) (location string, status int) {
 	form := url.Values{}
 	form.Add("i_user", username)
 	form.Add("i_pass", password)
@@ -21,14 +21,16 @@ func getAuth(username string, password string) (location string, err error) {
 	// Do not follow 302 redirect.
 	req, err := http.NewRequest("POST", AuthURL, strings.NewReader(data))
 	if err != nil {
-		return "", fmt.Errorf("Failed to create the request: %s", err)
+		glog.Errorf("Failed to create request to %s:, %s", AuthURL, err)
+		return "", http.StatusInternalServerError
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Content-Length", strconv.Itoa(len(data)))
 
 	resp, err := http.DefaultTransport.RoundTrip(req)
 	if err != nil {
-		return "", fmt.Errorf("Request error: %s", err)
+		glog.Errorf("Failed to get response from %s: %s", AuthURL, err)
+		return "", http.StatusBadGateway
 	}
 	defer resp.Body.Close()
 
@@ -36,35 +38,37 @@ func getAuth(username string, password string) (location string, err error) {
 	location = resp.Header.Get("Location")
 
 	if strings.Contains(location, "status=SUCCESS") {
-		err = nil
+		return location, http.StatusOK
 	} else if strings.Contains(location, "status=BAD_CREDENTIALS") {
-		err = fmt.Errorf("Bad credentials.")
+		return location, http.StatusUnauthorized
 	} else if location == "" {
-		err = fmt.Errorf("No new location provided.")
+		glog.Error("Empty redirection got from %s.", AuthURL)
+		return location, http.StatusBadGateway
 	} else {
-		err = fmt.Errorf("Unknown new location: %s", location)
+		glog.Error("Unknown redirection got from %s: %s", AuthURL, location)
+		return location, http.StatusBadGateway
 	}
-	return
 }
 
-func Login(username string, password string) (cookies []*http.Cookie, err error) {
-	location, err := getAuth(username, password)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get auth: %s", err)
+func Login(username string, password string) (cookies []*http.Cookie, status int) {
+	location, status := getAuth(username, password)
+	if status != http.StatusOK {
+		return nil, status
 	}
 
 	// Do not follow 302 redirect.
 	req, err := http.NewRequest("GET", location, nil)
 	if err != nil {
-		return nil, fmt.Errorf("Invalid location: %s", err)
+		glog.Errorf("Failed to create request to %s:, %s", location, err)
+		return nil, http.StatusInternalServerError
 	}
 
 	resp, err := http.DefaultTransport.RoundTrip(req)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to login using auth: %s", err)
+		glog.Errorf("Failed to login using auth (%s): %s", location, err)
+		return nil, http.StatusBadGateway
 	}
 	defer resp.Body.Close()
 
-	cookies = resp.Cookies()
-	return
+	return resp.Cookies(), http.StatusOK
 }
