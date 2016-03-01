@@ -179,22 +179,30 @@ func (adapter *OldAdapter) parseSubmissions(courseId string, homeworkId string) 
 		if fileHref, _ := hrefSelection.Attr("href"); fileHref != "" {
 			submission.Attachment = adapter.parseAttachmentInfo(fileHref)
 		}
+
 		// Markuser and Markedat
 		infoTr = infoTr.Next().Next()
 		infos := infoTr.Find("td.title+td").Map(func(i int, s *goquery.Selection) (info string) {
 			info, _ = s.Html()
 			return
 		})
+		// Mark
+		infoTr = infoTr.Next() // score tr
+		score, _ := infoTr.Find("td.title+td").Html()
+
 		submission.MarkedBy = &resource.User{
 			Name: strings.TrimSpace(infos[0]),
 		}
 		if markedAt := strings.TrimSpace(infos[1]); markedAt != "null" {
 			submission.MarkedAt = markedAt
+			if score := strings.TrimSpace(score); strings.Contains(score, "分") {
+				if mark, err := strconv.ParseFloat(strings.TrimSuffix(score, "分"), 32); err == nil {
+					f := float32(mark)
+					submission.Mark = &f
+				}
+			}
 		}
-		// Score
-		infoTr = infoTr.Next()
-		//score, _ := infoTr.Find("td.title+td").Html()
-		//submission.Mark = strings.TrimSpace(score)
+
 		// Comment
 		infoTr = infoTr.Next()
 		comment, _ := infoTr.Find("td.title+td").Children().Html()
