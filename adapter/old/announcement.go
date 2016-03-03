@@ -10,6 +10,11 @@ import (
 	"net/url"
 )
 
+const (
+	AnnouncementURL  = BaseURL + "/MultiLanguage/public/bbs/note_reply.jsp?bbs_type=课程公告&id={id}&course_id={course_id}"
+	AnnouncementsURL = BaseURL + "/MultiLanguage/public/bbs/getnoteid_student.jsp?course_id={course_id}"
+)
+
 func (adapter *OldAdapter) announcementBody(path string) (body string) {
 	path = "/MultiLanguage/public/bbs/" + path
 	doc, err := adapter.getOldResponse(path, make(map[string]string))
@@ -72,6 +77,7 @@ func (adapter *OldAdapter) Announcements(courseId string) (announcements []*reso
 					},
 					CreatedAt: infos[3],
 					Priority:  priority,
+					Read:      true, // We just read it.
 
 					Title: title,
 					Body:  body,

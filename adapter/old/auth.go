@@ -8,6 +8,10 @@ import (
 	"strings"
 )
 
+const (
+	LoginURL = "https://learn.tsinghua.edu.cn/MultiLanguage/lesson/teacher/loginteacher.jsp"
+)
+
 func Login(name string, pass string) (cookies []*http.Cookie, status int) {
 	form := url.Values{}
 	form.Set("userid", name)

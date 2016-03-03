@@ -13,8 +13,7 @@ import (
 )
 
 const (
-	BaseURL  = "https://learn.tsinghua.edu.cn"
-	LoginURL = "https://learn.tsinghua.edu.cn/MultiLanguage/lesson/teacher/loginteacher.jsp"
+	BaseURL = "https://learn.tsinghua.edu.cn"
 )
 
 // OldAdapter is the adapter for learn.tsinghua.edu.cn
