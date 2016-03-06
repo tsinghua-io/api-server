@@ -7,7 +7,7 @@ import (
 )
 
 func TestSelfProfile(t *testing.T) {
-	user, status := adapter.Profile("")
+	user, status := ada.Profile("", nil)
 	if status != http.StatusOK {
 		t.Errorf("Unable to get self profile: %s", http.StatusText(status))
 		return
@@ -32,14 +32,14 @@ func TestSelfProfile(t *testing.T) {
 func BenchmarkPersonalInfo(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		user, status := adapter.Profile("")
+		user, status := ada.Profile("", nil)
 		_ = user
 		_ = status
 	}
 }
 
 func TestProfile(t *testing.T) {
-	user, status := adapter.Profile(username)
+	user, status := ada.Profile("2013011187", nil)
 
 	if user != nil {
 		t.Errorf("Should return a nil User pointer.")

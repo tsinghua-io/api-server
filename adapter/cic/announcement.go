@@ -3,48 +3,50 @@ package cic
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/tsinghua-io/api-server/adapter"
 	"github.com/tsinghua-io/api-server/resource"
 	"io"
 	"strconv"
 	"strings"
 )
 
-// TODO: Rename to Notice?
-
 const (
-	AnnouncementsURL = BaseURL + "/b/myCourse/notice/listForStudent/{course_id}?pageSize=1000"
+	announcementsURL = BaseURL + "/b/myCourse/notice/listForStudent/{course_id}?pageSize=1000"
 )
 
 type announcementsParser struct {
-	PaginationList struct {
-		RecordList []struct {
-			Status       string // 0 for read, 1 for unread.
-			CourseNotice struct {
-				Id          int64
-				Title       string
-				Owner       string
-				RegDate     string
-				CourseId    string
-				MsgPriority int // 0 for normal, 1 for important.
-				Detail      string
+	params map[string]string
+	data   struct {
+		PaginationList struct {
+			RecordList []struct {
+				Status       string // 0 for read, 1 for unread.
+				CourseNotice struct {
+					Id          int64
+					Title       string
+					Owner       string
+					RegDate     string
+					CourseId    string
+					MsgPriority int // 0 for normal, 1 for important.
+					Detail      string
+				}
 			}
 		}
 	}
 }
 
-func (p *announcementsParser) parse(r io.Reader, info interface{}, _ string) error {
+func (p *announcementsParser) Parse(r io.Reader, info interface{}) error {
 	announcements, ok := info.(*[]*resource.Announcement)
 	if !ok {
 		return fmt.Errorf("The parser and the destination type do not match.")
 	}
 
 	dec := json.NewDecoder(r)
-	if err := dec.Decode(p); err != nil {
+	if err := dec.Decode(&p.data); err != nil {
 		return err
 	}
 
 	// TODO: Iterate a pointer slice?
-	for _, result := range p.PaginationList.RecordList {
+	for _, result := range p.data.PaginationList.RecordList {
 		var status int
 		if _, err := fmt.Sscan(result.Status, &status); err != nil {
 			return err
@@ -66,9 +68,11 @@ func (p *announcementsParser) parse(r io.Reader, info interface{}, _ string) err
 	return nil
 }
 
-func (adapter *CicAdapter) Announcements(course_id string) (announcements []*resource.Announcement, status int) {
+func (ada *CicAdapter) CourseAnnouncements(course_id string, params map[string]string) (announcements []*resource.Announcement, status int) {
+	url := strings.Replace(announcementsURL, "{course_id}", course_id, -1)
+	parser := &announcementsParser{params: params}
 	announcements = []*resource.Announcement{}
-	url := strings.Replace(AnnouncementsURL, "{course_id}", course_id, -1)
-	status = adapter.FetchInfo(url, "GET", &announcementsParser{}, &announcements)
+
+	status = adapter.FetchInfo(&ada.client, url, "GET", parser, &announcements)
 	return announcements, status
 }

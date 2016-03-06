@@ -7,7 +7,7 @@ import (
 )
 
 func TestAnnouncements(t *testing.T) {
-	actual, status := adapter.Announcements("2014-2015-1-20750021-97")
+	actual, status := ada.CourseAnnouncements("2014-2015-1-20750021-97", nil)
 	if status != http.StatusOK {
 		t.Errorf("Unable to get announcements: %s", http.StatusText(status))
 		return
@@ -73,7 +73,7 @@ func TestAnnouncements(t *testing.T) {
 func BenchmarkAnnouncements(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		info, status := adapter.Announcements("2014-2015-1-20750021-97")
+		info, status := ada.CourseAnnouncements("2014-2015-1-20750021-97", nil)
 		_ = info
 		_ = status
 	}

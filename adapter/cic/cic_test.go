@@ -16,7 +16,7 @@ const (
 )
 
 var (
-	adapter *CicAdapter
+	ada *CicAdapter
 )
 
 func AssertDeepEqual(t *testing.T, actual, expected interface{}) bool {
@@ -35,12 +35,12 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	// Login.
-	cookies, status := Login(username, password)
+	var status int
+	ada, status = Login(username, password)
 	if status != http.StatusOK {
 		glog.Errorf("Failed to login to %s: %s", username, http.StatusText(status))
 		os.Exit(1)
 	}
-	adapter = New(cookies, "zh-CN")
 
 	os.Exit(m.Run())
 }

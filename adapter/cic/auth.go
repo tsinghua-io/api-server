@@ -3,6 +3,7 @@ package cic
 import (
 	"github.com/golang/glog"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"strconv"
 	"strings"
@@ -50,7 +51,7 @@ func getAuth(username string, password string) (location string, status int) {
 	}
 }
 
-func Login(username string, password string) (cookies []*http.Cookie, status int) {
+func Login(username string, password string) (adapter *CicAdapter, status int) {
 	location, status := getAuth(username, password)
 	if status != http.StatusOK {
 		return nil, status
@@ -70,5 +71,13 @@ func Login(username string, password string) (cookies []*http.Cookie, status int
 	}
 	defer resp.Body.Close()
 
-	return resp.Cookies(), http.StatusOK
+	// Construct adapter.
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		glog.Errorf("Unable to create cookie jar: %s", err)
+		return nil, http.StatusInternalServerError
+	}
+	jar.SetCookies(parsedBaseURL, resp.Cookies())
+
+	return &CicAdapter{client: http.Client{Jar: jar}}, http.StatusOK
 }

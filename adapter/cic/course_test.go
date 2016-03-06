@@ -7,7 +7,7 @@ import (
 )
 
 func TestAttended(t *testing.T) {
-	courses, status := adapter.Attended()
+	courses, status := ada.Attended("", nil)
 	if status != http.StatusOK {
 		t.Errorf("Unable to get attended courses: %s", http.StatusText(status))
 		return
@@ -51,7 +51,7 @@ func TestAttended(t *testing.T) {
 func BenchmarkAttended(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		info, status := adapter.Attended()
+		info, status := ada.Attended("", nil)
 		_ = info
 		_ = status
 	}

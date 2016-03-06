@@ -3,6 +3,7 @@ package cic
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/tsinghua-io/api-server/adapter"
 	"github.com/tsinghua-io/api-server/resource"
 	"io"
 	"strconv"
@@ -14,41 +15,44 @@ const (
 )
 
 type filesParser struct {
-	ResultList map[string]struct {
-		NodeName     string
-		ChildMapData map[string]struct {
-			CourseOutlines struct {
-				Title string
-			}
-			CourseCoursewareList []struct {
-				ResourcesMappingByFileId struct {
-					FileId   string
-					RegDate  int64
-					FileName string
-					FileSize string
-					CourseId string
-					UserCode string
+	params map[string]string
+	data   struct {
+		ResultList map[string]struct {
+			NodeName     string
+			ChildMapData map[string]struct {
+				CourseOutlines struct {
+					Title string
 				}
-				RegUser string
-				Title   string
-				Detail  string
+				CourseCoursewareList []struct {
+					ResourcesMappingByFileId struct {
+						FileId   string
+						RegDate  int64
+						FileName string
+						FileSize string
+						CourseId string
+						UserCode string
+					}
+					RegUser string
+					Title   string
+					Detail  string
+				}
 			}
 		}
 	}
 }
 
-func (p *filesParser) parse(r io.Reader, info interface{}, _ string) error {
+func (p *filesParser) Parse(r io.Reader, info interface{}) error {
 	files, ok := info.(*[]*resource.File)
 	if !ok {
 		return fmt.Errorf("The parser and the destination type do not match.")
 	}
 
 	dec := json.NewDecoder(r)
-	if err := dec.Decode(p); err != nil {
+	if err := dec.Decode(&p.data); err != nil {
 		return err
 	}
 
-	for _, node1 := range p.ResultList {
+	for _, node1 := range p.data.ResultList {
 		for _, node2 := range node1.ChildMapData {
 			category := []string{node1.NodeName, node2.CourseOutlines.Title}
 
@@ -79,9 +83,11 @@ func (p *filesParser) parse(r io.Reader, info interface{}, _ string) error {
 	return nil
 }
 
-func (adapter *CicAdapter) Files(course_id string) (files []*resource.File, status int) {
+func (ada *CicAdapter) CourseFiles(courseId string, params map[string]string) (files []*resource.File, status int) {
+	url := strings.Replace(FilesURL, "{course_id}", courseId, -1)
+	parser := &filesParser{params: params}
 	files = []*resource.File{}
-	url := strings.Replace(FilesURL, "{course_id}", course_id, -1)
-	status = adapter.FetchInfo(url, "GET", &filesParser{}, &files)
+
+	status = adapter.FetchInfo(&ada.client, url, "GET", parser, &files)
 	return files, status
 }

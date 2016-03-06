@@ -3,6 +3,7 @@ package cic
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/tsinghua-io/api-server/adapter"
 	"github.com/tsinghua-io/api-server/resource"
 	"io"
 	"strconv"
@@ -19,62 +20,65 @@ func Int2Pfloat32(i int) *float32 {
 }
 
 type homeworksParser struct {
-	ResultList []struct {
-		CourseHomeworkRecord struct {
-			StudentId                     string
-			RegDate                       int64
-			HomewkDetail                  string
-			ResourcesMappingByHomewkAffix struct {
-				FileId   string
-				FileName string
-				FileSize string
-				UserCode string
+	params map[string]string
+	data   struct {
+		ResultList []struct {
+			CourseHomeworkRecord struct {
+				StudentId                     string
+				RegDate                       int64
+				HomewkDetail                  string
+				ResourcesMappingByHomewkAffix struct {
+					FileId   string
+					FileName string
+					FileSize string
+					UserCode string
+				}
+				ReplyDetail string
+				// TODO: Add this:
+				// ResourcesMappingByReplyAffix struct {
+				// }
+				Mark      *int
+				ReplyDate int64
+				Status    string // 0 for 未交, 1 for 未批, 2 for 已阅, 3 for 已批
+				IfDelay   string // 1 for late, 2 for 代交
+				GradeUser string
 			}
-			ReplyDetail string
-			// TODO: Add this:
-			// ResourcesMappingByReplyAffix struct {
-			// }
-			Mark      *int
-			ReplyDate int64
-			Status    string // 0 for 未交, 1 for 未批, 2 for 已阅, 3 for 已批
-			IfDelay   string // 1 for late, 2 for 代交
-			GradeUser string
-		}
-		CourseHomeworkInfo struct {
-			HomewkId            int
-			RegDate             int64
-			BeginDate           int64
-			EndDate             int64
-			Title               string
-			Detail              string
-			HomewkAffix         string // File ID.
-			HomewkAffixFilename string
-			// AnswerDetail
-			// AnswerLink
-			// AnswerLinkFilename
-			// AnswerDate
-			CourseId string
-			WeiJiao  int
-			// YiJiao
-			YiYue  int
-			YiPi   int
-			Jiaoed int
+			CourseHomeworkInfo struct {
+				HomewkId            int
+				RegDate             int64
+				BeginDate           int64
+				EndDate             int64
+				Title               string
+				Detail              string
+				HomewkAffix         string // File ID.
+				HomewkAffixFilename string
+				// AnswerDetail
+				// AnswerLink
+				// AnswerLinkFilename
+				// AnswerDate
+				CourseId string
+				WeiJiao  int
+				// YiJiao
+				YiYue  int
+				YiPi   int
+				Jiaoed int
+			}
 		}
 	}
 }
 
-func (p *homeworksParser) parse(r io.Reader, info interface{}, _ string) error {
+func (p *homeworksParser) Parse(r io.Reader, info interface{}) error {
 	homeworks, ok := info.(*[]*resource.Homework)
 	if !ok {
 		return fmt.Errorf("The parser and the destination type do not match.")
 	}
 
 	dec := json.NewDecoder(r)
-	if err := dec.Decode(p); err != nil {
+	if err := dec.Decode(&p.data); err != nil {
 		return err
 	}
 
-	for _, result := range p.ResultList {
+	for _, result := range p.data.ResultList {
 		// Fetch homework attachment, if exists.
 		var attach *resource.Attachment
 
@@ -152,9 +156,11 @@ func (p *homeworksParser) parse(r io.Reader, info interface{}, _ string) error {
 	return nil
 }
 
-func (adapter *CicAdapter) Homeworks(course_id string) (homeworks []*resource.Homework, status int) {
+func (ada *CicAdapter) CourseHomework(courseId string, params map[string]string) (homeworks []*resource.Homework, status int) {
+	url := strings.Replace(HomeworksURL, "{course_id}", courseId, -1)
+	parser := &homeworksParser{params: params}
 	homeworks = []*resource.Homework{}
-	url := strings.Replace(HomeworksURL, "{course_id}", course_id, -1)
-	status = adapter.FetchInfo(url, "GET", &homeworksParser{}, &homeworks)
+
+	status = adapter.FetchInfo(&ada.client, url, "GET", parser, &homeworks)
 	return homeworks, status
 }

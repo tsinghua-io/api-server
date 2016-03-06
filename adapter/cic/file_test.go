@@ -7,7 +7,7 @@ import (
 )
 
 func TestFiles(t *testing.T) {
-	actual, status := adapter.Files("2014-2015-1-20750021-97")
+	actual, status := ada.CourseFiles("2014-2015-1-20750021-97", nil)
 	if status != http.StatusOK {
 		t.Errorf("Unable to get files: %s", http.StatusText(status))
 		return
@@ -88,7 +88,7 @@ func TestFiles(t *testing.T) {
 func BenchmarkFiles(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		info, status := adapter.Files("2014-2015-1-20750021-97")
+		info, status := ada.CourseFiles("2014-2015-1-20750021-97", nil)
 		_ = info
 		_ = status
 	}

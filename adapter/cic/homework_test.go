@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func TestHomeworks(t *testing.T) {
-	actual, status := adapter.Homeworks("2014-2015-1-20750021-97")
+func TestCourseHomework(t *testing.T) {
+	actual, status := ada.CourseHomework("2014-2015-1-20750021-97", nil)
 	if status != http.StatusOK {
 		t.Errorf("Unable to get homeworks: %s", http.StatusText(status))
 		return
@@ -169,10 +169,10 @@ func TestHomeworks(t *testing.T) {
 	AssertDeepEqual(t, actual, expected)
 }
 
-func BenchmarkHomeworks(b *testing.B) {
+func BenchmarkCourseHomework(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		info, status := adapter.Homeworks("2014-2015-1-20750021-97")
+		info, status := ada.CourseHomework("2014-2015-1-20750021-97", nil)
 		_ = info
 		_ = status
 	}

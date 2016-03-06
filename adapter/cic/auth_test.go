@@ -18,8 +18,8 @@ func TestLoginFail(t *testing.T) {
 func BenchmarkLogin(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		cookies, status := Login(username, password)
-		_ = cookies
+		ada, status := Login(username, password)
+		_ = ada
 		_ = status
 	}
 }

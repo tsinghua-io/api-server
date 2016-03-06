@@ -3,6 +3,7 @@ package cic
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/tsinghua-io/api-server/adapter"
 	"github.com/tsinghua-io/api-server/resource"
 	"io"
 	"net/http"
@@ -17,26 +18,29 @@ const (
 )
 
 type timeLocationParser struct {
-	ResultList []struct {
-		Skzc string
-		Skxq string
-		Skjc string
-		Skdd string
+	params map[string]string
+	data   struct {
+		ResultList []struct {
+			Skzc string
+			Skxq string
+			Skjc string
+			Skdd string
+		}
 	}
 }
 
-func (p *timeLocationParser) parse(r io.Reader, info interface{}, _ string) error {
+func (p *timeLocationParser) Parse(r io.Reader, info interface{}) error {
 	timeLocations, ok := info.(*[]*resource.TimeLocation)
 	if !ok {
 		return fmt.Errorf("The parser and the destination type do not match.")
 	}
 
 	dec := json.NewDecoder(r)
-	if err := dec.Decode(p); err != nil {
+	if err := dec.Decode(&p.data); err != nil {
 		return err
 	}
 
-	for _, result := range p.ResultList {
+	for _, result := range p.data.ResultList {
 		dayOfWeek, err := strconv.Atoi(result.Skxq)
 		if err != nil {
 			return fmt.Errorf("Failed to parse DayOfWeek to int: %s", err)
@@ -59,28 +63,31 @@ func (p *timeLocationParser) parse(r io.Reader, info interface{}, _ string) erro
 }
 
 type assistantsParser struct {
-	ResultList []struct {
-		id     string
-		dwmc   string
-		phone  string
-		email  string
-		name   string
-		gender string
+	params map[string]string
+	data   struct {
+		ResultList []struct {
+			id     string
+			dwmc   string
+			phone  string
+			email  string
+			name   string
+			gender string
+		}
 	}
 }
 
-func (p *assistantsParser) parse(r io.Reader, info interface{}, _ string) error {
+func (p *assistantsParser) Parse(r io.Reader, info interface{}) error {
 	users, ok := info.(*[]*resource.User)
 	if !ok {
 		return fmt.Errorf("The parser and the destination type do not match.")
 	}
 
 	dec := json.NewDecoder(r)
-	if err := dec.Decode(p); err != nil {
+	if err := dec.Decode(&p.data); err != nil {
 		return err
 	}
 
-	for _, result := range p.ResultList {
+	for _, result := range p.data.ResultList {
 		user := &resource.User{
 			Id:         result.id,
 			Name:       result.name,
@@ -96,54 +103,57 @@ func (p *assistantsParser) parse(r io.Reader, info interface{}, _ string) error 
 }
 
 type coursesParser struct {
-	ResultList []struct {
-		CourseId      string
-		Course_no     string
-		Course_seq    string
-		Course_name   string
-		E_course_name string
-		TeacherInfo   struct {
-			Id     string
-			Name   string
-			Email  string
-			Phone  string
-			Gender string
-			Title  string
+	params map[string]string
+	data   struct {
+		ResultList []struct {
+			CourseId      string
+			Course_no     string
+			Course_seq    string
+			Course_name   string
+			E_course_name string
+			TeacherInfo   struct {
+				Id     string
+				Name   string
+				Email  string
+				Phone  string
+				Gender string
+				Title  string
+			}
+			CodeDepartmentInfo struct {
+				Dwmc   string
+				Dwywmc string
+			}
+			SemesterInfo struct {
+				SemesterName  string
+				SemesterEname string
+			}
+			Detail_c    string
+			Detail_e    string
+			Credit      int
+			Course_time int
 		}
-		CodeDepartmentInfo struct {
-			Dwmc   string
-			Dwywmc string
-		}
-		SemesterInfo struct {
-			SemesterName  string
-			SemesterEname string
-		}
-		Detail_c    string
-		Detail_e    string
-		Credit      int
-		Course_time int
 	}
 }
 
-func (p *coursesParser) parse(r io.Reader, info interface{}, langCode string) error {
+func (p *coursesParser) Parse(r io.Reader, info interface{}) error {
 	courses, ok := info.(*[]*resource.Course)
 	if !ok {
 		return fmt.Errorf("The parser and the destination type do not match.")
 	}
 
 	dec := json.NewDecoder(r)
-	if err := dec.Decode(p); err != nil {
+	if err := dec.Decode(&p.data); err != nil {
 		return err
 	}
 
 	// TODO: Here we loop through a struct array. Will Go copy every struct?
 	// Try some benchmarks.
-	for _, result := range p.ResultList {
+	for _, result := range p.data.ResultList {
 		// Language specific fields.
 		// TODO: Move out of loop?
 		var semester, name, description, department string
-		switch langCode {
-		case "zh-CN":
+		switch p.params["lang"] {
+		case "zh-CN", "":
 			semester = result.SemesterInfo.SemesterName
 			name = result.Course_name
 			description = result.Detail_c
@@ -183,13 +193,14 @@ func (p *coursesParser) parse(r io.Reader, info interface{}, langCode string) er
 	return nil
 }
 
-// func (adapter *CicAdapter) Attending() (courses []*resource.Course, status int) {
-//  status = adapter.FetchInfo(PersonalInfoURL, "POST", &attendingParser{}, &courses)
-//  return
-// }
+func (ada *CicAdapter) Attended(username string, params map[string]string) (courses []*resource.Course, status int) {
+	if username != "" {
+		// Not suppported yet.
+		return nil, http.StatusBadRequest
+	}
 
-func (adapter *CicAdapter) Attended() (courses []*resource.Course, status int) {
-	if status = adapter.FetchInfo(AttendedURL, "GET", &coursesParser{}, &courses); status != http.StatusOK {
+	parser := &coursesParser{params: params}
+	if status = adapter.FetchInfo(&ada.client, AttendedURL, "GET", parser, &courses); status != http.StatusOK {
 		return nil, status
 	}
 	chan_size := len(courses) * 2
@@ -200,14 +211,16 @@ func (adapter *CicAdapter) Attended() (courses []*resource.Course, status int) {
 
 		// Time & Place.
 		go func() {
+			parser := &timeLocationParser{params: params}
 			url := strings.Replace(TimePlaceURL, "{course_id}", course.Id, -1)
-			statuses <- adapter.FetchInfo(url, "GET", &timeLocationParser{}, &course.TimeLocations)
+			statuses <- adapter.FetchInfo(&ada.client, url, "GET", parser, &course.TimeLocations)
 		}()
 
 		// Assistants.
 		go func() {
+			parser := &assistantsParser{params: params}
 			url := strings.Replace(AssistantsURL, "{course_id}", course.Id, -1)
-			statuses <- adapter.FetchInfo(url, "GET", &assistantsParser{}, &course.Assistants)
+			statuses <- adapter.FetchInfo(&ada.client, url, "GET", parser, &course.Assistants)
 		}()
 	}
 
