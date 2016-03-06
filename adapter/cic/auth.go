@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	AuthURL = "https://id.tsinghua.edu.cn/do/off/ui/auth/login/post/fa8077873a7a80b1cd6b185d5a796617/0?/j_spring_security_thauth_roaming_entry"
+	authURL = "https://id.tsinghua.edu.cn/do/off/ui/auth/login/post/fa8077873a7a80b1cd6b185d5a796617/0?/j_spring_security_thauth_roaming_entry"
 )
 
 func getAuth(username string, password string) (location string, status int) {
@@ -20,9 +20,9 @@ func getAuth(username string, password string) (location string, status int) {
 	data := form.Encode()
 
 	// Do not follow 302 redirect.
-	req, err := http.NewRequest("POST", AuthURL, strings.NewReader(data))
+	req, err := http.NewRequest("POST", authURL, strings.NewReader(data))
 	if err != nil {
-		glog.Errorf("Failed to create request to %s:, %s", AuthURL, err)
+		glog.Errorf("Failed to create request to %s:, %s", authURL, err)
 		return "", http.StatusInternalServerError
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -30,7 +30,7 @@ func getAuth(username string, password string) (location string, status int) {
 
 	resp, err := http.DefaultTransport.RoundTrip(req)
 	if err != nil {
-		glog.Errorf("Failed to get response from %s: %s", AuthURL, err)
+		glog.Errorf("Failed to get response from %s: %s", authURL, err)
 		return "", http.StatusBadGateway
 	}
 	defer resp.Body.Close()
@@ -43,10 +43,10 @@ func getAuth(username string, password string) (location string, status int) {
 	} else if strings.Contains(location, "status=BAD_CREDENTIALS") {
 		return location, http.StatusUnauthorized
 	} else if location == "" {
-		glog.Error("Empty redirection got from %s.", AuthURL)
+		glog.Error("Empty redirection got from %s.", authURL)
 		return location, http.StatusBadGateway
 	} else {
-		glog.Error("Unknown redirection got from %s: %s", AuthURL, location)
+		glog.Error("Unknown redirection got from %s: %s", authURL, location)
 		return location, http.StatusBadGateway
 	}
 }

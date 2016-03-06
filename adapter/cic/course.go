@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	TimePlaceURL  = BaseURL + "/b/course/info/timePlace/{course_id}"
-	AssistantsURL = BaseURL + "/b/mycourse/AssistTeacher/list/{course_id}"
-	AttendedURL   = BaseURL + "/b/myCourse/courseList/loadCourse4Student/-1"
+	timePlaceURL        = BaseURL + "/b/course/info/timePlace/{course_id}"
+	courseAssistantsURL = BaseURL + "/b/mycourse/AssistTeacher/list/{course_id}"
+	attendedURL         = BaseURL + "/b/myCourse/courseList/loadCourse4Student/-1"
 )
 
 type timeLocationParser struct {
@@ -200,7 +200,7 @@ func (ada *CicAdapter) Attended(username string, params map[string]string) (cour
 	}
 
 	parser := &coursesParser{params: params}
-	if status = adapter.FetchInfo(&ada.client, AttendedURL, "GET", parser, &courses); status != http.StatusOK {
+	if status = adapter.FetchInfo(&ada.client, attendedURL, "GET", parser, &courses); status != http.StatusOK {
 		return nil, status
 	}
 	chan_size := len(courses) * 2
@@ -212,14 +212,14 @@ func (ada *CicAdapter) Attended(username string, params map[string]string) (cour
 		// Time & Place.
 		go func() {
 			parser := &timeLocationParser{params: params}
-			url := strings.Replace(TimePlaceURL, "{course_id}", course.Id, -1)
+			url := strings.Replace(timePlaceURL, "{course_id}", course.Id, -1)
 			statuses <- adapter.FetchInfo(&ada.client, url, "GET", parser, &course.TimeLocations)
 		}()
 
 		// Assistants.
 		go func() {
 			parser := &assistantsParser{params: params}
-			url := strings.Replace(AssistantsURL, "{course_id}", course.Id, -1)
+			url := strings.Replace(courseAssistantsURL, "{course_id}", course.Id, -1)
 			statuses <- adapter.FetchInfo(&ada.client, url, "GET", parser, &course.Assistants)
 		}()
 	}

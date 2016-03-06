@@ -9,7 +9,7 @@ import (
 
 const (
 	BaseURL     = "http://learn.cic.tsinghua.edu.cn"
-	DownloadURL = BaseURL + "/b/resource/downloadFileStream/{file_id}"
+	downloadURL = BaseURL + "/b/resource/downloadFileStream/{file_id}"
 )
 
 var parsedBaseURL, _ = url.Parse(BaseURL)
@@ -30,5 +30,5 @@ func parseRegDate(regDate int64) string {
 }
 
 func fileID2DownloadUrl(fileID string) string {
-	return strings.Replace(DownloadURL, "{file_id}", fileID, -1)
+	return strings.Replace(downloadURL, "{file_id}", fileID, -1)
 }

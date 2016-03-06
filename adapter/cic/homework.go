@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	HomeworksURL = BaseURL + "/b/myCourse/homework/list4Student/{course_id}/0"
+	courseHomeworkURL = BaseURL + "/b/myCourse/homework/list4Student/{course_id}/0"
 )
 
 func Int2Pfloat32(i int) *float32 {
@@ -157,7 +157,7 @@ func (p *homeworksParser) Parse(r io.Reader, info interface{}) error {
 }
 
 func (ada *CicAdapter) CourseHomework(courseId string, params map[string]string) (homeworks []*resource.Homework, status int) {
-	url := strings.Replace(HomeworksURL, "{course_id}", courseId, -1)
+	url := strings.Replace(courseHomeworkURL, "{course_id}", courseId, -1)
 	parser := &homeworksParser{params: params}
 	homeworks = []*resource.Homework{}
 

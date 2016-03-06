@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	announcementsURL = BaseURL + "/b/myCourse/notice/listForStudent/{course_id}?pageSize=1000"
+	courseAnnouncementsURL = BaseURL + "/b/myCourse/notice/listForStudent/{course_id}?pageSize=1000"
 )
 
 type announcementsParser struct {
@@ -69,7 +69,7 @@ func (p *announcementsParser) Parse(r io.Reader, info interface{}) error {
 }
 
 func (ada *CicAdapter) CourseAnnouncements(course_id string, params map[string]string) (announcements []*resource.Announcement, status int) {
-	url := strings.Replace(announcementsURL, "{course_id}", course_id, -1)
+	url := strings.Replace(courseAnnouncementsURL, "{course_id}", course_id, -1)
 	parser := &announcementsParser{params: params}
 	announcements = []*resource.Announcement{}
 

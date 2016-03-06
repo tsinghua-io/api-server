@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	FilesURL = BaseURL + "/b/myCourse/tree/getCoursewareTreeData/{course_id}/0"
+	CoursefilesURL = BaseURL + "/b/myCourse/tree/getCoursewareTreeData/{course_id}/0"
 )
 
 type filesParser struct {
@@ -84,7 +84,7 @@ func (p *filesParser) Parse(r io.Reader, info interface{}) error {
 }
 
 func (ada *CicAdapter) CourseFiles(courseId string, params map[string]string) (files []*resource.File, status int) {
-	url := strings.Replace(FilesURL, "{course_id}", courseId, -1)
+	url := strings.Replace(CoursefilesURL, "{course_id}", courseId, -1)
 	parser := &filesParser{params: params}
 	files = []*resource.File{}
 
