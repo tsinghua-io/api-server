@@ -212,15 +212,15 @@ func (ada *CicAdapter) Attended(username string, params map[string]string) (cour
 		// Time & Place.
 		go func() {
 			parser := &timeLocationParser{params: params}
-			url := strings.Replace(timePlaceURL, "{course_id}", course.Id, -1)
-			statuses <- adapter.FetchInfo(&ada.client, url, "GET", parser, &course.TimeLocations)
+			URL := strings.Replace(timePlaceURL, "{course_id}", course.Id, -1)
+			statuses <- adapter.FetchInfo(&ada.client, URL, "GET", parser, &course.TimeLocations)
 		}()
 
 		// Assistants.
 		go func() {
 			parser := &assistantsParser{params: params}
-			url := strings.Replace(courseAssistantsURL, "{course_id}", course.Id, -1)
-			statuses <- adapter.FetchInfo(&ada.client, url, "GET", parser, &course.Assistants)
+			URL := strings.Replace(courseAssistantsURL, "{course_id}", course.Id, -1)
+			statuses <- adapter.FetchInfo(&ada.client, URL, "GET", parser, &course.Assistants)
 		}()
 	}
 

@@ -51,7 +51,7 @@ func getAuth(username string, password string) (location string, status int) {
 	}
 }
 
-func Login(username string, password string) (adapter *CicAdapter, status int) {
+func Login(username string, password string) (ada *CicAdapter, status int) {
 	location, status := getAuth(username, password)
 	if status != http.StatusOK {
 		return nil, status

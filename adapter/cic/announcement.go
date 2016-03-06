@@ -69,10 +69,10 @@ func (p *announcementsParser) Parse(r io.Reader, info interface{}) error {
 }
 
 func (ada *CicAdapter) CourseAnnouncements(course_id string, params map[string]string) (announcements []*resource.Announcement, status int) {
-	url := strings.Replace(courseAnnouncementsURL, "{course_id}", course_id, -1)
+	URL := strings.Replace(courseAnnouncementsURL, "{course_id}", course_id, -1)
 	parser := &announcementsParser{params: params}
 	announcements = []*resource.Announcement{}
 
-	status = adapter.FetchInfo(&ada.client, url, "GET", parser, &announcements)
+	status = adapter.FetchInfo(&ada.client, URL, "GET", parser, &announcements)
 	return announcements, status
 }

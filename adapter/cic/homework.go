@@ -157,10 +157,10 @@ func (p *homeworksParser) Parse(r io.Reader, info interface{}) error {
 }
 
 func (ada *CicAdapter) CourseHomework(courseId string, params map[string]string) (homeworks []*resource.Homework, status int) {
-	url := strings.Replace(courseHomeworkURL, "{course_id}", courseId, -1)
+	URL := strings.Replace(courseHomeworkURL, "{course_id}", courseId, -1)
 	parser := &homeworksParser{params: params}
 	homeworks = []*resource.Homework{}
 
-	status = adapter.FetchInfo(&ada.client, url, "GET", parser, &homeworks)
+	status = adapter.FetchInfo(&ada.client, URL, "GET", parser, &homeworks)
 	return homeworks, status
 }

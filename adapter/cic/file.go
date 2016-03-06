@@ -84,10 +84,10 @@ func (p *filesParser) Parse(r io.Reader, info interface{}) error {
 }
 
 func (ada *CicAdapter) CourseFiles(courseId string, params map[string]string) (files []*resource.File, status int) {
-	url := strings.Replace(CoursefilesURL, "{course_id}", courseId, -1)
+	URL := strings.Replace(CoursefilesURL, "{course_id}", courseId, -1)
 	parser := &filesParser{params: params}
 	files = []*resource.File{}
 
-	status = adapter.FetchInfo(&ada.client, url, "GET", parser, &files)
+	status = adapter.FetchInfo(&ada.client, URL, "GET", parser, &files)
 	return files, status
 }
