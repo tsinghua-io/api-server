@@ -68,8 +68,8 @@ func (p *announcementsParser) Parse(r io.Reader, info interface{}) error {
 	return nil
 }
 
-func (ada *CicAdapter) CourseAnnouncements(course_id string, params map[string]string) (announcements []*resource.Announcement, status int) {
-	URL := strings.Replace(courseAnnouncementsURL, "{course_id}", course_id, -1)
+func (ada *CicAdapter) CourseAnnouncements(courseId string, params map[string]string) (announcements []*resource.Announcement, status int) {
+	URL := strings.Replace(courseAnnouncementsURL, "{course_id}", courseId, -1)
 	parser := &announcementsParser{params: params}
 	announcements = []*resource.Announcement{}
 
