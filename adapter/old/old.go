@@ -1,7 +1,7 @@
 package old
 
 import (
-	"github.com/golang/glog"
+	"fmt"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"mime"
 	"net/http"
@@ -20,27 +20,33 @@ type OldAdapter struct {
 }
 
 // TODO: move to adapter.go
-func (adapter *OldAdapter) parseFileInfo(path string) (filename string, size int) {
-	resp, err := adapter.client.Head(BaseURL + path)
+func parseFileInfo(client http.Client, path string) (filename string, size int, err error) {
+	resp, err := client.Head(path)
 	if err != nil {
-		glog.Errorf("Failed to get header information of file %s: %s", path, err)
-		return
+		return "", 0, fmt.Errorf("Failed to get header information of file %s: %s", path, err)
 	}
 
 	// file size
-	size, _ = strconv.Atoi(resp.Header.Get("Content-Length"))
+	sizeStr := resp.Header.Get("Content-Length")
+	size, err = strconv.Atoi(sizeStr)
+	if err != nil {
+		return "", 0, err
+	}
 
 	// file name
 	disposition := resp.Header.Get("Content-Disposition")
 	// decode from gbk
-	disposition, _ = simplifiedchinese.GBK.NewDecoder().String(disposition)
+	disposition, err = simplifiedchinese.GBK.NewDecoder().String(disposition)
+	if err != nil {
+		return "", 0, err
+	}
 
 	// parse disposition header
 	disposition, params, err := mime.ParseMediaType(disposition)
 	if err != nil {
-		glog.Errorf("Failed to parse header Content-Disposition of file %s", path)
-		return
+		return "", 0, fmt.Errorf("Failed to parse header Content-Disposition of file %s", path)
 	}
 	filename = params["filename"]
-	return
+
+	return filename, size, nil
 }
