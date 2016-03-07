@@ -49,16 +49,13 @@ func FetchInfo(client *http.Client, url string, method string, p Parser, info in
 	}
 	defer resp.Body.Close()
 
-	t_receive := time.Now()
-	glog.Infof("Fetched data from %s (%s)", url, t_receive.Sub(t_send))
-
 	// Parse the data.
 	if err := p.Parse(resp.Body, info); err != nil {
 		glog.Errorf("Unable to parse data received from %s: %s", url, err)
 		return http.StatusInternalServerError
 	}
 
-	glog.Infof("Parsed data from %s (%s)", url, time.Since(t_receive))
+	glog.Infof("Parsed data from %s (%s)", url, time.Since(t_send))
 
 	// We are safe.
 	return http.StatusOK
