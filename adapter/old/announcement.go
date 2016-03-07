@@ -3,110 +3,157 @@ package old
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/golang/glog"
+	"github.com/tsinghua-io/api-server/adapter"
 	"github.com/tsinghua-io/api-server/resource"
 	"golang.org/x/net/html"
+	"io"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 const (
-	AnnouncementURL  = BaseURL + "/MultiLanguage/public/bbs/note_reply.jsp?bbs_type=课程公告&id={id}&course_id={course_id}"
-	AnnouncementsURL = BaseURL + "/MultiLanguage/public/bbs/getnoteid_student.jsp?course_id={course_id}"
+	announcementBodyURL    = BaseURL + "/MultiLanguage/public/bbs/note_reply.jsp?bbs_type=课程公告&id={id}&course_id={course_id}"
+	courseAnnouncementsURL = BaseURL + "/MultiLanguage/public/bbs/getnoteid_student.jsp?course_id={course_id}"
 )
 
-func (adapter *OldAdapter) announcementBody(path string) (body string) {
-	path = "/MultiLanguage/public/bbs/" + path
-	doc, err := adapter.getOldResponse(path, make(map[string]string))
-
-	if err != nil {
-		err = fmt.Errorf("Failed to get response from learning web: %s", err)
-	} else {
-		body, err = doc.Find("tr[height='300'] td.tr_l2").Html()
-	}
-	return
+type announcementBodyParser struct {
+	params map[string]string
 }
 
-func (adapter *OldAdapter) parseRow(s *goquery.Selection, courseId string, annc **resource.Announcement) error {
+func (p *announcementBodyParser) Parse(r io.Reader, info interface{}) error {
+	body, ok := info.(*string)
+	if !ok {
+		return fmt.Errorf("The parser and the destination type do not match.")
+	}
+
+	doc, err := goquery.NewDocumentFromReader(r)
+	if err != nil {
+		return err
+	}
+
+	tempBody, err := doc.Find("tr[height='300'] td.tr_l2").Html()
+	if err != nil {
+		return err
+	}
+	*body = tempBody
+	return nil
+}
+
+type courseAnnouncementsParser struct {
+	params   map[string]string
+	courseId string
+}
+
+func (p *courseAnnouncementsParser) Parse(r io.Reader, info interface{}) error {
+	announcements, ok := info.(*[]*resource.Announcement)
+	if !ok {
+		return fmt.Errorf("The parser and the destination type do not match.")
+	}
+
+	doc, err := goquery.NewDocumentFromReader(r)
+	if err != nil {
+		return err
+	}
+
+	rows := doc.Find("tr.tr1, tr.tr2")
+	*announcements = make([]*resource.Announcement, rows.Size())
+
+	// Parse each row.
+	rows.EachWithBreak(func(i int, s *goquery.Selection) bool {
+		annc := &resource.Announcement{}
+		annc.CourseId = p.courseId
+
+		if err = parseAnnouncementsRow(s, annc); err != nil {
+			return false
+		}
+		(*announcements)[i] = annc
+		return true
+	})
+	return err
+}
+
+func parseAnnouncementsRow(s *goquery.Selection, annc *resource.Announcement) error {
 	infos := s.Find("td").Map(func(i int, tdSelection *goquery.Selection) (info string) {
 		info, _ = tdSelection.Html()
 		return
 	})
+	if len(infos) < 5 {
+		return fmt.Errorf("No enough cols: %d", len(infos))
+	}
 
 	hrefSelection := s.Find("td a")
-
-	var href string
-	var hrefUrl *url.URL
-	var err error
-	href, _ = hrefSelection.Attr("href")
-
-	if hrefUrl, err = url.Parse(href); err != nil {
+	href, exists := hrefSelection.Attr("href")
+	if !exists {
+		return fmt.Errorf("href not found")
+	}
+	hrefUrl, err := url.Parse(href)
+	if err != nil {
 		return err
 	}
 
-	if announcementId := hrefUrl.Query().Get("id"); announcementId != "" {
-		body := adapter.announcementBody(href)
-
-		var priority int
-		var title string
-		switch hrefSelection.Nodes[0].FirstChild.Type {
-		case html.TextNode:
-			priority = 0
-			title, _ = hrefSelection.Html()
-		default:
-			priority = 1
-			title, _ = hrefSelection.Children().Html()
-		}
-
-		*annc = &resource.Announcement{
-			Id:       announcementId,
-			CourseId: courseId,
-
-			Owner: &resource.User{
-				Name: infos[2],
-			},
-			CreatedAt: infos[3],
-			Priority:  priority,
-			Read:      true, // We just read it.
-
-			Title: title,
-			Body:  body,
-		}
-		return nil
-	} else {
-		return fmt.Errorf("Cannot get announcement_id from %s", hrefUrl)
+	// id.
+	id := hrefUrl.Query().Get("id")
+	if id == "" {
+		return fmt.Errorf("Cannot get id from %s", hrefUrl)
 	}
+
+	// title & priority
+	var priority int
+	var title string
+	switch hrefSelection.Nodes[0].FirstChild.Type {
+	case html.TextNode:
+		priority = 0
+		title, err = hrefSelection.Html()
+		if err != nil {
+			return err
+		}
+	default:
+		priority = 1
+		title, err = hrefSelection.Children().Html()
+		if err != nil {
+			return err
+		}
+	}
+
+	// We are safe.
+	annc.Id = id
+	annc.Owner = &resource.User{Name: infos[2]}
+	annc.CreatedAt = infos[3]
+	annc.Priority = priority
+	annc.Read = true
+	annc.Title = title
+
+	return nil
 }
 
-func (adapter *OldAdapter) Announcements(courseId string) (announcements []*resource.Announcement, status int) {
-	path := "/MultiLanguage/public/bbs/getnoteid_student.jsp?course_id=" + courseId
-	doc, err := adapter.getOldResponse(path, make(map[string]string))
+func (ada *OldAdapter) CourseAnnouncements(courseId string, params map[string]string) (announcements []*resource.Announcement, status int) {
+	URL := strings.Replace(courseAnnouncementsURL, "{course_id}", courseId, -1)
+	parser := &courseAnnouncementsParser{params: params, courseId: courseId}
 
-	if err != nil {
-		glog.Errorf("Failed to get response from learning web: %s", err)
-		return nil, http.StatusBadGateway
+	if status = adapter.FetchInfo(&ada.client, URL, "GET", parser, &announcements); status != http.StatusOK {
+		return nil, status
+	}
+	count := len(announcements)
+	statuses := make(chan int, count)
+
+	URL = strings.Replace(announcementBodyURL, "{course_id}", courseId, -1)
+	for _, annc := range announcements {
+		annc := annc
+
+		go func() {
+			URL := strings.Replace(URL, "{id}", annc.Id, -1)
+			parser := &announcementBodyParser{params: params}
+			statuses <- adapter.FetchInfo(&ada.client, URL, "GET", parser, &annc.Body)
+		}()
 	}
 
-	trs := doc.Find("tr.tr1, tr.tr2")
-	count := trs.Size()
-	announcements = make([]*resource.Announcement, count)
-	errChan := make(chan error, count)
-
-	i := 0
-	trs.Each(func(_ int, s *goquery.Selection) {
-		index := i
-		go func() {
-			errChan <- adapter.parseRow(s, courseId, &announcements[index])
-		}()
-		i++
-	})
-
-	for i = 0; i < count; i++ {
-		if err := <-errChan; err != nil {
-
-			return nil, http.StatusBadGateway
+	// Drain the channel.
+	for i := 0; i < count; i++ {
+		if status = <-statuses; status != http.StatusOK {
+			return nil, status
 		}
 	}
 
-	return announcements, http.StatusOK
+	return
 }

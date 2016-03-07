@@ -4,127 +4,232 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/golang/glog"
+	"github.com/tsinghua-io/api-server/adapter"
 	"github.com/tsinghua-io/api-server/resource"
-	"golang.org/x/net/html"
+	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"strconv"
 	"strings"
 )
 
-func (adapter *OldAdapter) courseIds(typepage int) (courseIdList []string, err error) {
-	path := "/MultiLanguage/lesson/student/MyCourse.jsp?typepage=" + strconv.Itoa(typepage)
-	doc, err := adapter.getOldResponse(path, make(map[string]string))
+const (
+	attendedURL   = BaseURL + "/MultiLanguage/lesson/student/MyCourse.jsp?typepage={page}&language=cn"
+	courseInfoURL = BaseURL + "/MultiLanguage/lesson/student/course_info.jsp?course_id={course_id}"
+)
 
+func URL2CourseId(courseURL string) (courseId string, err error) {
+	if courseURL == "" {
+		return "", fmt.Errorf("Empty course URL.")
+	}
+
+	parsedURL, err := url.Parse(courseURL)
 	if err != nil {
-		err = fmt.Errorf("Failed to get response from learning web: %s", err)
+		return "", err
+	}
+
+	if courseId = parsedURL.Query().Get("course_id"); courseId != "" {
+		return courseId, nil
+	} else if courseId = path.Base(parsedURL.Path); courseId != "" {
+		return courseId, nil
 	} else {
-		// parsing the response body
-		courseLinkList := doc.Find("#info_1 tr a")
-		courseLinkList.Each(func(i int, s *goquery.Selection) {
-			var href string
-			var hrefUrl *url.URL
-			var courseId string
-			href, _ = s.Attr("href")
-			if hrefUrl, err = url.Parse(href); err != nil {
+		return "", fmt.Errorf("Unknown course URL format: %s", courseURL)
+	}
+}
+
+func courseName2Semester(name string) (semester string, err error) {
+	// Semester.
+	begin := len(name) - 22
+	semesterBegin := len(name) - 13
+	semesterEnd := len(name) - 10
+	end := len(name) - 1
+
+	if len(name) < 23 || string(name[begin-1]) != "(" || string(name[end]) != ")" {
+		return "", fmt.Errorf("Unknown course name format: %s", name)
+	}
+
+	yearStr := name[begin:semesterBegin]
+	switch string(name[semesterBegin:semesterEnd]) {
+	case "秋":
+		return yearStr + "-1", nil
+	case "春":
+		return yearStr + "-2", nil
+	case "夏":
+		return yearStr + "-3", nil
+	default:
+		return "", fmt.Errorf("Unknown course name format: %s", name)
+	}
+}
+
+func parseCourseLink(s *goquery.Selection, course *resource.Course) error {
+	text := s.Text()
+
+	// Course ID.
+	href, _ := s.Attr("href")
+	id, err := URL2CourseId(href)
+	if err != nil {
+		return err
+	}
+
+	// Semester.
+	semester, err := courseName2Semester(text)
+	if err != nil {
+		return err
+	}
+
+	// We are safe.
+	course.Id = id
+	course.Semester = semester
+
+	return nil
+}
+
+type CourseInfoParser struct {
+	params map[string]string
+}
+
+func (p *CourseInfoParser) Parse(r io.Reader, info interface{}) error {
+	course, ok := info.(*resource.Course)
+	if !ok {
+		return fmt.Errorf("The parser and the destination type do not match.")
+	}
+
+	doc, err := goquery.NewDocumentFromReader(r)
+	if err != nil {
+		return err
+	}
+
+	tds := doc.Find("table#table_box td")
+
+	infos := tds.Map(func(i int, s *goquery.Selection) (info string) {
+		return strings.TrimSpace(s.Text())
+	})
+	if len(infos) < 23 {
+		return fmt.Errorf("Course information parsing error: cannot parse all the informations from %s", infos)
+	}
+
+	// Yes here's all we need for now.
+
+	// credit, _ := strconv.Atoi(infos[7])
+	// hour, _ := strconv.Atoi(infos[9])
+
+	course.CourseNumber = infos[1]
+	course.CourseSequence = infos[3]
+	// course.Name = infos[5]
+	// course.Credit = credit
+	// course.Hour = hour
+	// course.Description = infos[22]
+	// course.Teachers = []*resource.User{
+	// 	&resource.User{
+	// 		Name:  infos[16],
+	// 		Email: infos[18],
+	// 		Phone: infos[20],
+	// 	},
+	// }
+
+	return nil
+}
+
+type courseListParser struct {
+	params map[string]string
+}
+
+func (p *courseListParser) Parse(r io.Reader, info interface{}) error {
+	courses, ok := info.(*[]*resource.Course)
+	if !ok {
+		return fmt.Errorf("The parser and the destination type do not match.")
+	}
+
+	doc, err := goquery.NewDocumentFromReader(r)
+	if err != nil {
+		return err
+	}
+
+	links := doc.Find("#info_1 tr a")
+	count := links.Size()
+	*courses = make([]*resource.Course, count)
+
+	links.EachWithBreak(func(i int, s *goquery.Selection) bool {
+		course := &resource.Course{}
+		if err = parseCourseLink(s, course); err != nil {
+			return false
+		}
+		(*courses)[i] = course
+		return true
+	})
+	return err
+}
+
+func (ada *OldAdapter) Attended(username string, params map[string]string) (courses []*resource.Course, status int) {
+	if params["detail"] == "true" {
+		glog.Errorf("Course detail is not supported by old adapter.")
+		return nil, http.StatusInternalServerError
+	}
+
+	switch semester := params["semester"]; semester {
+	case "", "all":
+		var page1, page2 []*resource.Course
+		status1 := make(chan int, 1)
+		status2 := make(chan int, 1)
+
+		go func() {
+			var status int
+			page1, status = ada.attendedPage(username, params, 1)
+			status1 <- status
+		}()
+		go func() {
+			var status int
+			page2, status = ada.attendedPage(username, params, 2)
+			status2 <- status
+		}()
+
+		if status := <-status1; status != http.StatusOK {
+			return nil, status
+		}
+		if status := <-status2; status != http.StatusOK {
+			return nil, status
+		}
+
+		return append(page1, page2...), http.StatusOK
+	default:
+		glog.Errorf("Semester (%s) is not supported by old adapter.	", semester)
+		return nil, http.StatusNotImplemented
+	}
+}
+
+func (ada *OldAdapter) attendedPage(_ string, params map[string]string, tab int) (courses []*resource.Course, status int) {
+	URL := strings.Replace(attendedURL, "{page}", strconv.Itoa(tab), -1)
+	parser := &courseListParser{params: params}
+
+	if status = adapter.FetchInfo(&ada.client, URL, "GET", parser, &courses); status != http.StatusOK {
+		return nil, status
+	}
+
+	count := len(courses)
+	statuses := make(chan int, count)
+
+	for _, course := range courses {
+		course := course // Avoid variable reusing.
+
+		go func() {
+			// Skip new courses.
+			if strings.Contains(course.Id, "-") {
+				statuses <- http.StatusOK
 				return
 			}
-			if courseId = hrefUrl.Query().Get("course_id"); courseId != "" {
-				courseIdList = append(courseIdList, courseId)
-			}
-		})
-	}
-	return
-}
-
-func (adapter *OldAdapter) courseInfo(courseId string) (course *resource.Course, err error) {
-	path := "/MultiLanguage/lesson/student/course_info.jsp?course_id=" + courseId
-	doc, err := adapter.getOldResponse(path, make(map[string]string))
-
-	if err != nil {
-		err = fmt.Errorf("Failed to get response from learning web: %s", err)
-	} else {
-		tds := doc.Find("table#table_box td")
-
-		infos := tds.Map(func(i int, s *goquery.Selection) (info string) {
-			firstChild := s.Nodes[0].FirstChild
-			if firstChild != nil {
-				switch s.Nodes[0].FirstChild.Type {
-				case html.TextNode:
-					info, _ = s.Html()
-				case html.ElementNode:
-					info, _ = s.Children().Html()
-				default:
-					info, _ = s.Html()
-				}
-			}
-			return
-		})
-		if len(infos) < 23 {
-			err = fmt.Errorf("Course information parsing error: cannot parse all the informations from %s", infos)
-			return
-		}
-		course = &resource.Course{
-			Id:   courseId,
-			Name: infos[5],
-			Teachers: []*resource.User{&resource.User{
-				Name:  infos[16],
-				Email: infos[18],
-				Phone: infos[20],
-			}},
-			CourseNumber:   infos[1],
-			CourseSequence: infos[3],
-			Description:    infos[22],
-		}
-
-		if credit, err := strconv.Atoi(strings.TrimSpace(infos[7])); err == nil {
-			course.Credit = credit
-		}
-		if hour, err := strconv.Atoi(strings.TrimSpace(infos[9])); err == nil {
-			course.Hour = hour
-		}
-	}
-	return
-}
-
-func (adapter *OldAdapter) Attended() (courses []*resource.Course, status int) {
-	courseIdList, err := adapter.courseIds(2)
-	if err != nil {
-		glog.Errorf("Failed to get attended course list: %s", err)
-		status = http.StatusBadGateway
-		return
+			URL := strings.Replace(courseInfoURL, "{course_id}", course.Id, -1)
+			parser := &CourseInfoParser{params: params}
+			statuses <- adapter.FetchInfo(&ada.client, URL, "GET", parser, course)
+		}()
 	}
 
-	for _, courseId := range courseIdList {
-		course, err := adapter.courseInfo(courseId)
-		if err != nil {
-			glog.Errorf("Failed to get course info of course %s: %s\n", courseId, err)
-			status = http.StatusBadGateway
-			return
+	// Drain the channel.
+	for i := 0; i < count; i++ {
+		if status = <-statuses; status != http.StatusOK {
+			return nil, status
 		}
-		courses = append(courses, course)
-	}
-	status = http.StatusOK
-	return
-}
-
-func (adapter *OldAdapter) Attending() (courses []*resource.Course, status int) {
-	courseIdList, err := adapter.courseIds(1)
-	if err != nil {
-		glog.Errorf("Failed to get attending course list: %s", err)
-		status = http.StatusBadGateway
-		return
 	}
 
-	for _, courseId := range courseIdList {
-		course, err := adapter.courseInfo(courseId)
-		if err != nil {
-			glog.Errorf("Failed to get course info of course %s: %s\n", courseId, err)
-			status = http.StatusBadGateway
-			return
-		}
-		courses = append(courses, course)
-	}
-	status = http.StatusOK
 	return
 }

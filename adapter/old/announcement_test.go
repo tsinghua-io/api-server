@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func TestAnnouncements(t *testing.T) {
-	actual, status := adapter.Announcements("103048")
+func TestCourseAnnouncements(t *testing.T) {
+	actual, status := ada.CourseAnnouncements("103048", nil)
 	if status != http.StatusOK {
 		t.Errorf("Unable to get announcements: %s", http.StatusText(status))
 		return
@@ -100,10 +100,10 @@ func TestAnnouncements(t *testing.T) {
 	AssertDeepEqual(t, actual, expected)
 }
 
-func BenchmarkAnnouncements(b *testing.B) {
+func BenchmarkCourseAnnouncements(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		info, status := adapter.Announcements("103048")
+		info, status := ada.CourseAnnouncements("103048", nil)
 		_ = info
 		_ = status
 	}

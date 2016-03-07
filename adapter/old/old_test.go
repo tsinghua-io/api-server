@@ -15,7 +15,8 @@ const (
 )
 
 var (
-	adapter *OldAdapter
+	ada      *OldAdapter
+	password = os.Getenv("thu_pass")
 )
 
 func AssertDeepEqual(t *testing.T, actual, expected interface{}) bool {
@@ -34,18 +35,18 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	// Login.
-	cookies, status := Login(username, os.Getenv("thu_password"))
+	var status int
+	ada, status = Login(username, password)
 	if status != http.StatusOK {
 		glog.Errorf("Failed to login to %s: %s", username, http.StatusText(status))
 		os.Exit(1)
 	}
-	adapter = New(cookies, "zh-CN")
 
 	os.Exit(m.Run())
 }
 
 // func TestLoginSuccuss(t *testing.T) {
-// 	cookies, status := Login(username, os.Getenv("thu_password"))
+// 	cookies, status := Login(username, password)
 // 	if status != http.StatusOK {
 // 		t.Errorf("Login failed: %d", status)
 // 		return
@@ -219,7 +220,7 @@ func TestMain(m *testing.M) {
 // func BenchmarkLogin(b *testing.B) {
 // 	b.ResetTimer()
 // 	for i := 0; i < b.N; i++ {
-// 		cookies, status := Login(username, os.Getenv("thu_password"))
+// 		cookies, status := Login(username, password)
 // 		_ = cookies
 // 		_ = status
 // 	}
