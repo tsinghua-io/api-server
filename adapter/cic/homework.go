@@ -57,11 +57,11 @@ type homeworksParser struct {
 				// AnswerLinkFilename
 				// AnswerDate
 				CourseId string
-				WeiJiao  int
+				WeiJiao  *int
 				// YiJiao
-				YiYue  int
-				YiPi   int
-				Jiaoed int
+				YiYue  *int
+				YiPi   *int
+				Jiaoed *int
 			}
 		}
 	}
