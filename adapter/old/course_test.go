@@ -78,3 +78,17 @@ func BenchmarkAttended(b *testing.B) {
 		_ = status
 	}
 }
+
+func TestCourseIdMap(t *testing.T) {
+	courses, status := ada.Attended("", nil)
+	if status != http.StatusOK {
+		t.Errorf("Unable to get attended courses: %s", http.StatusText(status))
+		return
+	}
+
+	actual := CourseIdMap(courses)
+
+	AssertDeepEqual(t, actual["2014-2015-2-40260202-0"], "")
+	AssertDeepEqual(t, actual["2014-2015-2-30230711-2"], "123510")
+	AssertDeepEqual(t, actual["2013-2014-2-10610193-18"], "108357")
+}

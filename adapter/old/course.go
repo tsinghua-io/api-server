@@ -233,3 +233,16 @@ func (ada *OldAdapter) attendedPage(_ string, params map[string]string, tab int)
 
 	return
 }
+
+func CourseIdMap(courses []*resource.Course) map[string]string {
+	cic2old := make(map[string]string)
+
+	for _, course := range courses {
+		if strings.Contains(course.Id, "-") {
+			continue // Already a cic id.
+		}
+		cicId := course.Semester + "-" + course.CourseNumber + "-" + course.CourseSequence
+		cic2old[cicId] = course.Id
+	}
+	return cic2old
+}
