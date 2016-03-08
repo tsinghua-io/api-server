@@ -10,6 +10,7 @@ import (
 	"github.com/tsinghua-io/api-server/webapp"
 	"net/http"
 	"reflect"
+	"strings"
 )
 
 type handlerSpec struct {
@@ -67,7 +68,13 @@ func (useragent *userAgent) GenerateHandler(methodName string,
 		for i, arg := range args {
 			values[i] = reflect.ValueOf(arg)
 		}
-		values[len(values)-1] = reflect.ValueOf(make(map[string]string))
+
+		// Pass url query as the final parameter
+		var params = make(map[string]string)
+		for k, v := range r.URL.Query() {
+			params[k] = strings.Join(v, ", ")
+		}
+		values[len(values)-1] = reflect.ValueOf(params)
 
 		// call the actual handler in the adapter
 		methodVal := reflect.ValueOf(ada).MethodByName(methodName)
