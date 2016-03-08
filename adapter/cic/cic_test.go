@@ -12,11 +12,11 @@ import (
 
 const (
 	username = "lisihan13"
-	password = "1L2S3H@th"
 )
 
 var (
-	ada *CicAdapter
+	ada      *CicAdapter
+	password = os.Getenv("thu_pass")
 )
 
 func AssertDeepEqual(t *testing.T, actual, expected interface{}) bool {

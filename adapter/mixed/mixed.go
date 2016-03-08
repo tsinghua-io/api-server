@@ -9,8 +9,29 @@ import (
 )
 
 type MixedAdapter struct {
-	old old.OldAdapter
-	cic cic.CicAdapter
+	old *old.OldAdapter
+	cic *cic.CicAdapter
+}
+
+func Login(username string, password string) (ada *MixedAdapter, status int) {
+	var oldAda *old.OldAdapter
+	oldStatus := make(chan int, 1)
+	go func() {
+		ada, status := old.Login(username, password)
+		oldAda = ada
+		oldStatus <- status
+	}()
+
+	cicAda, cicStatus := cic.Login(username, password)
+	if cicStatus != http.StatusOK {
+		return nil, cicStatus
+	}
+	if status := <-oldStatus; status != http.StatusOK {
+		return nil, status
+	}
+
+	// We are safe.
+	return &MixedAdapter{old: oldAda, cic: cicAda}, http.StatusOK
 }
 
 func (ada *MixedAdapter) Profile(username string, params map[string]string) (user *resource.User, status int) {
