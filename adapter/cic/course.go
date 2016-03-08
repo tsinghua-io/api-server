@@ -66,12 +66,12 @@ type assistantsParser struct {
 	params map[string]string
 	data   struct {
 		ResultList []struct {
-			id     string
-			dwmc   string
-			phone  string
-			email  string
-			name   string
-			gender string
+			Id     string
+			Dwmc   string
+			Phone  string
+			Email  string
+			Name   string
+			Gender string
 		}
 	}
 }
@@ -89,12 +89,12 @@ func (p *assistantsParser) Parse(r io.Reader, info interface{}) error {
 
 	for _, result := range p.data.ResultList {
 		user := &resource.User{
-			Id:         result.id,
-			Name:       result.name,
-			Department: result.dwmc,
-			Gender:     result.gender,
-			Email:      result.email,
-			Phone:      result.phone,
+			Id:         result.Id,
+			Name:       result.Name,
+			Department: result.Dwmc,
+			Gender:     result.Gender,
+			Email:      result.Email,
+			Phone:      result.Phone,
 		}
 		*users = append(*users, user)
 	}
