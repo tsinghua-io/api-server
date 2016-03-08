@@ -28,7 +28,7 @@ func (ada *OldAdapter) fillAttachment(attachment *resource.Attachment) {
 		return
 	}
 
-	filename, size, err := parseFileInfo(ada.client, attachment.DownloadUrl)
+	filename, size, err := ParseFileInfo(ada.client, attachment.DownloadUrl)
 	if err != nil {
 		glog.Errorf("Failed to parse file info from %s: %s", attachment.DownloadUrl, err)
 		return

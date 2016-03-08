@@ -3,9 +3,12 @@ package cic
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/adapter"
+	"github.com/tsinghua-io/api-server/adapter/old"
 	"github.com/tsinghua-io/api-server/resource"
 	"io"
+	"net/http"
 	"strconv"
 	"strings"
 )
@@ -35,12 +38,13 @@ type homeworksParser struct {
 					FileId   string
 					FileName string
 					FileSize string
-					UserCode string
 				}
-				ReplyDetail string
-				// TODO: Add this:
-				// ResourcesMappingByReplyAffix struct {
-				// }
+				ReplyDetail                  string
+				ResourcesMappingByReplyAffix struct {
+					FileId   string
+					FileName string
+					FileSize string
+				}
 				Mark      *int
 				ReplyDate int64
 				Status    string // 0 for 未交, 1 for 未批, 2 for 已阅, 3 for 已批
@@ -100,11 +104,22 @@ func (p *homeworksParser) Parse(r io.Reader, info interface{}) error {
 		if result.CourseHomeworkRecord.Status != "0" {
 			// Fetch submission attachment, if exists.
 			var attach *resource.Attachment
-
 			if affix := result.CourseHomeworkRecord.ResourcesMappingByHomewkAffix; affix.FileId != "" {
 				size, _ := strconv.Atoi(affix.FileSize)
 
 				attach = &resource.Attachment{
+					Filename:    affix.FileName,
+					Size:        size,
+					DownloadUrl: fileID2DownloadUrl(affix.FileId),
+				}
+			}
+
+			// Fetch comment attachment, if exists.
+			var commentAttach *resource.Attachment
+			if affix := result.CourseHomeworkRecord.ResourcesMappingByReplyAffix; affix.FileId != "" {
+				size, _ := strconv.Atoi(affix.FileSize)
+
+				commentAttach = &resource.Attachment{
 					Filename:    affix.FileName,
 					Size:        size,
 					DownloadUrl: fileID2DownloadUrl(affix.FileId),
@@ -130,11 +145,9 @@ func (p *homeworksParser) Parse(r io.Reader, info interface{}) error {
 					MarkedBy: &resource.User{
 						Name: result.CourseHomeworkRecord.GradeUser,
 					},
-					MarkedAt: parseRegDate(result.CourseHomeworkRecord.ReplyDate),
-					Comment:  result.CourseHomeworkRecord.ReplyDetail,
-					// TODO: Add this.
-					// CommentAttachment: resource.Attachment{
-					// }
+					MarkedAt:          parseRegDate(result.CourseHomeworkRecord.ReplyDate),
+					Comment:           result.CourseHomeworkRecord.ReplyDetail,
+					CommentAttachment: commentAttach,
 				},
 			}
 		}
@@ -165,6 +178,36 @@ func (ada *CicAdapter) CourseHomework(courseId string, params map[string]string)
 	parser := &homeworksParser{params: params}
 	homeworks = []*resource.Homework{}
 
-	status = adapter.FetchInfo(&ada.client, URL, "GET", parser, &homeworks)
+	if status = adapter.FetchInfo(&ada.client, URL, "GET", parser, &homeworks); status != http.StatusOK {
+		return nil, status
+	}
+	count := len(homeworks)
+	statuses := make(chan int, count)
+
+	for _, hw := range homeworks {
+		hw := hw
+
+		go func() {
+			if hw.Attachment == nil {
+				statuses <- http.StatusOK
+				return
+			}
+			if _, size, err := old.ParseFileInfo(ada.client, hw.Attachment.DownloadUrl); err != nil {
+				glog.Errorf("Failed to parse file info of %s: %s", hw.Attachment.DownloadUrl, err)
+				statuses <- http.StatusBadGateway
+			} else {
+				hw.Attachment.Size = size
+				statuses <- http.StatusOK
+			}
+		}()
+	}
+
+	// Drain the channel.
+	for i := 0; i < count; i++ {
+		if status = <-statuses; status != http.StatusOK {
+			return nil, status
+		}
+	}
+
 	return homeworks, status
 }

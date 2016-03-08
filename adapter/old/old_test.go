@@ -30,8 +30,8 @@ func AssertDeepEqual(t *testing.T, actual, expected interface{}) bool {
 }
 
 func TestMain(m *testing.M) {
-	flag.Set("alsologtostderr", "true")
-	flag.Set("v", "3")
+	// flag.Set("alsologtostderr", "true")
+	// flag.Set("v", "3")
 	flag.Parse()
 
 	// Login.

@@ -94,7 +94,7 @@ func (ada *OldAdapter) CourseFiles(courseId string, params map[string]string) (f
 		file := file
 
 		go func() {
-			filename, size, err := parseFileInfo(ada.client, file.DownloadUrl)
+			filename, size, err := ParseFileInfo(ada.client, file.DownloadUrl)
 			if err != nil {
 				glog.Errorf("Failed to parse file info of %s: %s", file.DownloadUrl, err)
 				statuses <- http.StatusBadGateway

@@ -20,7 +20,7 @@ type OldAdapter struct {
 }
 
 // TODO: move to adapter.go
-func parseFileInfo(client http.Client, path string) (filename string, size int, err error) {
+func ParseFileInfo(client http.Client, path string) (filename string, size int, err error) {
 	resp, err := client.Head(path)
 	if err != nil {
 		return "", 0, fmt.Errorf("Failed to get header information of file %s: %s", path, err)

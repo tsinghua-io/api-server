@@ -76,6 +76,7 @@ func TestCourseHomework(t *testing.T) {
 			Body:              "<p>课件我传不上去，只要放在印象笔记中与大家共享，请大家通过这个链接<a href=\"http://app.yinxiang.com/l/AAmpP7Z7r6lKnqrhVrtaVajvcJNd__J4xEA/\">http://app.yinxiang.com/l/AAmpP7Z7r6lKnqrhVrtaVajvcJNd__J4xEA/</a>&nbsp;来下载，以前和以后的课件我多会放在这里。请大家按时完成作业。</p>",
 			Attachment: &resource.Attachment{
 				Filename:    "文献检索与利用-第二次作业——SCI.docx",
+				Size:        15832,
 				DownloadUrl: "http://learn.cic.tsinghua.edu.cn/b/resource/downloadFileStream/2004980851_2014-2015-1-20750021-97_ZY_1413969147",
 			},
 			Submissions: []*resource.Submission{
@@ -111,6 +112,7 @@ func TestCourseHomework(t *testing.T) {
 			Body:              "",
 			Attachment: &resource.Attachment{
 				Filename:    "EI作业.doc",
+				Size:        32256,
 				DownloadUrl: "http://learn.cic.tsinghua.edu.cn/b/resource/downloadFileStream/2004980851_2014-2015-1-20750021-97_ZY_1414652158",
 			},
 			Submissions: []*resource.Submission{
