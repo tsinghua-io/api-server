@@ -54,7 +54,10 @@ func (p *filesParser) Parse(r io.Reader, info interface{}) error {
 
 	for _, node1 := range p.data.ResultList {
 		for _, node2 := range node1.ChildMapData {
-			category := []string{node1.NodeName, node2.CourseOutlines.Title}
+			category := []string{
+				strings.TrimSpace(node1.NodeName),
+				strings.TrimSpace(node2.CourseOutlines.Title),
+			}
 
 			for _, item := range node2.CourseCoursewareList {
 				fileId := item.ResourcesMappingByFileId.FileId

@@ -19,6 +19,10 @@ func Int2Pfloat32(i int) *float32 {
 	return &f
 }
 
+func NewInt(i int) *int {
+	return &i
+}
+
 type homeworksParser struct {
 	params map[string]string
 	data   struct {
