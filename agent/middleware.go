@@ -2,7 +2,7 @@ package agent
 
 import (
 	"github.com/gorilla/context"
-	"github.com/tsinghua-io/api-server/adapter/old"
+	"github.com/tsinghua-io/api-server/adapter/mixed"
 	"net/http"
 )
 
@@ -24,13 +24,13 @@ func GetUserSession(h http.Handler) http.Handler {
 			return
 		}
 
-		session, status := old.Login(loginName, loginPass)
+		ada, status := mixed.Login(loginName, loginPass)
 		if status != http.StatusOK {
 			w.WriteHeader(status)
 			return
 		}
 
-		context.Set(r, "session", session)
+		context.Set(r, "adapter", ada)
 
 		// Call the original handler
 		h.ServeHTTP(w, r)

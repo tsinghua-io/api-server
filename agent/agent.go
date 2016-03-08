@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"github.com/golang/glog"
 	"github.com/gorilla/context"
-	"github.com/tsinghua-io/api-server/adapter/old"
-	//"github.com/tsinghua-io/api-server/adapter/cic"
 	"github.com/gorilla/mux"
 	"github.com/tsinghua-io/api-server/webapp"
 	"net/http"
@@ -26,12 +24,11 @@ type userAgent struct {
 
 var UserAgent = userAgent{
 	UrlMap: map[string]handlerSpec{
-		"/users/me":                         handlerSpec{"PersonalInfo", "GET", getArgsMe},
-		"/users/me/attending":               handlerSpec{"Attending", "GET", getArgsMe},
+		"/users/me":                         handlerSpec{"Profile", "GET", getArgsMe},
 		"/users/me/attended":                handlerSpec{"Attended", "GET", getArgsMe},
-		"/courses/{courseId}/announcements": handlerSpec{"Announcements", "GET", getArgsCourse},
-		"/courses/{courseId}/files":         handlerSpec{"Files", "GET", getArgsCourse},
-		"/courses/{courseId}/homeworks":     handlerSpec{"Homeworks", "GET", getArgsCourse},
+		"/courses/{courseId}/announcements": handlerSpec{"CourseAnnouncements", "GET", getArgsCourse},
+		"/courses/{courseId}/files":         handlerSpec{"CourseFiles", "GET", getArgsCourse},
+		"/courses/{courseId}/homeworks":     handlerSpec{"CourseHomework", "GET", getArgsCourse},
 	},
 }
 
@@ -46,7 +43,7 @@ func argsFromUrl(argNames ...string) func(http.ResponseWriter, *http.Request) []
 }
 
 var getArgsCourse = argsFromUrl("courseId")
-var getArgsMe = argsFromUrl()
+var getArgsMe = argsFromUrl("userId")
 
 func (useragent *userAgent) BindRoute(app *webapp.WebApp) {
 	for path, handlerSpec := range useragent.UrlMap {
@@ -58,20 +55,19 @@ func (useragent *userAgent) BindRoute(app *webapp.WebApp) {
 func (useragent *userAgent) GenerateHandler(methodName string,
 	getArgs func(http.ResponseWriter, *http.Request) []interface{}) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session, ok := context.GetOk(r, "session")
+		ada, ok := context.GetOk(r, "adapter")
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		ada := old.New(session.([]*http.Cookie), "")
-
 		// get the arguments
 		args := getArgs(w, r)
-		values := make([]reflect.Value, len(args))
+		values := make([]reflect.Value, len(args)+1)
 		for i, arg := range args {
 			values[i] = reflect.ValueOf(arg)
 		}
+		values[len(values)-1] = reflect.ValueOf(make(map[string]string))
 
 		// call the actual handler in the adapter
 		methodVal := reflect.ValueOf(ada).MethodByName(methodName)

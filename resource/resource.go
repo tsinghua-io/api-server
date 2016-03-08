@@ -15,20 +15,20 @@ type User struct {
 
 type TimeLocation struct {
 	Weeks       string `json:"weeks,omitempty"`
-	DayOfWeek   int    `json:"day_of_week"`
-	PeriodOfDay int    `json:"period_of_day"`
+	DayOfWeek   int    `json:"day_of_week,omitempty"`
+	PeriodOfDay int    `json:"period_of_day,omitempty"`
 	Location    string `json:"location,omitempty"`
 }
 
 type Course struct {
 	// Identifiers.
-	Id             string `json:"id"`
-	Semester       string `json:"semester"`
-	CourseNumber   string `json:"course_number"`
-	CourseSequence string `json:"course_sequence"`
+	Id             string `json:"id,omitempty"`
+	Semester       string `json:"semester,omitempty"`
+	CourseNumber   string `json:"course_number,omitempty"`
+	CourseSequence string `json:"course_sequence,omitempty"`
 
 	// Metadata.
-	Name        string `json:"name"`
+	Name        string `json:"name,omitempty"`
 	Credit      int    `json:"credit"`
 	Hour        int    `json:"hour"`
 	Description string `json:"description,omitempty"`
@@ -43,12 +43,12 @@ type Course struct {
 
 type Announcement struct {
 	// Identifiers.
-	Id       string `json:"id"`
-	CourseId string `json:"course_id"`
+	Id       string `json:"id,omitempty"`
+	CourseId string `json:"course_id,omitempty"`
 
 	// Metadata.
 	Owner     *User  `json:"owner,omitempty"`
-	CreatedAt string `json:"created_at"`
+	CreatedAt string `json:"created_at,omitempty"`
 	Priority  int    `json:"priority"`
 	Read      bool   `json:"read"`
 
@@ -59,34 +59,34 @@ type Announcement struct {
 
 type File struct {
 	// Identifiers.
-	Id       string `json:"id"`
-	CourseId string `json:"course_id"`
+	Id       string `json:"id,omitempty"`
+	CourseId string `json:"course_id,omitempty"`
 
 	// Metadata.
 	Owner       *User    `json:"owner,omitempty"`
-	CreatedAt   string   `json:"created_at"`
+	CreatedAt   string   `json:"created_at,omitempty"`
 	Title       string   `json:"title,omitempty"`
 	Description string   `json:"description,omitempty"`
 	Category    []string `json:"category,omitempty"`
-	Read        bool     `json:"read"`
 
 	// Content.
-	Filename    string `json:"filename"`
+	Filename    string `json:"filename,omitempty"`
 	Size        int    `json:"size"`
-	DownloadUrl string `json:"download_url"`
+	DownloadUrl string `json:"download_url,omitempty"`
 }
 
 type Attachment struct {
-	Filename    string `json:"filename"`
+	Filename    string `json:"filename,omitempty"`
 	Size        int    `json:"size"`
-	DownloadUrl string `json:"download_url"`
+	DownloadUrl string `json:"download_url,omitempty"`
 }
 
 type Submission struct {
 	// Metadata.
-	Owner     *User  `json:"student,omitempty"`
-	CreatedAt string `json:"created_at"`
-	Late      bool   `json:"late"`
+	Owner      *User  `json:"student,omitempty"`
+	HomeworkId string `json:"homework_id,omitempty"`
+	CreatedAt  string `json:"created_at,omitempty"`
+	Late       bool   `json:"late"`
 
 	// Content.
 	Body       string      `json:"body,omitempty"`
@@ -104,17 +104,17 @@ type Submission struct {
 
 type Homework struct {
 	// Identifiers.
-	Id       string `json:"id"`
-	CourseId string `json:"course_id"`
+	Id       string `json:"id,omitempty"`
+	CourseId string `json:"course_id,omitempty"`
 
 	// Metadata.
 	CreatedAt         string `json:"created_at,omitempty"`
-	BeginAt           string `json:"begin_at"`
-	DueAt             string `json:"due_at"`
-	SubmittedCount    int    `json:"submitted_count,omitempty"`
-	NotSubmittedCount int    `json:"not_submitted_count,omitempty"`
-	SeenCount         int    `json:"seen_count,omitempty"`
-	MarkedCount       int    `json:"marked_count,omitempty"`
+	BeginAt           string `json:"begin_at,omitempty"`
+	DueAt             string `json:"due_at,omitempty"`
+	SubmittedCount    *int   `json:"submitted_count,omitempty"`
+	NotSubmittedCount *int   `json:"not_submitted_count,omitempty"`
+	SeenCount         *int   `json:"seen_count,omitempty"`
+	MarkedCount       *int   `json:"marked_count,omitempty"`
 
 	// Content.
 	Title      string      `json:"title,omitempty"`

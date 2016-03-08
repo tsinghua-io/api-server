@@ -5,6 +5,7 @@ Api server in go
 package main
 
 import (
+	"flag"
 	"github.com/NYTimes/gziphandler"
 	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/agent"
@@ -24,6 +25,8 @@ func BindRoute(app *webapp.WebApp) {
 }
 
 func main() {
+	flag.Parse()
+
 	app := webapp.NewWebApp()
 	BindRoute(app)
 	http.Handle("/", app)
