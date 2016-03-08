@@ -124,8 +124,7 @@ type coursesParser struct {
 				Dwywmc string
 			}
 			SemesterInfo struct {
-				SemesterName  string
-				SemesterEname string
+				Id string
 			}
 			Detail_c    string
 			Detail_e    string
@@ -151,15 +150,13 @@ func (p *coursesParser) Parse(r io.Reader, info interface{}) error {
 	for _, result := range p.data.ResultList {
 		// Language specific fields.
 		// TODO: Move out of loop?
-		var semester, name, description, department string
+		var name, description, department string
 		switch p.params["lang"] {
 		case "zh-CN", "":
-			semester = result.SemesterInfo.SemesterName
 			name = result.Course_name
 			description = result.Detail_c
 			department = result.CodeDepartmentInfo.Dwmc
 		case "en":
-			semester = result.SemesterInfo.SemesterEname
 			name = result.E_course_name
 			description = result.Detail_e
 			department = result.CodeDepartmentInfo.Dwywmc
@@ -167,7 +164,7 @@ func (p *coursesParser) Parse(r io.Reader, info interface{}) error {
 
 		course := &resource.Course{
 			Id:             result.CourseId,
-			Semester:       semester,
+			Semester:       result.SemesterInfo.Id,
 			CourseNumber:   result.Course_no,
 			CourseSequence: result.Course_seq,
 			Name:           name,
