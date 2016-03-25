@@ -20,7 +20,7 @@ func TestAttended(t *testing.T) {
 	actual := courses[len(courses)-1]
 	expected := &resource.Course{
 		Id:             "2013-2014-1-00640252-96",
-		Semester:       "2013-2014-秋季学期",
+		Semester:       "2013-2014-1",
 		CourseNumber:   "00640252",
 		CourseSequence: "96",
 		Name:           "英语报刊选读",
