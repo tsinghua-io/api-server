@@ -1,4 +1,4 @@
-package cic
+package learn
 
 import (
 	"flag"
