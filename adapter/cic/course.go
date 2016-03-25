@@ -1,25 +1,33 @@
 package cic
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/tsinghua-io/api-server/adapter"
+	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/resource"
-	"io"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
-const (
-	timePlaceURL        = BaseURL + "/b/course/info/timePlace/{course_id}"
-	courseAssistantsURL = BaseURL + "/b/mycourse/AssistTeacher/list/{course_id}"
-	attendedURL         = BaseURL + "/b/myCourse/courseList/loadCourse4Student/-1"
-)
+func TimeLocationsURL(courseId string) string {
+	return fmt.Sprintf("%s/b/course/info/timePlace/%s", BaseURL, courseId)
+}
 
-type timeLocationParser struct {
-	params map[string]string
-	data   struct {
+func AssistantsURL(courseId string) string {
+	return fmt.Sprintf("%s/b/mycourse/AssistTeacher/list/%s", BaseURL, courseId)
+}
+
+func AttendedURL(semesterID string) string {
+	return fmt.Sprintf("%s/b/myCourse/courseList/loadCourse4Student/%s", BaseURL, semesterID)
+}
+
+func (ada *Adapter) TimeLocations(courseId string, _ map[string]string, timeLocations *[]*resource.TimeLocation) (status int) {
+	if timeLocations == nil {
+		glog.Errorf("nil received")
+		return http.StatusInternalServerError
+	}
+
+	url := TimeLocationsURL(courseId)
+	var v struct {
 		ResultList []struct {
 			Skzc string
 			Skxq string
@@ -27,27 +35,19 @@ type timeLocationParser struct {
 			Skdd string
 		}
 	}
-}
 
-func (p *timeLocationParser) Parse(r io.Reader, info interface{}) error {
-	timeLocations, ok := info.(*[]*resource.TimeLocation)
-	if !ok {
-		return fmt.Errorf("The parser and the destination type do not match.")
+	if err := ada.GetJSON("GET", url, &v); err != nil {
+		return http.StatusBadGateway
 	}
 
-	dec := json.NewDecoder(r)
-	if err := dec.Decode(&p.data); err != nil {
-		return err
-	}
-
-	for _, result := range p.data.ResultList {
+	for _, result := range v.ResultList {
 		dayOfWeek, err := strconv.Atoi(result.Skxq)
 		if err != nil {
-			return fmt.Errorf("Failed to parse DayOfWeek to int: %s", err)
+			return http.StatusBadGateway
 		}
 		periodOfDay, err := strconv.Atoi(result.Skjc)
 		if err != nil {
-			return fmt.Errorf("Failed to parse PeriodOfDay to int: %s", err)
+			return http.StatusBadGateway
 		}
 
 		timeLocation := &resource.TimeLocation{
@@ -59,12 +59,17 @@ func (p *timeLocationParser) Parse(r io.Reader, info interface{}) error {
 		*timeLocations = append(*timeLocations, timeLocation)
 	}
 
-	return nil
+	return http.StatusOK
 }
 
-type assistantsParser struct {
-	params map[string]string
-	data   struct {
+func (ada *Adapter) Assistants(courseId string, _ map[string]string, assistants *[]*resource.User) (status int) {
+	if assistants == nil {
+		glog.Errorf("nil received")
+		return http.StatusInternalServerError
+	}
+
+	url := AssistantsURL(courseId)
+	var v struct {
 		ResultList []struct {
 			Id     string
 			Dwmc   string
@@ -74,21 +79,13 @@ type assistantsParser struct {
 			Gender string
 		}
 	}
-}
 
-func (p *assistantsParser) Parse(r io.Reader, info interface{}) error {
-	users, ok := info.(*[]*resource.User)
-	if !ok {
-		return fmt.Errorf("The parser and the destination type do not match.")
+	if err := ada.GetJSON("GET", url, &v); err != nil {
+		return http.StatusBadGateway
 	}
 
-	dec := json.NewDecoder(r)
-	if err := dec.Decode(&p.data); err != nil {
-		return err
-	}
-
-	for _, result := range p.data.ResultList {
-		user := &resource.User{
+	for _, result := range v.ResultList {
+		assistant := &resource.User{
 			Id:         result.Id,
 			Name:       result.Name,
 			Department: result.Dwmc,
@@ -96,15 +93,20 @@ func (p *assistantsParser) Parse(r io.Reader, info interface{}) error {
 			Email:      result.Email,
 			Phone:      result.Phone,
 		}
-		*users = append(*users, user)
+		*assistants = append(*assistants, assistant)
 	}
 
-	return nil
+	return http.StatusOK
 }
 
-type coursesParser struct {
-	params map[string]string
-	data   struct {
+func (ada *Adapter) Attended(semesterID string, params map[string]string, courses *[]*resource.Course) (status int) {
+	if courses == nil {
+		glog.Errorf("nil received")
+		return http.StatusInternalServerError
+	}
+
+	url := AttendedURL(semesterID)
+	var v struct {
 		ResultList []struct {
 			CourseId      string
 			Course_no     string
@@ -132,26 +134,21 @@ type coursesParser struct {
 			Course_time int
 		}
 	}
-}
 
-func (p *coursesParser) Parse(r io.Reader, info interface{}) error {
-	courses, ok := info.(*[]*resource.Course)
-	if !ok {
-		return fmt.Errorf("The parser and the destination type do not match.")
+	if err := ada.GetJSON("GET", url, &v); err != nil {
+		return http.StatusBadGateway
 	}
 
-	dec := json.NewDecoder(r)
-	if err := dec.Decode(&p.data); err != nil {
-		return err
-	}
+	statuses := make(chan int, 1)
+	count := 0
 
 	// TODO: Here we loop through a struct array. Will Go copy every struct?
 	// Try some benchmarks.
-	for _, result := range p.data.ResultList {
+	for _, result := range v.ResultList {
 		// Language specific fields.
 		// TODO: Move out of loop?
 		var name, description, department string
-		switch p.params["lang"] {
+		switch params["lang"] {
 		case "zh-CN", "":
 			name = result.Course_name
 			description = result.Detail_c
@@ -184,49 +181,23 @@ func (p *coursesParser) Parse(r io.Reader, info interface{}) error {
 				},
 			},
 		}
+
+		count += 2
+		go func() {
+			statuses <- ada.TimeLocations(course.Id, params, &course.TimeLocations)
+		}()
+		go func() {
+			statuses <- ada.Assistants(course.Id, params, &course.Assistants)
+		}()
 		*courses = append(*courses, course)
 	}
 
-	return nil
-}
-
-func (ada *CicAdapter) Attended(username string, params map[string]string) (courses []*resource.Course, status int) {
-	if username != "" {
-		// Not suppported yet.
-		return nil, http.StatusBadRequest
-	}
-
-	parser := &coursesParser{params: params}
-	if status = adapter.FetchInfo(&ada.client, attendedURL, "GET", parser, &courses); status != http.StatusOK {
-		return nil, status
-	}
-	chan_size := len(courses) * 2
-	statuses := make(chan int, chan_size)
-
-	for _, course := range courses {
-		course := course // Avoid variable reusing.
-
-		// Time & Place.
-		go func() {
-			URL := strings.Replace(timePlaceURL, "{course_id}", course.Id, -1)
-			parser := &timeLocationParser{params: params}
-			statuses <- adapter.FetchInfo(&ada.client, URL, "GET", parser, &course.TimeLocations)
-		}()
-
-		// Assistants.
-		go func() {
-			URL := strings.Replace(courseAssistantsURL, "{course_id}", course.Id, -1)
-			parser := &assistantsParser{params: params}
-			statuses <- adapter.FetchInfo(&ada.client, URL, "GET", parser, &course.Assistants)
-		}()
-	}
-
-	// Drain the channel.
-	for i := 0; i < chan_size; i++ {
-		if status = <-statuses; status != http.StatusOK {
-			return nil, status
+	status = http.StatusOK
+	for i := 0; i < count; i++ {
+		if s := <-statuses; s != http.StatusOK {
+			status = s
 		}
 	}
 
-	return
+	return status
 }

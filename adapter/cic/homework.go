@@ -1,34 +1,25 @@
 package cic
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/golang/glog"
-	"github.com/tsinghua-io/api-server/adapter"
-	"github.com/tsinghua-io/api-server/adapter/old"
 	"github.com/tsinghua-io/api-server/resource"
-	"io"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
-const (
-	courseHomeworkURL = BaseURL + "/b/myCourse/homework/list4Student/{course_id}/0"
-)
-
-func Int2Pfloat32(i int) *float32 {
-	f := float32(i)
-	return &f
+func HomeworksURL(courseId string) string {
+	return fmt.Sprintf("%s/b/myCourse/homework/list4Student/%s/0", BaseURL, courseId)
 }
 
-func NewInt(i int) *int {
-	return &i
-}
+func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[]*resource.Homework) (status int) {
+	if homeworks == nil {
+		glog.Errorf("nil received")
+		return http.StatusInternalServerError
+	}
 
-type homeworksParser struct {
-	params map[string]string
-	data   struct {
+	url := HomeworksURL(courseId)
+	var v struct {
 		ResultList []struct {
 			CourseHomeworkRecord struct {
 				StudentId                     string
@@ -60,41 +51,27 @@ type homeworksParser struct {
 				Detail              string
 				HomewkAffix         string // File ID.
 				HomewkAffixFilename string
-				// AnswerDetail
-				// AnswerLink
-				// AnswerLinkFilename
-				// AnswerDate
-				CourseId string
-				WeiJiao  *int
-				// YiJiao
-				YiYue  *int
-				YiPi   *int
-				Jiaoed *int
+				CourseId            string
 			}
 		}
 	}
-}
 
-func (p *homeworksParser) Parse(r io.Reader, info interface{}) error {
-	homeworks, ok := info.(*[]*resource.Homework)
-	if !ok {
-		return fmt.Errorf("The parser and the destination type do not match.")
+	if err := ada.GetJSON("GET", url, &v); err != nil {
+		return http.StatusBadGateway
 	}
 
-	dec := json.NewDecoder(r)
-	if err := dec.Decode(&p.data); err != nil {
-		return err
-	}
-
-	for _, result := range p.data.ResultList {
+	for _, result := range v.ResultList {
 		// Fetch homework attachment, if exists.
 		var attach *resource.Attachment
 
-		if fileID := result.CourseHomeworkInfo.HomewkAffix; fileID != "" {
+		if fileId := result.CourseHomeworkInfo.HomewkAffix; fileId != "" {
 			attach = &resource.Attachment{
-				Filename: result.CourseHomeworkInfo.HomewkAffixFilename,
-				// TODO: Get file size?
-				DownloadUrl: fileID2DownloadUrl(fileID),
+				Filename:    result.CourseHomeworkInfo.HomewkAffixFilename,
+				DownloadURL: DownloadURL(fileId),
+			}
+			// Get file size.
+			if status := ada.FileInfo(attach.DownloadURL, nil, &attach.Size); status != http.StatusOK {
+				return status
 			}
 		}
 
@@ -110,7 +87,7 @@ func (p *homeworksParser) Parse(r io.Reader, info interface{}) error {
 				attach = &resource.Attachment{
 					Filename:    affix.FileName,
 					Size:        size,
-					DownloadUrl: fileID2DownloadUrl(affix.FileId),
+					DownloadURL: DownloadURL(affix.FileId),
 				}
 			}
 
@@ -122,14 +99,16 @@ func (p *homeworksParser) Parse(r io.Reader, info interface{}) error {
 				commentAttach = &resource.Attachment{
 					Filename:    affix.FileName,
 					Size:        size,
-					DownloadUrl: fileID2DownloadUrl(affix.FileId),
+					DownloadURL: DownloadURL(affix.FileId),
 				}
 			}
 
-			// Fetch mark, if exists.
-			var mark *float32
-			if intMark := result.CourseHomeworkRecord.Mark; intMark != nil {
-				mark = Int2Pfloat32(*intMark)
+			// Mark.
+			var marked bool
+			var mark float32
+			if result.CourseHomeworkRecord.Mark != nil {
+				marked = true
+				mark = float32(*result.CourseHomeworkRecord.Mark)
 			}
 
 			submissions = []*resource.Submission{
@@ -141,11 +120,12 @@ func (p *homeworksParser) Parse(r io.Reader, info interface{}) error {
 					Late:       result.CourseHomeworkRecord.IfDelay == "1",
 					Body:       result.CourseHomeworkRecord.HomewkDetail,
 					Attachment: attach,
-					Mark:       mark,
+					Marked:     marked,
 					MarkedBy: &resource.User{
 						Name: result.CourseHomeworkRecord.GradeUser,
 					},
 					MarkedAt:          parseRegDate(result.CourseHomeworkRecord.ReplyDate),
+					Mark:              mark,
 					Comment:           result.CourseHomeworkRecord.ReplyDetail,
 					CommentAttachment: commentAttach,
 				},
@@ -153,61 +133,18 @@ func (p *homeworksParser) Parse(r io.Reader, info interface{}) error {
 		}
 
 		homework := &resource.Homework{
-			Id:                strconv.Itoa(result.CourseHomeworkInfo.HomewkId),
-			CourseId:          result.CourseHomeworkInfo.CourseId,
-			CreatedAt:         parseRegDate(result.CourseHomeworkInfo.RegDate),
-			BeginAt:           parseRegDate(result.CourseHomeworkInfo.BeginDate),
-			DueAt:             parseRegDate(result.CourseHomeworkInfo.EndDate),
-			SubmittedCount:    result.CourseHomeworkInfo.Jiaoed,
-			NotSubmittedCount: result.CourseHomeworkInfo.WeiJiao,
-			SeenCount:         result.CourseHomeworkInfo.YiYue,
-			MarkedCount:       result.CourseHomeworkInfo.YiPi,
-			Title:             result.CourseHomeworkInfo.Title,
-			Body:              result.CourseHomeworkInfo.Detail,
-			Attachment:        attach,
-			Submissions:       submissions,
+			Id:          strconv.Itoa(result.CourseHomeworkInfo.HomewkId),
+			CourseId:    result.CourseHomeworkInfo.CourseId,
+			CreatedAt:   parseRegDate(result.CourseHomeworkInfo.RegDate),
+			BeginAt:     parseRegDate(result.CourseHomeworkInfo.BeginDate),
+			DueAt:       parseRegDate(result.CourseHomeworkInfo.EndDate),
+			Title:       result.CourseHomeworkInfo.Title,
+			Body:        result.CourseHomeworkInfo.Detail,
+			Attachment:  attach,
+			Submissions: submissions,
 		}
 		*homeworks = append(*homeworks, homework)
 	}
 
-	return nil
-}
-
-func (ada *CicAdapter) CourseHomework(courseId string, params map[string]string) (homeworks []*resource.Homework, status int) {
-	URL := strings.Replace(courseHomeworkURL, "{course_id}", courseId, -1)
-	parser := &homeworksParser{params: params}
-	homeworks = []*resource.Homework{}
-
-	if status = adapter.FetchInfo(&ada.client, URL, "GET", parser, &homeworks); status != http.StatusOK {
-		return nil, status
-	}
-	count := len(homeworks)
-	statuses := make(chan int, count)
-
-	for _, hw := range homeworks {
-		hw := hw
-
-		go func() {
-			if hw.Attachment == nil {
-				statuses <- http.StatusOK
-				return
-			}
-			if _, size, err := old.ParseFileInfo(ada.client, hw.Attachment.DownloadUrl); err != nil {
-				glog.Errorf("Failed to parse file info of %s: %s", hw.Attachment.DownloadUrl, err)
-				statuses <- http.StatusBadGateway
-			} else {
-				hw.Attachment.Size = size
-				statuses <- http.StatusOK
-			}
-		}()
-	}
-
-	// Drain the channel.
-	for i := 0; i < count; i++ {
-		if status = <-statuses; status != http.StatusOK {
-			return nil, status
-		}
-	}
-
-	return homeworks, status
+	return http.StatusOK
 }

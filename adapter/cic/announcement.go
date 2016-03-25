@@ -1,25 +1,27 @@
 package cic
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/tsinghua-io/api-server/adapter"
+	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/resource"
-	"io"
+	"net/http"
 	"strconv"
-	"strings"
 )
 
-const (
-	courseAnnouncementsURL = BaseURL + "/b/myCourse/notice/listForStudent/{course_id}?pageSize=1000"
-)
+func AnnouncementsURL(courseId string) string {
+	return fmt.Sprintf("%s/b/myCourse/notice/listForStudent/%s?pageSize=1000", BaseURL, courseId)
+}
 
-type announcementsParser struct {
-	params map[string]string
-	data   struct {
+func (ada *Adapter) Announcements(courseId string, _ map[string]string, announcements *[]*resource.Announcement) (status int) {
+	if announcements == nil {
+		glog.Errorf("nil received")
+		return http.StatusInternalServerError
+	}
+
+	url := AnnouncementsURL(courseId)
+	var v struct {
 		PaginationList struct {
 			RecordList []struct {
-				Status       string // 0 for read, 1 for unread.
 				CourseNotice struct {
 					Id          int64
 					Title       string
@@ -32,47 +34,24 @@ type announcementsParser struct {
 			}
 		}
 	}
-}
 
-func (p *announcementsParser) Parse(r io.Reader, info interface{}) error {
-	announcements, ok := info.(*[]*resource.Announcement)
-	if !ok {
-		return fmt.Errorf("The parser and the destination type do not match.")
-	}
-
-	dec := json.NewDecoder(r)
-	if err := dec.Decode(&p.data); err != nil {
-		return err
+	if err := ada.GetJSON("GET", url, &v); err != nil {
+		return http.StatusBadGateway
 	}
 
 	// TODO: Iterate a pointer slice?
-	for _, result := range p.data.PaginationList.RecordList {
-		var status int
-		if _, err := fmt.Sscan(result.Status, &status); err != nil {
-			return err
-		}
-
+	for _, result := range v.PaginationList.RecordList {
 		announcement := &resource.Announcement{
 			Id:        strconv.FormatInt(result.CourseNotice.Id, 10),
 			CourseId:  result.CourseNotice.CourseId,
 			Owner:     &resource.User{Name: result.CourseNotice.Owner},
 			CreatedAt: result.CourseNotice.RegDate,
 			Priority:  result.CourseNotice.MsgPriority,
-			Read:      status != 0,
 			Title:     result.CourseNotice.Title,
 			Body:      result.CourseNotice.Detail,
 		}
 		*announcements = append(*announcements, announcement)
 	}
 
-	return nil
-}
-
-func (ada *CicAdapter) CourseAnnouncements(courseId string, params map[string]string) (announcements []*resource.Announcement, status int) {
-	URL := strings.Replace(courseAnnouncementsURL, "{course_id}", courseId, -1)
-	parser := &announcementsParser{params: params}
-	announcements = []*resource.Announcement{}
-
-	status = adapter.FetchInfo(&ada.client, URL, "GET", parser, &announcements)
-	return announcements, status
+	return http.StatusOK
 }

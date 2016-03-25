@@ -29,8 +29,8 @@ type Course struct {
 
 	// Metadata.
 	Name        string `json:"name,omitempty"`
-	Credit      int    `json:"credit"`
-	Hour        int    `json:"hour"`
+	Credit      int    `json:"credit,omitempty"`
+	Hour        int    `json:"hour,omitempty"`
 	Description string `json:"description,omitempty"`
 
 	// Time & location.
@@ -49,8 +49,7 @@ type Announcement struct {
 	// Metadata.
 	Owner     *User  `json:"owner,omitempty"`
 	CreatedAt string `json:"created_at,omitempty"`
-	Priority  int    `json:"priority"`
-	Read      bool   `json:"read"`
+	Priority  int    `json:"priority,omitempty"`
 
 	// Content.
 	Title string `json:"title,omitempty"`
@@ -71,14 +70,14 @@ type File struct {
 
 	// Content.
 	Filename    string `json:"filename,omitempty"`
-	Size        int    `json:"size"`
-	DownloadUrl string `json:"download_url,omitempty"`
+	Size        int    `json:"size,omitempty"`
+	DownloadURL string `json:"download_url,omitempty"`
 }
 
 type Attachment struct {
 	Filename    string `json:"filename,omitempty"`
-	Size        int    `json:"size"`
-	DownloadUrl string `json:"download_url,omitempty"`
+	Size        int    `json:"size,omitempty"`
+	DownloadURL string `json:"download_url,omitempty"`
 }
 
 type Submission struct {
@@ -86,18 +85,19 @@ type Submission struct {
 	Owner      *User  `json:"student,omitempty"`
 	HomeworkId string `json:"homework_id,omitempty"`
 	CreatedAt  string `json:"created_at,omitempty"`
-	Late       bool   `json:"late"`
+	Late       bool   `json:"late,omitempty"`
 
 	// Content.
 	Body       string      `json:"body,omitempty"`
 	Attachment *Attachment `json:"attachment,omitempty"`
 
 	// Scoring metadata.
+	Marked   bool   `json:"marked,omitempty"`
 	MarkedBy *User  `json:"marked_by,omitempty"`
 	MarkedAt string `json:"marked_at,omitempty"`
 
 	// Scoring content.
-	Mark              *float32    `json:"mark,omitempty"`
+	Mark              float32     `json:"mark,omitempty"`
 	Comment           string      `json:"comment,omitempty"`
 	CommentAttachment *Attachment `json:"comment_attachment,omitempty"`
 }
@@ -108,13 +108,9 @@ type Homework struct {
 	CourseId string `json:"course_id,omitempty"`
 
 	// Metadata.
-	CreatedAt         string `json:"created_at,omitempty"`
-	BeginAt           string `json:"begin_at,omitempty"`
-	DueAt             string `json:"due_at,omitempty"`
-	SubmittedCount    *int   `json:"submitted_count,omitempty"`
-	NotSubmittedCount *int   `json:"not_submitted_count,omitempty"`
-	SeenCount         *int   `json:"seen_count,omitempty"`
-	MarkedCount       *int   `json:"marked_count,omitempty"`
+	CreatedAt string `json:"created_at,omitempty"`
+	BeginAt   string `json:"begin_at,omitempty"`
+	DueAt     string `json:"due_at,omitempty"`
 
 	// Content.
 	Title      string      `json:"title,omitempty"`

@@ -1,14 +1,15 @@
 package cic
 
 import (
+	"github.com/tsinghua-io/api-server/adapter"
 	"github.com/tsinghua-io/api-server/resource"
 	"net/http"
 	"testing"
 )
 
 func TestFiles(t *testing.T) {
-	actual, status := ada.CourseFiles("2014-2015-1-20750021-97", nil)
-	if status != http.StatusOK {
+	var actual []*resource.File
+	if status := ada.Files("2014-2015-1-20750021-97", nil, &actual); status != http.StatusOK {
 		t.Errorf("Unable to get files: %s", http.StatusText(status))
 		return
 	}
@@ -25,7 +26,7 @@ func TestFiles(t *testing.T) {
 			Category:    []string{"课程文件", "电子教案"},
 			Filename:    "文献检索与利用（理工类）-全面认识文献信息源.pptx",
 			Size:        7935551,
-			DownloadUrl: "http://learn.cic.tsinghua.edu.cn/b/resource/downloadFileStream/2004980851_2014-2015-1-20750021-97_KJ_1411486091",
+			DownloadURL: "http://learn.cic.tsinghua.edu.cn/b/resource/downloadFileStream/2004980851_2014-2015-1-20750021-97_KJ_1411486091",
 		},
 		{
 			Id:          "2004980851_2014-2015-1-20750021-97_KJ_1413292186",
@@ -37,7 +38,7 @@ func TestFiles(t *testing.T) {
 			Category:    []string{"课程文件", "电子教案"},
 			Filename:    "文献检索与利用（理工类）-全面认识文献信息源2.pptx",
 			Size:        3678507,
-			DownloadUrl: "http://learn.cic.tsinghua.edu.cn/b/resource/downloadFileStream/2004980851_2014-2015-1-20750021-97_KJ_1413292186",
+			DownloadURL: "http://learn.cic.tsinghua.edu.cn/b/resource/downloadFileStream/2004980851_2014-2015-1-20750021-97_KJ_1413292186",
 		},
 		{
 			Id:          "2004980851_2014-2015-1-20750021-97_KJ_1413292258",
@@ -49,7 +50,7 @@ func TestFiles(t *testing.T) {
 			Category:    []string{"课程文件", "电子教案"},
 			Filename:    "文献检索与利用（3）--文献调研1.pptx",
 			Size:        5154562,
-			DownloadUrl: "http://learn.cic.tsinghua.edu.cn/b/resource/downloadFileStream/2004980851_2014-2015-1-20750021-97_KJ_1413292258",
+			DownloadURL: "http://learn.cic.tsinghua.edu.cn/b/resource/downloadFileStream/2004980851_2014-2015-1-20750021-97_KJ_1413292258",
 		},
 		{
 			Id:          "2004980851_2014-2015-1-20750021-97_KJ_1414651951",
@@ -61,7 +62,7 @@ func TestFiles(t *testing.T) {
 			Category:    []string{"课程文件", "电子教案"},
 			Filename:    "文献检索与利用（3）--文献调研2--SCI.pptx",
 			Size:        4807443,
-			DownloadUrl: "http://learn.cic.tsinghua.edu.cn/b/resource/downloadFileStream/2004980851_2014-2015-1-20750021-97_KJ_1414651951",
+			DownloadURL: "http://learn.cic.tsinghua.edu.cn/b/resource/downloadFileStream/2004980851_2014-2015-1-20750021-97_KJ_1414651951",
 		},
 		{
 			Id:          "2004980851_2014-2015-1-20750021-97_KJ_1414652071",
@@ -73,18 +74,18 @@ func TestFiles(t *testing.T) {
 			Category:    []string{"课程文件", "电子教案"},
 			Filename:    "文献检索与利用（3）--文献调研3--EI.pptx",
 			Size:        2275654,
-			DownloadUrl: "http://learn.cic.tsinghua.edu.cn/b/resource/downloadFileStream/2004980851_2014-2015-1-20750021-97_KJ_1414652071",
+			DownloadURL: "http://learn.cic.tsinghua.edu.cn/b/resource/downloadFileStream/2004980851_2014-2015-1-20750021-97_KJ_1414652071",
 		},
 	}
 
-	AssertDeepEqual(t, actual, expected)
+	adapter.AssertDeepEqual(t, actual, expected)
 }
 
 func BenchmarkFiles(b *testing.B) {
+	var files []*resource.File
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		info, status := ada.CourseFiles("2014-2015-1-20750021-97", nil)
-		_ = info
-		_ = status
+		ada.Files("2014-2015-1-20750021-97", nil, &files)
 	}
 }

@@ -1,14 +1,15 @@
 package cic
 
 import (
+	"github.com/tsinghua-io/api-server/adapter"
 	"github.com/tsinghua-io/api-server/resource"
 	"net/http"
 	"testing"
 )
 
 func TestAttended(t *testing.T) {
-	courses, status := ada.Attended("", nil)
-	if status != http.StatusOK {
+	var courses []*resource.Course
+	if status := ada.Attended("-1", nil, &courses); status != http.StatusOK {
 		t.Errorf("Unable to get attended courses: %s", http.StatusText(status))
 		return
 	}
@@ -45,14 +46,14 @@ func TestAttended(t *testing.T) {
 		},
 	}
 
-	AssertDeepEqual(t, actual, expected)
+	adapter.AssertDeepEqual(t, actual, expected)
 }
 
 func BenchmarkAttended(b *testing.B) {
+	var courses []*resource.Course
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		info, status := ada.Attended("", nil)
-		_ = info
-		_ = status
+		ada.Attended("-1", nil, &courses)
 	}
 }

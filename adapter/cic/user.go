@@ -1,21 +1,24 @@
 package cic
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/tsinghua-io/api-server/adapter"
+	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/resource"
-	"io"
 	"net/http"
 )
 
-const (
-	profileURL = BaseURL + "/b/m/getStudentById"
-)
+func UserURL(_ string) string {
+	return fmt.Sprintf("%s/b/m/getStudentById", BaseURL)
+}
 
-type profileParser struct {
-	params map[string]string
-	data   struct {
+func (ada *Adapter) User(userId string, _ map[string]string, user *resource.User) (status int) {
+	if user == nil {
+		glog.Errorf("nil received")
+		return http.StatusInternalServerError
+	}
+
+	url := UserURL(userId)
+	var v struct {
 		DataSingle struct {
 			Classname string
 			Email     string
@@ -27,41 +30,22 @@ type profileParser struct {
 			Title     string
 		}
 	}
-}
 
-func (p *profileParser) Parse(r io.Reader, info interface{}) error {
-	user, ok := info.(*resource.User)
-	if !ok {
-		return fmt.Errorf("The parser and the destination type do not match.")
+	if err := ada.GetJSON("POST", url, &v); err != nil {
+		return http.StatusBadGateway
 	}
 
-	dec := json.NewDecoder(r)
-	if err := dec.Decode(&p.data); err != nil {
-		return err
+	data := v.DataSingle
+	*user = resource.User{
+		Id:         data.Id,
+		Name:       data.Name,
+		Type:       data.Title,
+		Department: data.MajorName,
+		Class:      data.Classname,
+		Gender:     data.Gender,
+		Email:      data.Email,
+		Phone:      data.Phone,
 	}
 
-	user.Id = p.data.DataSingle.Id
-	user.Name = p.data.DataSingle.Name
-	user.Type = p.data.DataSingle.Title
-	user.Department = p.data.DataSingle.MajorName
-	user.Class = p.data.DataSingle.Classname
-	user.Gender = p.data.DataSingle.Gender
-	user.Email = p.data.DataSingle.Email
-	user.Phone = p.data.DataSingle.Phone
-
-	return nil
-}
-
-func (ada *CicAdapter) Profile(username string, params map[string]string) (user *resource.User, status int) {
-	if username != "" {
-		// Not supported yet.
-		return nil, http.StatusBadRequest
-	}
-
-	// Self Profile.
-	parser := &profileParser{params: params}
-	user = &resource.User{}
-
-	status = adapter.FetchInfo(&ada.client, profileURL, "POST", parser, user)
-	return user, status
+	return http.StatusOK
 }

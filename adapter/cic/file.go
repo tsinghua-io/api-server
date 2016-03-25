@@ -1,22 +1,26 @@
 package cic
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/tsinghua-io/api-server/adapter"
+	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/resource"
-	"io"
+	"net/http"
 	"strconv"
 	"strings"
 )
 
-const (
-	CoursefilesURL = BaseURL + "/b/myCourse/tree/getCoursewareTreeData/{course_id}/0"
-)
+func FilesURL(courseId string) string {
+	return fmt.Sprintf("%s/b/myCourse/tree/getCoursewareTreeData/%s/0", BaseURL, courseId)
+}
 
-type filesParser struct {
-	params map[string]string
-	data   struct {
+func (ada *Adapter) Files(courseId string, _ map[string]string, files *[]*resource.File) (status int) {
+	if files == nil {
+		glog.Errorf("nil received")
+		return http.StatusInternalServerError
+	}
+
+	url := FilesURL(courseId)
+	var v struct {
 		ResultList map[string]struct {
 			NodeName     string
 			ChildMapData map[string]struct {
@@ -39,20 +43,12 @@ type filesParser struct {
 			}
 		}
 	}
-}
 
-func (p *filesParser) Parse(r io.Reader, info interface{}) error {
-	files, ok := info.(*[]*resource.File)
-	if !ok {
-		return fmt.Errorf("The parser and the destination type do not match.")
+	if err := ada.GetJSON("POST", url, &v); err != nil {
+		return http.StatusBadGateway
 	}
 
-	dec := json.NewDecoder(r)
-	if err := dec.Decode(&p.data); err != nil {
-		return err
-	}
-
-	for _, node1 := range p.data.ResultList {
+	for _, node1 := range v.ResultList {
 		for _, node2 := range node1.ChildMapData {
 			category := []string{
 				strings.TrimSpace(node1.NodeName),
@@ -76,21 +72,12 @@ func (p *filesParser) Parse(r io.Reader, info interface{}) error {
 					Category:    category,
 					Filename:    item.ResourcesMappingByFileId.FileName,
 					Size:        size,
-					DownloadUrl: fileID2DownloadUrl(fileId),
+					DownloadURL: DownloadURL(fileId),
 				}
 				*files = append(*files, file)
 			}
 		}
 	}
 
-	return nil
-}
-
-func (ada *CicAdapter) CourseFiles(courseId string, params map[string]string) (files []*resource.File, status int) {
-	URL := strings.Replace(CoursefilesURL, "{course_id}", courseId, -1)
-	parser := &filesParser{params: params}
-	files = []*resource.File{}
-
-	status = adapter.FetchInfo(&ada.client, URL, "GET", parser, &files)
-	return files, status
+	return http.StatusOK
 }
