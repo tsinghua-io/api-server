@@ -14,13 +14,18 @@ var (
 )
 
 func TestNewFail(t *testing.T) {
-	_, status := New("InvalidUsername", "InvalidPassword")
-	if status == http.StatusOK {
-		t.Error("Logged in using invalid username/password.")
-		return
+	if _, status := New("", ""); status == http.StatusOK {
+		t.Error("Logged in using no username or password.")
 	}
-
-	t.Log("Error received: ", http.StatusText(status))
+	if _, status := New("", "qwerty"); status == http.StatusOK {
+		t.Error("Logged in using no username.")
+	}
+	if _, status := New("2013011187", ""); status == http.StatusOK {
+		t.Error("Logged in using no password.")
+	}
+	if _, status := New("2013011187", "qwerty"); status == http.StatusOK {
+		t.Error("Logged in using invalid password.")
+	}
 }
 
 func BenchmarkNew(b *testing.B) {
