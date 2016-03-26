@@ -1,12 +1,10 @@
 package learn
 
 import (
-	"fmt"
 	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/adapter"
 	"net/http"
 	"net/url"
-	"time"
 )
 
 const (
