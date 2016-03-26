@@ -3,6 +3,7 @@ package learn
 import (
 	"fmt"
 	"github.com/golang/glog"
+	"github.com/tsinghua-io/api-server/adapter"
 	"github.com/tsinghua-io/api-server/resource"
 	"net/http"
 	"strconv"
@@ -99,7 +100,7 @@ func (ada *Adapter) Assistants(courseId string, _ map[string]string, assistants 
 	return http.StatusOK
 }
 
-func (ada *Adapter) Attended(semesterID string, params map[string]string, courses *[]*resource.Course) (status int) {
+func (ada *Adapter) attended(semesterID string, params map[string]string, courses *[]*resource.Course) (status int) {
 	if courses == nil {
 		glog.Errorf("nil received")
 		return http.StatusInternalServerError
@@ -192,12 +193,56 @@ func (ada *Adapter) Attended(semesterID string, params map[string]string, course
 		*courses = append(*courses, course)
 	}
 
-	status = http.StatusOK
 	for i := 0; i < count; i++ {
-		if s := <-statuses; s != http.StatusOK {
-			status = s
-		}
+		status = adapter.MergeStatus(status, <-statuses)
 	}
 
 	return status
+}
+
+func (ada *Adapter) Attended(userId string, params map[string]string, courses *[]*resource.Course) (status int) {
+	if userId != "" {
+		return http.StatusNotImplemented
+	}
+
+	if courses == nil {
+		glog.Errorf("nil received")
+		return http.StatusInternalServerError
+	}
+
+	// Return courses of a certain semester.
+	if semester, ok := params["semester"]; ok {
+		return ada.attended(semester, params, courses)
+	}
+
+	var past_courses, this_courses, next_courses []*resource.Course
+
+	// Past semesters.
+	past_s := make(chan int, 1)
+	go func() {
+		past_s <- ada.attended("-1", params, &past_courses)
+	}()
+
+	var this_sem, next_sem string
+	if status := ada.Semesters(&this_sem, &next_sem); status != http.StatusOK {
+		return status
+	}
+
+	// This semester.
+	this_s := make(chan int, 1)
+	go func() {
+		this_s <- ada.attended(this_sem, params, &this_courses)
+	}()
+
+	// Next semester.
+	next_s := ada.attended(next_sem, params, &next_courses)
+
+	// Merge.
+	if status := adapter.MergeStatus(<-past_s, <-this_s, next_s); status != http.StatusOK {
+		return status
+	}
+
+	*courses = append(next_courses, this_courses...)
+	*courses = append(*courses, past_courses...)
+	return http.StatusOK
 }

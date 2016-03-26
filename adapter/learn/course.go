@@ -174,11 +174,8 @@ func (ada *Adapter) attended(page int, _ map[string]string, courses *[]*resource
 		(*courses)[i] = course
 	})
 
-	status = http.StatusOK
 	for i := 0; i < rows; i++ {
-		if s := <-statuses; s != http.StatusOK {
-			status = s
-		}
+		status = adapter.MergeStatus(status, <-statuses)
 	}
 
 	return status

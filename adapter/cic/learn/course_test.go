@@ -9,7 +9,7 @@ import (
 
 func TestAttended(t *testing.T) {
 	var courses []*resource.Course
-	if status := ada.Attended("-1", nil, &courses); status != http.StatusOK {
+	if status := ada.Attended("", nil, &courses); status != http.StatusOK {
 		t.Errorf("Unable to get attended courses: %s", http.StatusText(status))
 		return
 	}
@@ -54,6 +54,6 @@ func BenchmarkAttended(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ada.Attended("-1", nil, &courses)
+		ada.Attended("", nil, &courses)
 	}
 }

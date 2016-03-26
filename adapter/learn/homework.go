@@ -204,11 +204,8 @@ func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[
 		}
 	})
 
-	status = http.StatusOK
 	for i := 0; i < count; i++ {
-		if s := <-statuses; s != http.StatusOK {
-			status = s
-		}
+		status = adapter.MergeStatus(status, <-statuses)
 	}
 
 	return status

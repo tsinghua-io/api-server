@@ -99,3 +99,12 @@ func (ada *Adapter) FileInfo(url string, filename *string, size *int) (status in
 
 	return http.StatusOK
 }
+
+func MergeStatus(statuses ...int) (status int) {
+	for _, s := range statuses {
+		if s != 0 && s != http.StatusOK {
+			return s
+		}
+	}
+	return http.StatusOK
+}

@@ -80,11 +80,8 @@ func (ada *Adapter) Files(courseId string, _ map[string]string, files *[]*resour
 		})
 	})
 
-	status = http.StatusOK
 	for i := 0; i < count; i++ {
-		if s := <-statuses; s != http.StatusOK {
-			status = s
-		}
+		status = adapter.MergeStatus(status, <-statuses)
 	}
 
 	return status
