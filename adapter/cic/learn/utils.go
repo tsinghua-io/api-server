@@ -31,3 +31,12 @@ func (ada *Adapter) Semesters(currentSemester, nextSemester *string) (status int
 
 	return http.StatusOK
 }
+
+func parseRegDate(regDate int64) string {
+	// Return empty string for 0.
+	// Will not work for 1970-01-01T08:00:00+0800.
+	if regDate == 0 {
+		return ""
+	}
+	return time.Unix(regDate/1000, 0).Format("2006-01-02T15:04:05+0800")
+}

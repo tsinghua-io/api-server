@@ -13,6 +13,10 @@ func FilesURL(courseId string) string {
 	return fmt.Sprintf("%s/b/myCourse/tree/getCoursewareTreeData/%s/0", BaseURL, courseId)
 }
 
+func DownloadURL(fileId string) string {
+	return fmt.Sprintf("%s/b/resource/downloadFileStream/%s", BaseURL, fileId)
+}
+
 func (ada *Adapter) Files(courseId string, _ map[string]string, files *[]*resource.File) (status int) {
 	if files == nil {
 		glog.Errorf("nil received")
