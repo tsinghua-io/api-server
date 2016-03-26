@@ -1,6 +1,7 @@
-package old
+package learn
 
 import (
+	"github.com/tsinghua-io/api-server/adapter"
 	"github.com/tsinghua-io/api-server/resource"
 	"net/http"
 	"testing"
@@ -18,7 +19,7 @@ func TestURL2CourseId(t *testing.T) {
 
 	for _, testInput := range testSet {
 		id, _ := URL2CourseId(testInput.courseURL)
-		AssertDeepEqual(t, id, testInput.courseId)
+		adapter.AssertDeepEqual(t, id, testInput.courseId)
 	}
 }
 
@@ -35,13 +36,13 @@ func TestCourseName2Semester(t *testing.T) {
 
 	for _, testInput := range testSet {
 		semester, _ := courseName2Semester(testInput.Name)
-		AssertDeepEqual(t, semester, testInput.Semester)
+		adapter.AssertDeepEqual(t, semester, testInput.Semester)
 	}
 }
 
 func TestAttended(t *testing.T) {
-	courses, status := ada.Attended("", nil)
-	if status != http.StatusOK {
+	var courses []*resource.Course
+	if status := ada.Attended("", nil, &courses); status != http.StatusOK {
 		t.Errorf("Unable to get attended courses: %s", http.StatusText(status))
 		return
 	}
@@ -65,30 +66,28 @@ func TestAttended(t *testing.T) {
 		},
 	}
 
-	AssertDeepEqual(t, courses[0], &testSet[0])
-	AssertDeepEqual(t, courses[len(courses)-1], &testSet[1])
-	AssertDeepEqual(t, courses[len(courses)-25], &testSet[2])
+	adapter.AssertDeepEqual(t, courses[0], &testSet[0])
+	adapter.AssertDeepEqual(t, courses[len(courses)-1], &testSet[1])
+	adapter.AssertDeepEqual(t, courses[len(courses)-25], &testSet[2])
 }
 
 func BenchmarkAttended(b *testing.B) {
+	var courses []*resource.Course
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		info, status := ada.Attended("", nil)
-		_ = info
-		_ = status
+		ada.Attended("", nil, &courses)
 	}
 }
 
 func TestCourseIdMap(t *testing.T) {
-	courses, status := ada.Attended("", nil)
-	if status != http.StatusOK {
+	actual := make(map[string]string)
+	if status := ada.CourseIdMap("", nil, actual); status != http.StatusOK {
 		t.Errorf("Unable to get attended courses: %s", http.StatusText(status))
 		return
 	}
 
-	actual := CourseIdMap(courses)
-
-	AssertDeepEqual(t, actual["2014-2015-2-40260202-0"], "")
-	AssertDeepEqual(t, actual["2014-2015-2-30230711-2"], "123510")
-	AssertDeepEqual(t, actual["2013-2014-2-10610193-18"], "108357")
+	adapter.AssertDeepEqual(t, actual["2014-2015-2-40260202-0"], "")
+	adapter.AssertDeepEqual(t, actual["2014-2015-2-30230711-2"], "123510")
+	adapter.AssertDeepEqual(t, actual["2013-2014-2-10610193-18"], "108357")
 }

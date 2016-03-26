@@ -1,4 +1,4 @@
-package old
+package learn
 
 import (
 	"github.com/tsinghua-io/api-server/resource"
@@ -42,6 +42,6 @@ import (
 // 	}
 // }
 
-func (ada *OldAdapter) Profile(_ string, _ map[string]string) (user *resource.User, status int) {
-	return nil, http.StatusNotImplemented
+func (ada *Adapter) User(_ string, _ map[string]string, _ *resource.User) (status int) {
+	return http.StatusNotImplemented
 }

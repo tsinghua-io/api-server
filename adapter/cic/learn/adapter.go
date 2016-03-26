@@ -15,8 +15,6 @@ const (
 	AuthURL     = "https://id.tsinghua.edu.cn/do/off/ui/auth/login/post/fa8077873a7a80b1cd6b185d5a796617/0?/j_spring_security_thauth_roaming_entry"
 )
 
-var parsedBaseURL, _ = url.Parse(BaseURL)
-
 type Adapter struct {
 	adapter.Adapter
 }
@@ -31,7 +29,7 @@ func New(userId, password string) (ada *Adapter, status int) {
 
 	resp, err := ada.PostForm(AuthURL, form)
 	if err != nil {
-		glog.Errorf("Failed to post login form: %s", err)
+		glog.Errorf("Failed to post login form to %s: %s", AuthURL, err)
 		return nil, http.StatusBadGateway
 	}
 	defer resp.Body.Close()

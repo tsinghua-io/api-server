@@ -1,119 +1,122 @@
-package old
+package learn
 
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/tsinghua-io/api-server/adapter"
+	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/resource"
 	"golang.org/x/net/html"
-	"io"
 	"net/http"
 	"net/url"
-	"strings"
 )
 
-const (
-	announcementBodyURL    = BaseURL + "/MultiLanguage/public/bbs/note_reply.jsp?bbs_type=课程公告&id={id}&course_id={course_id}"
-	courseAnnouncementsURL = BaseURL + "/MultiLanguage/public/bbs/getnoteid_student.jsp?course_id={course_id}"
-)
-
-type announcementBodyParser struct {
-	params map[string]string
+func AnnouncementBodyURL(courseId, id string) string {
+	return fmt.Sprintf("%s/MultiLanguage/public/bbs/note_reply.jsp?bbs_type=课程公告&course_id=%s&id=%s", BaseURL, courseId, id)
 }
 
-func (p *announcementBodyParser) Parse(r io.Reader, info interface{}) error {
-	body, ok := info.(*string)
-	if !ok {
-		return fmt.Errorf("The parser and the destination type do not match.")
+func AnnouncementsURL(courseId string) string {
+	return fmt.Sprintf("%s/MultiLanguage/public/bbs/getnoteid_student.jsp?course_id=%s", BaseURL, courseId)
+}
+
+func (ada *Adapter) AnnouncementBody(courseId, id string, _ map[string]string, body *string) (status int) {
+	if body == nil {
+		glog.Errorf("nil received")
+		return http.StatusInternalServerError
 	}
 
-	doc, err := goquery.NewDocumentFromReader(r)
+	url := AnnouncementBodyURL(courseId, id)
+	doc, err := ada.GetDocument(url)
 	if err != nil {
-		return err
+		return http.StatusBadGateway
 	}
 
 	tempBody, err := doc.Find("tr[height='300'] td.tr_l2").Html()
 	if err != nil {
-		return err
+		return http.StatusBadGateway
 	}
 	*body = tempBody
-	return nil
+
+	return http.StatusOK
 }
 
-type courseAnnouncementsParser struct {
-	params   map[string]string
-	courseId string
-}
-
-func (p *courseAnnouncementsParser) Parse(r io.Reader, info interface{}) error {
-	announcements, ok := info.(*[]*resource.Announcement)
-	if !ok {
-		return fmt.Errorf("The parser and the destination type do not match.")
+func (ada *Adapter) Announcements(courseId string, _ map[string]string, announcements *[]*resource.Announcement) (status int) {
+	if announcements == nil {
+		glog.Errorf("nil received")
+		return http.StatusInternalServerError
 	}
 
-	doc, err := goquery.NewDocumentFromReader(r)
+	url := AnnouncementsURL(courseId)
+	doc, err := ada.GetDocument(url)
 	if err != nil {
-		return err
+		return http.StatusBadGateway
 	}
 
 	rows := doc.Find("tr.tr1, tr.tr2")
 	*announcements = make([]*resource.Announcement, rows.Size())
 
 	// Parse each row.
-	rows.EachWithBreak(func(i int, s *goquery.Selection) bool {
-		annc := &resource.Announcement{}
-		annc.CourseId = p.courseId
+	statuses := make(chan int, 1)
 
-		if err = parseAnnouncementsRow(s, annc); err != nil {
-			return false
-		}
+	rows.Each(func(i int, s *goquery.Selection) {
+		annc := &resource.Announcement{CourseId: courseId}
+		go func() {
+			statuses <- ada.parseAnnouncementsRow(s, annc)
+		}()
 		(*announcements)[i] = annc
-		return true
 	})
-	return err
+
+	status = http.StatusOK
+	for i := 0; i < rows.Size(); i++ {
+		if s := <-statuses; s != http.StatusOK {
+			status = s
+		}
+	}
+
+	return status
 }
 
-func parseAnnouncementsRow(s *goquery.Selection, annc *resource.Announcement) error {
+func (ada *Adapter) parseAnnouncementsRow(s *goquery.Selection, annc *resource.Announcement) (status int) {
 	infos := s.Find("td").Map(func(i int, tdSelection *goquery.Selection) (info string) {
 		info, _ = tdSelection.Html()
-		return
+		return info
 	})
 	if len(infos) < 5 {
-		return fmt.Errorf("No enough cols: %d", len(infos))
+		glog.Errorf("No enough cols: %d", len(infos))
+		return http.StatusBadGateway
 	}
 
 	hrefSelection := s.Find("td a")
 	href, exists := hrefSelection.Attr("href")
 	if !exists {
-		return fmt.Errorf("href not found")
+		glog.Errorf("href not found")
+		return http.StatusBadGateway
 	}
-	hrefUrl, err := url.Parse(href)
+	hrefURL, err := url.Parse(href)
 	if err != nil {
-		return err
+		glog.Errorf("Failed to parse href (%s): %s", href, err)
+		return http.StatusBadGateway
 	}
 
-	// id.
-	id := hrefUrl.Query().Get("id")
+	// Id.
+	id := hrefURL.Query().Get("id")
 	if id == "" {
-		return fmt.Errorf("Cannot get id from %s", hrefUrl)
+		glog.Errorf("Cannot get id from %s", hrefURL)
+		return http.StatusBadGateway
 	}
 
-	// title & priority
+	// Title & priority.
 	var priority int
-	var title string
 	switch hrefSelection.Nodes[0].FirstChild.Type {
 	case html.TextNode:
 		priority = 0
-		title, err = hrefSelection.Html()
-		if err != nil {
-			return err
-		}
 	default:
 		priority = 1
-		title, err = hrefSelection.Children().Html()
-		if err != nil {
-			return err
-		}
+	}
+
+	// Body.
+	var body string
+	if status := ada.AnnouncementBody(annc.CourseId, id, nil, &body); status != http.StatusOK {
+		return status
 	}
 
 	// We are safe.
@@ -121,39 +124,8 @@ func parseAnnouncementsRow(s *goquery.Selection, annc *resource.Announcement) er
 	annc.Owner = &resource.User{Name: infos[2]}
 	annc.CreatedAt = infos[3]
 	annc.Priority = priority
-	annc.Read = true
-	annc.Title = title
+	annc.Title = hrefSelection.Text()
+	annc.Body = body
 
-	return nil
-}
-
-func (ada *OldAdapter) CourseAnnouncements(courseId string, params map[string]string) (announcements []*resource.Announcement, status int) {
-	URL := strings.Replace(courseAnnouncementsURL, "{course_id}", courseId, -1)
-	parser := &courseAnnouncementsParser{params: params, courseId: courseId}
-
-	if status = adapter.FetchInfo(&ada.client, URL, "GET", parser, &announcements); status != http.StatusOK {
-		return nil, status
-	}
-	count := len(announcements)
-	statuses := make(chan int, count)
-
-	URL = strings.Replace(announcementBodyURL, "{course_id}", courseId, -1)
-	for _, annc := range announcements {
-		annc := annc
-
-		go func() {
-			URL := strings.Replace(URL, "{id}", annc.Id, -1)
-			parser := &announcementBodyParser{params: params}
-			statuses <- adapter.FetchInfo(&ada.client, URL, "GET", parser, &annc.Body)
-		}()
-	}
-
-	// Drain the channel.
-	for i := 0; i < count; i++ {
-		if status = <-statuses; status != http.StatusOK {
-			return nil, status
-		}
-	}
-
-	return
+	return http.StatusOK
 }

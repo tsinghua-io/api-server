@@ -1,42 +1,38 @@
-package old
+package learn
 
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/golang/glog"
-	"github.com/tsinghua-io/api-server/adapter"
 	"github.com/tsinghua-io/api-server/resource"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
 )
 
-const (
-	courseFileURL = BaseURL + "/MultiLanguage/lesson/student/download.jsp?course_id={course_id}"
-)
-
-type courseFilesParser struct {
-	params   map[string]string
-	courseId string
+func FilesURL(courseId string) string {
+	return fmt.Sprintf("%s/MultiLanguage/lesson/student/download.jsp?course_id=%s", BaseURL, courseId)
 }
 
-func (p *courseFilesParser) Parse(r io.Reader, info interface{}) error {
-	files, ok := info.(*[]*resource.File)
-	if !ok {
-		return fmt.Errorf("The parser and the destination type do not match.")
+func (ada *Adapter) Files(courseId string, _ map[string]string, files *[]*resource.File) (status int) {
+	if files == nil {
+		glog.Errorf("nil received")
+		return http.StatusInternalServerError
 	}
 
-	doc, err := goquery.NewDocumentFromReader(r)
+	doc, err := ada.GetDocument(FilesURL(courseId))
 	if err != nil {
-		return err
+		return http.StatusBadGateway
 	}
 
 	// Find all categories
 	categories := doc.Find("td.textTD").Map(func(i int, s *goquery.Selection) (info string) {
 		info = strings.TrimSpace(s.Text())
-		return
+		return info
 	})
+
+	statuses := make(chan int, 1)
+	count := 0
 
 	categoryDivs := doc.Find("div.layerbox")
 	categoryDivs.Each(func(i int, div *goquery.Selection) {
@@ -45,7 +41,7 @@ func (p *courseFilesParser) Parse(r io.Reader, info interface{}) error {
 		trs.Each(func(i int, s *goquery.Selection) {
 			infos := s.Find("td").Map(func(i int, tdSelection *goquery.Selection) (info string) {
 				info = strings.TrimSpace(tdSelection.Text())
-				return
+				return info
 			})
 
 			hrefSelection := s.Find("td a")
@@ -64,54 +60,32 @@ func (p *courseFilesParser) Parse(r io.Reader, info interface{}) error {
 				title := strings.TrimSpace(hrefSelection.Text())
 				file := &resource.File{
 					Id:          fileId,
-					CourseId:    p.courseId,
+					CourseId:    courseId,
 					CreatedAt:   infos[4],
 					Title:       title,
 					Description: infos[2],
 					Category:    []string{category},
-					DownloadUrl: BaseURL + href,
+					DownloadURL: BaseURL + href,
 				}
+
+				// Get file info.
+				count++
+				go func() {
+					statuses <- ada.FileInfo(file.DownloadURL, &file.Filename, &file.Size)
+				}()
 
 				*files = append(*files, file)
 			}
+
 		})
 	})
 
-	return nil
-}
-
-func (ada *OldAdapter) CourseFiles(courseId string, params map[string]string) (files []*resource.File, status int) {
-	URL := strings.Replace(courseFileURL, "{course_id}", courseId, -1)
-	parser := &courseFilesParser{params: params, courseId: courseId}
-
-	if status = adapter.FetchInfo(&ada.client, URL, "GET", parser, &files); status != http.StatusOK {
-		return nil, status
-	}
-	count := len(files)
-	statuses := make(chan int, count)
-
-	for _, file := range files {
-		file := file
-
-		go func() {
-			filename, size, err := ParseFileInfo(ada.client, file.DownloadUrl)
-			if err != nil {
-				glog.Errorf("Failed to parse file info of %s: %s", file.DownloadUrl, err)
-				statuses <- http.StatusBadGateway
-			}
-			file.Filename = filename
-			file.Size = size
-			statuses <- http.StatusOK
-		}()
-	}
-
-	// Drain the channel.
+	status = http.StatusOK
 	for i := 0; i < count; i++ {
-
-		if status = <-statuses; status != http.StatusOK {
-			return nil, status
+		if s := <-statuses; s != http.StatusOK {
+			status = s
 		}
 	}
 
-	return
+	return status
 }

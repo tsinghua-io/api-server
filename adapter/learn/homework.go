@@ -1,107 +1,97 @@
-package old
+package learn
 
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/golang/glog"
-	"github.com/tsinghua-io/api-server/adapter"
 	"github.com/tsinghua-io/api-server/resource"
-	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 )
 
-const (
-	homeworkDetailURL = BaseURL + "/MultiLanguage/lesson/student/hom_wk_detail.jsp?id={homework_id}&course_id={course_id}"
-	submissionURL     = BaseURL + "/MultiLanguage/lesson/student/hom_wk_view.jsp?id={homework_id}&course_id={course_id}"
-	courseHomeworkURL = BaseURL + "/MultiLanguage/lesson/student/hom_wk_brw.jsp?course_id={course_id}&language=cn"
-)
-
-func NewFloat32(f float32) *float32 {
-	return &f
+func HomeworkDetailURL(courseId, homeworkId string) string {
+	return fmt.Sprintf("%s/MultiLanguage/lesson/student/hom_wk_detail.jsp?id=%s&course_id=%s", BaseURL, homeworkId, courseId)
 }
 
-func (ada *OldAdapter) fillAttachment(attachment *resource.Attachment) {
-	if attachment == nil {
-		return
+func SubmissionURL(courseId, homeworkId string) string {
+	return fmt.Sprintf("%s/MultiLanguage/lesson/student/hom_wk_view.jsp?id=%s&course_id=%s", BaseURL, homeworkId, courseId)
+}
+
+func HomeworksURL(courseId string) string {
+	return fmt.Sprintf("%s/MultiLanguage/lesson/student/hom_wk_brw.jsp?course_id=%s&language=cn", BaseURL, courseId)
+}
+
+func (ada *Adapter) HomeworkDetail(courseId, id string, _ map[string]string, homework *resource.Homework) (status int) {
+	if homework == nil {
+		glog.Errorf("nil received")
+		return http.StatusInternalServerError
 	}
 
-	filename, size, err := ParseFileInfo(ada.client, attachment.DownloadUrl)
+	url := HomeworkDetailURL(courseId, id)
+	doc, err := ada.GetDocument(url)
 	if err != nil {
-		glog.Errorf("Failed to parse file info from %s: %s", attachment.DownloadUrl, err)
-		return
-	}
-	attachment.Filename = filename
-	attachment.Size = size
-
-	return
-}
-
-type homeworkDetailParser struct {
-	params map[string]string
-}
-
-func (p *homeworkDetailParser) Parse(r io.Reader, info interface{}) error {
-	hw, ok := info.(*resource.Homework)
-	if !ok {
-		return fmt.Errorf("The parser and the destination type do not match.")
-	}
-
-	doc, err := goquery.NewDocumentFromReader(r)
-	if err != nil {
-		return err
+		return http.StatusBadGateway
 	}
 
 	// Body.
 	bodyTr := doc.Find("table#table_box tr:nth-child(2)")
 	if bodyTr.Size() == 0 {
-		return fmt.Errorf("Failed to find the body of the homework.")
+		glog.Errorf("Failed to find the body of the homework.")
+		return http.StatusBadGateway
 	}
 	body := bodyTr.Find("td ~ td").First().Children().Text()
 
 	// Attachment.
-	var attachment *resource.Attachment
+	var attach *resource.Attachment
 	hrefSelection := bodyTr.Next().Find("td a")
 	if fileHref, _ := hrefSelection.Attr("href"); fileHref != "" {
-		attachment = &resource.Attachment{DownloadUrl: BaseURL + fileHref}
+		url := BaseURL + fileHref
+		attach = &resource.Attachment{DownloadURL: url}
+		if status := ada.FileInfo(url, &attach.Filename, &attach.Size); status != http.StatusOK {
+			return status
+		}
 	}
 
 	// We are safe.
-	hw.Body = body
-	hw.Attachment = attachment
-	return nil
+	homework.Body = body
+	homework.Attachment = attach
+	return http.StatusOK
 }
 
-type submissionParser struct {
-	params map[string]string
-}
-
-func (p *submissionParser) Parse(r io.Reader, info interface{}) error {
-	submission, ok := info.(*resource.Submission)
-	if !ok {
-		return fmt.Errorf("The parser and the destination type do not match.")
+func (ada *Adapter) Submission(courseId, id string, _ map[string]string, submission *resource.Submission) (status int) {
+	if submission == nil {
+		glog.Errorf("nil received")
+		return http.StatusInternalServerError
 	}
 
-	doc, err := goquery.NewDocumentFromReader(r)
+	url := SubmissionURL(courseId, id)
+	doc, err := ada.GetDocument(url)
 	if err != nil {
-		return err
+		return http.StatusBadGateway
 	}
 
 	tableSelection := doc.Find("#table_box")
 	if tableSelection.Length() == 0 {
-		return fmt.Errorf("#table_box not found in submission page")
+		glog.Errorf("#table_box not found in submission page")
+		return http.StatusBadGateway
 	}
 
 	// Body
 	infoTr := tableSelection.Find("tr:nth-child(2)")
 	submission.Body = infoTr.Find("td.title+td").Children().Text()
+
 	// Attachment
 	infoTr = infoTr.Next()
 	hrefSelection := infoTr.Find("td a")
 	if fileHref, _ := hrefSelection.Attr("href"); fileHref != "" {
-		submission.Attachment = &resource.Attachment{DownloadUrl: BaseURL + fileHref}
+		url := BaseURL + fileHref
+		attach := &resource.Attachment{DownloadURL: url}
+		if status := ada.FileInfo(url, &attach.Filename, &attach.Size); status != http.StatusOK {
+			return status
+		}
+		submission.Attachment = attach
 	}
 
 	// Markuser and Markedat
@@ -110,6 +100,7 @@ func (p *submissionParser) Parse(r io.Reader, info interface{}) error {
 		info = strings.TrimSpace(s.Text())
 		return
 	})
+
 	// Mark
 	infoTr = infoTr.Next() // score tr
 	score, _ := infoTr.Find("td.title+td").Html()
@@ -119,12 +110,16 @@ func (p *submissionParser) Parse(r io.Reader, info interface{}) error {
 			Name: strings.TrimSpace(infos[0]),
 		}
 	}
+
 	if markedAt := infos[1]; markedAt != "null" {
+		submission.Marked = true
 		submission.MarkedAt = markedAt
 		if score := strings.TrimSpace(score); strings.Contains(score, "分") {
-			if mark, err := strconv.ParseFloat(strings.TrimSuffix(score, "分"), 32); err == nil {
-				f := float32(mark)
-				submission.Mark = &f
+			if mark, err := strconv.ParseFloat(strings.TrimSuffix(score, "分"), 32); err != nil {
+				glog.Errorf("Failed to prase %s into mark: %s", score, err)
+				return http.StatusBadGateway
+			} else {
+				submission.Mark = float32(mark)
 			}
 		}
 	}
@@ -137,35 +132,38 @@ func (p *submissionParser) Parse(r io.Reader, info interface{}) error {
 	infoTr = infoTr.Next()
 	hrefSelection = infoTr.Find("td a")
 	if fileHref, _ := hrefSelection.Attr("href"); fileHref != "" {
-		submission.CommentAttachment = &resource.Attachment{DownloadUrl: BaseURL + fileHref}
+		url := BaseURL + fileHref
+		attach := &resource.Attachment{DownloadURL: url}
+		if status := ada.FileInfo(url, &attach.Filename, &attach.Size); status != http.StatusOK {
+			return status
+		}
+		submission.CommentAttachment = attach
 	}
 
-	return nil
+	return http.StatusOK
 }
 
-type courseHomeworkParser struct {
-	params   map[string]string
-	courseId string
-}
-
-func (p *courseHomeworkParser) Parse(r io.Reader, info interface{}) error {
-	homework, ok := info.(*[]*resource.Homework)
-	if !ok {
-		return fmt.Errorf("The parser and the destination type do not match.")
+func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[]*resource.Homework) (status int) {
+	if homeworks == nil {
+		glog.Errorf("nil received")
+		return http.StatusInternalServerError
 	}
 
-	doc, err := goquery.NewDocumentFromReader(r)
+	doc, err := ada.GetDocument(HomeworksURL(courseId))
 	if err != nil {
-		return err
+		return http.StatusBadGateway
 	}
 
 	trs := doc.Find("tr.tr1, tr.tr2")
-	*homework = make([]*resource.Homework, trs.Size())
+	*homeworks = make([]*resource.Homework, trs.Size())
+
+	statuses := make(chan int, 1)
+	count := 0
 
 	trs.Each(func(i int, s *goquery.Selection) {
 		infos := s.Find("td").Map(func(i int, tdSelection *goquery.Selection) (info string) {
 			info = strings.TrimSpace(tdSelection.Text())
-			return
+			return info
 		})
 
 		hrefSelection := s.Find("td a")
@@ -184,68 +182,34 @@ func (p *courseHomeworkParser) Parse(r io.Reader, info interface{}) error {
 
 			hw := &resource.Homework{
 				Id:       homeworkId,
-				CourseId: p.courseId,
+				CourseId: courseId,
 				BeginAt:  infos[1],
 				DueAt:    infos[2],
 				Title:    title,
 			}
+
+			// Detile.
+			count++
+			go func() {
+				statuses <- ada.HomeworkDetail(courseId, homeworkId, nil, hw)
+			}()
 			if infos[3] != "尚未提交" {
 				hw.Submissions = append(hw.Submissions, &resource.Submission{HomeworkId: homeworkId})
+				count++
+				go func() {
+					statuses <- ada.Submission(courseId, homeworkId, nil, hw.Submissions[0])
+				}()
 			}
-			(*homework)[i] = hw
+			(*homeworks)[i] = hw
 		}
 	})
 
-	return nil
-}
-
-func (ada *OldAdapter) CourseHomework(courseId string, params map[string]string) (homework []*resource.Homework, status int) {
-	URL := strings.Replace(courseHomeworkURL, "{course_id}", courseId, -1)
-	homeworkDetailURL := strings.Replace(homeworkDetailURL, "{course_id}", courseId, -1)
-	submissionURL := strings.Replace(submissionURL, "{course_id}", courseId, -1)
-	parser := &courseHomeworkParser{params: params, courseId: courseId}
-
-	if status = adapter.FetchInfo(&ada.client, URL, "GET", parser, &homework); status != http.StatusOK {
-		return nil, status
-	}
-	count := len(homework)
-	chanSize := 2 * count
-	statuses := make(chan int, chanSize)
-
-	for _, hw := range homework {
-		hw := hw
-
-		go func() {
-			URL := strings.Replace(homeworkDetailURL, "{homework_id}", hw.Id, -1)
-			parser := &homeworkDetailParser{params: params}
-
-			status := adapter.FetchInfo(&ada.client, URL, "GET", parser, hw)
-			ada.fillAttachment(hw.Attachment)
-			statuses <- status
-		}()
-
-		go func() {
-			if len(hw.Submissions) == 0 {
-				statuses <- http.StatusOK
-				return
-			}
-			submission := hw.Submissions[0]
-			URL := strings.Replace(submissionURL, "{homework_id}", hw.Id, -1)
-			parser := &submissionParser{params: params}
-
-			status := adapter.FetchInfo(&ada.client, URL, "GET", parser, submission)
-			ada.fillAttachment(submission.Attachment)
-			ada.fillAttachment(submission.CommentAttachment)
-			statuses <- status
-		}()
-	}
-
-	// Drain the channel.
-	for i := 0; i < chanSize; i++ {
-		if status = <-statuses; status != http.StatusOK {
-			return nil, status
+	status = http.StatusOK
+	for i := 0; i < count; i++ {
+		if s := <-statuses; s != http.StatusOK {
+			status = s
 		}
 	}
 
-	return
+	return status
 }
