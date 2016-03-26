@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/golang/glog"
+	"github.com/tsinghua-io/api-server/adapter"
 	"github.com/tsinghua-io/api-server/resource"
 	"net/http"
 	"net/url"
