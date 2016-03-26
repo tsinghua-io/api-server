@@ -54,7 +54,12 @@ func (ada *Adapter) GetJSON(method, url string, v interface{}) error {
 	defer resp.Body.Close()
 
 	dec := json.NewDecoder(resp.Body)
-	return dec.Decode(v)
+	if err := dec.Decode(v); err != nil {
+		glog.Errorf("Unable to decode JSON: %s", err)
+		return err
+	}
+
+	return nil
 }
 
 func (ada *Adapter) FileInfo(url string, filename *string, size *int) (status int) {

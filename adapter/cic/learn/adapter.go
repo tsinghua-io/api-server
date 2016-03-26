@@ -1,18 +1,17 @@
 package learn
 
 import (
+	"fmt"
 	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/adapter"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
 const (
-	BaseURL     = "http://learn.cic.tsinghua.edu.cn"
-	downloadURL = BaseURL + "/b/resource/downloadFileStream/{file_id}"
-	AuthURL     = "https://id.tsinghua.edu.cn/do/off/ui/auth/login/post/fa8077873a7a80b1cd6b185d5a796617/0?/j_spring_security_thauth_roaming_entry"
+	BaseURL = "http://learn.cic.tsinghua.edu.cn"
+	AuthURL = "https://id.tsinghua.edu.cn/do/off/ui/auth/login/post/fa8077873a7a80b1cd6b185d5a796617/0?/j_spring_security_thauth_roaming_entry"
 )
 
 type Adapter struct {
@@ -53,5 +52,5 @@ func parseRegDate(regDate int64) string {
 }
 
 func DownloadURL(fileId string) string {
-	return strings.Replace(downloadURL, "{file_id}", fileId, -1)
+	return fmt.Sprintf("%s/b/resource/downloadFileStream/%s", BaseURL, fileId)
 }
