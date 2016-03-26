@@ -1,8 +1,8 @@
-package mixed
+package learn
 
 import (
-	"github.com/tsinghua-io/api-server/adapter/cic"
-	"github.com/tsinghua-io/api-server/adapter/old"
+	"github.com/tsinghua-io/api-server/adapter/cic/learn"
+	"github.com/tsinghua-io/api-server/adapter/learn"
 	"github.com/tsinghua-io/api-server/resource"
 	"net/http"
 	"strings"

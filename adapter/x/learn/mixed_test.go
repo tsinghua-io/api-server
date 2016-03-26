@@ -1,4 +1,4 @@
-package mixed
+package learn
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	username = "lisihan13"
+	username = "2013011187"
 )
 
 var (
