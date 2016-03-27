@@ -14,8 +14,11 @@ type API struct {
 }
 
 func New(middlewares ...Middleware) *API {
+	r := mux.NewRouter()
+	r.NotFoundHandler = new(resource.NotFoundHandler)
+
 	return &API{
-		Router:      mux.NewRouter(),
+		Router:      r,
 		middlewares: middlewares,
 	}
 }

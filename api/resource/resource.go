@@ -9,6 +9,12 @@ import (
 	"strings"
 )
 
+type NotFoundHandler struct{}
+
+func (h *NotFoundHandler) ServeHTTP(rw http.ResponseWriter, _ *http.Request) {
+	rw.WriteHeader(http.StatusNotFound)
+}
+
 const (
 	GET    = "GET"
 	POST   = "POST"
@@ -102,7 +108,7 @@ func HandlerFunc(r interface{}) http.HandlerFunc {
 		if handler == nil {
 			if supported := SupportedMethods(r); len(supported) == 0 {
 				// The resource does not exist at all.
-				rw.WriteHeader(http.StatusNotFound)
+				new(NotFoundHandler).ServeHTTP(rw, req)
 			} else {
 				// We have other methods available, tell client.
 				rw.Header().Set("Allow", strings.Join(supported, ", "))
