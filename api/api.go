@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/gorilla/mux"
+	"github.com/justinas/alice"
 	"net/http"
 )
 
@@ -11,38 +12,29 @@ func (h *NotFoundHandler) ServeHTTP(rw http.ResponseWriter, _ *http.Request) {
 	rw.WriteHeader(http.StatusNotFound)
 }
 
-type Middleware func(http.Handler) http.Handler
-
 type API struct {
-	*mux.Router
-	middlewares []Middleware
+	router *mux.Router
+	chain  alice.Chain
 }
 
-func New(middlewares ...Middleware) *API {
+func New(constructors ...alice.Constructor) *API {
 	r := mux.NewRouter()
 	r.NotFoundHandler = new(NotFoundHandler)
 
 	return &API{
-		Router:      r,
-		middlewares: middlewares,
+		router: r,
+		chain:  alice.New(constructors...),
 	}
 }
 
-func (api *API) Use(middlewares ...Middleware) {
-	api.middlewares = append(api.middlewares, middlewares...)
+func (api *API) Use(constructors ...alice.Constructor) {
+	api.chain = api.chain.Append(constructors...)
 }
 
 func (api *API) AddResource(path string, r interface{}) *mux.Route {
-	return api.HandleFunc(path, HandlerFunc(r))
+	return api.router.HandleFunc(path, HandlerFunc(r))
 }
 
 func (api *API) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	var handler http.Handler
-	handler = api.Router
-
-	for i := len(api.middlewares) - 1; i >= 0; i-- {
-		handler = api.middlewares[i](handler)
-	}
-
-	handler.ServeHTTP(rw, req)
+	api.chain.Then(api.router).ServeHTTP(rw, req)
 }
