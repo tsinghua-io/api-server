@@ -1,37 +1,22 @@
-/*
-Api server in go
-*/
-
 package main
 
 import (
 	"flag"
-	"github.com/NYTimes/gziphandler"
 	"github.com/golang/glog"
-	"github.com/tsinghua-io/api-server/agent"
-	"github.com/tsinghua-io/api-server/webapp"
+	"github.com/tsinghua-io/api-server/api"
 	"net/http"
+	"strconv"
 )
-
-const (
-	ADDRESS = "127.0.0.1:8080"
-)
-
-func BindRoute(app *webapp.WebApp) {
-	app.UseAgent(&agent.UserAgent)
-	app.UseMiddleware(agent.GetUserSession)
-	app.UseMiddleware(agent.SetContentType)
-	app.UseMiddleware(gziphandler.GzipHandler)
-}
 
 func main() {
+	host := flag.String("host", "", "Host of the server")
+	port := flag.Int("port", 8000, "Port of the server")
 	flag.Parse()
 
-	app := webapp.NewWebApp()
-	BindRoute(app)
-	http.Handle("/", app)
-	err := http.ListenAndServe(ADDRESS, nil)
-	if err != nil {
-		glog.Fatalln("Error occured when lauching server: \n", err)
-	}
+	api := api.New()
+
+	addr := *host + ":" + strconv.Itoa(*port)
+	glog.Infof("Starting server on %s", addr)
+	err := http.ListenAndServe(addr, api)
+	glog.Fatalf("Shutting down: %s", err)
 }
