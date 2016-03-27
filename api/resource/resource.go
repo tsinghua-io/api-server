@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"bytes"
 	"compress/gzip"
 	"encoding/json"
 	"github.com/golang/glog"
@@ -104,8 +105,8 @@ func HandlerFunc(r interface{}) http.HandlerFunc {
 				rw.WriteHeader(http.StatusNotFound)
 			} else {
 				// We have other methods available, tell client.
-				rw.WriteHeader(http.StatusMethodNotAllowed)
 				rw.Header().Set("Allow", strings.Join(supported, ", "))
+				rw.WriteHeader(http.StatusMethodNotAllowed)
 			}
 			return
 		}
@@ -114,13 +115,20 @@ func HandlerFunc(r interface{}) http.HandlerFunc {
 		// Return gzipped data.
 		rw.Header().Set("Content-Type", "application/json; charset=utf-8")
 		rw.Header().Set("Content-Encoding", "gzip")
-		encoder := json.NewEncoder(gzip.NewWriter(rw))
 
-		if err := encoder.Encode(data); err != nil {
+		buffer := new(bytes.Buffer)
+		gz := gzip.NewWriter(buffer)
+		err := json.NewEncoder(gz).Encode(data)
+		gz.Close()
+
+		if err != nil {
 			glog.Errorf("Failed to marshal data into JSON: %s", err)
 			rw.WriteHeader(http.StatusInternalServerError)
-		} else {
-			rw.WriteHeader(code)
+			return
 		}
+
+		// Encoded, send it.
+		rw.WriteHeader(code)
+		rw.Write(buffer.Bytes())
 	}
 }
