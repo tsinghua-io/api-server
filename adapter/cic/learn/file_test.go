@@ -1,25 +1,25 @@
 package learn
 
 import (
-	"github.com/tsinghua-io/api-server/adapter"
-	"github.com/tsinghua-io/api-server/resource"
+	"github.com/tsinghua-io/api-server/model"
+	"github.com/tsinghua-io/api-server/util"
 	"net/http"
 	"testing"
 )
 
 func TestFiles(t *testing.T) {
-	var actual []*resource.File
+	var actual []*model.File
 	if status := ada.Files("2014-2015-1-20750021-97", nil, &actual); status != http.StatusOK {
 		t.Errorf("Unable to get files: %s", http.StatusText(status))
 		return
 	}
 
 	// Check fetched data.
-	expected := []*resource.File{
+	expected := []*model.File{
 		{
 			Id:          "2004980851_2014-2015-1-20750021-97_KJ_1411486091",
 			CourseId:    "2014-2015-1-20750021-97",
-			Owner:       &resource.User{Id: "2004980851", Name: "王媛"},
+			Owner:       &model.User{Id: "2004980851", Name: "王媛"},
 			CreatedAt:   "2014-09-23T23:28:13+0800",
 			Title:       "全面认识文献信息源1",
 			Description: "本讲中提到的工具：图书馆主页、馆藏目录、超星电子图书、读秀学术搜索、FirstSearch中的WorldCat联合目录。",
@@ -31,7 +31,7 @@ func TestFiles(t *testing.T) {
 		{
 			Id:          "2004980851_2014-2015-1-20750021-97_KJ_1413292186",
 			CourseId:    "2014-2015-1-20750021-97",
-			Owner:       &resource.User{Id: "2004980851", Name: "王媛"},
+			Owner:       &model.User{Id: "2004980851", Name: "王媛"},
 			CreatedAt:   "2014-10-14T21:09:47+0800",
 			Title:       "全面认识文献信息源2",
 			Description: "",
@@ -43,7 +43,7 @@ func TestFiles(t *testing.T) {
 		{
 			Id:          "2004980851_2014-2015-1-20750021-97_KJ_1413292258",
 			CourseId:    "2014-2015-1-20750021-97",
-			Owner:       &resource.User{Id: "2004980851", Name: "王媛"},
+			Owner:       &model.User{Id: "2004980851", Name: "王媛"},
 			CreatedAt:   "2014-10-14T21:10:58+0800",
 			Title:       "文献调研1",
 			Description: "",
@@ -55,7 +55,7 @@ func TestFiles(t *testing.T) {
 		{
 			Id:          "2004980851_2014-2015-1-20750021-97_KJ_1414651951",
 			CourseId:    "2014-2015-1-20750021-97",
-			Owner:       &resource.User{Id: "2004980851", Name: "王媛"},
+			Owner:       &model.User{Id: "2004980851", Name: "王媛"},
 			CreatedAt:   "2014-10-30T14:52:32+0800",
 			Title:       "文献调研SCI",
 			Description: "",
@@ -67,7 +67,7 @@ func TestFiles(t *testing.T) {
 		{
 			Id:          "2004980851_2014-2015-1-20750021-97_KJ_1414652071",
 			CourseId:    "2014-2015-1-20750021-97",
-			Owner:       &resource.User{Id: "2004980851", Name: "王媛"},
+			Owner:       &model.User{Id: "2004980851", Name: "王媛"},
 			CreatedAt:   "2014-10-30T14:54:31+0800",
 			Title:       "文献调研EI",
 			Description: "",
@@ -78,11 +78,11 @@ func TestFiles(t *testing.T) {
 		},
 	}
 
-	adapter.AssertDeepEqual(t, actual, expected)
+	util.AssertDeepEqual(t, actual, expected)
 }
 
 func BenchmarkFiles(b *testing.B) {
-	var files []*resource.File
+	var files []*model.File
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

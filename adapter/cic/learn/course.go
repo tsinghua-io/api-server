@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/adapter"
-	"github.com/tsinghua-io/api-server/resource"
+	"github.com/tsinghua-io/api-server/model"
 	"net/http"
 	"strconv"
 )
@@ -21,7 +21,7 @@ func AttendedURL(semesterID string) string {
 	return fmt.Sprintf("%s/b/myCourse/courseList/loadCourse4Student/%s", BaseURL, semesterID)
 }
 
-func (ada *Adapter) TimeLocations(courseId string, _ map[string]string, timeLocations *[]*resource.TimeLocation) (status int) {
+func (ada *Adapter) TimeLocations(courseId string, _ map[string]string, timeLocations *[]*model.TimeLocation) (status int) {
 	if timeLocations == nil {
 		glog.Errorf("nil received")
 		return http.StatusInternalServerError
@@ -51,7 +51,7 @@ func (ada *Adapter) TimeLocations(courseId string, _ map[string]string, timeLoca
 			return http.StatusBadGateway
 		}
 
-		timeLocation := &resource.TimeLocation{
+		timeLocation := &model.TimeLocation{
 			Weeks:       result.Skzc,
 			DayOfWeek:   dayOfWeek,
 			PeriodOfDay: periodOfDay,
@@ -63,7 +63,7 @@ func (ada *Adapter) TimeLocations(courseId string, _ map[string]string, timeLoca
 	return http.StatusOK
 }
 
-func (ada *Adapter) Assistants(courseId string, _ map[string]string, assistants *[]*resource.User) (status int) {
+func (ada *Adapter) Assistants(courseId string, _ map[string]string, assistants *[]*model.User) (status int) {
 	if assistants == nil {
 		glog.Errorf("nil received")
 		return http.StatusInternalServerError
@@ -86,7 +86,7 @@ func (ada *Adapter) Assistants(courseId string, _ map[string]string, assistants 
 	}
 
 	for _, result := range v.ResultList {
-		assistant := &resource.User{
+		assistant := &model.User{
 			Id:         result.Id,
 			Name:       result.Name,
 			Department: result.Dwmc,
@@ -100,7 +100,7 @@ func (ada *Adapter) Assistants(courseId string, _ map[string]string, assistants 
 	return http.StatusOK
 }
 
-func (ada *Adapter) attended(semesterID string, params map[string]string, courses *[]*resource.Course) (status int) {
+func (ada *Adapter) attended(semesterID string, params map[string]string, courses *[]*model.Course) (status int) {
 	if courses == nil {
 		glog.Errorf("nil received")
 		return http.StatusInternalServerError
@@ -160,7 +160,7 @@ func (ada *Adapter) attended(semesterID string, params map[string]string, course
 			department = result.CodeDepartmentInfo.Dwywmc
 		}
 
-		course := &resource.Course{
+		course := &model.Course{
 			Id:             result.CourseId,
 			Semester:       result.SemesterInfo.Id,
 			CourseNumber:   result.Course_no,
@@ -170,8 +170,8 @@ func (ada *Adapter) attended(semesterID string, params map[string]string, course
 			Hour:           result.Course_time,
 			Description:    description,
 
-			Teachers: []*resource.User{
-				&resource.User{
+			Teachers: []*model.User{
+				&model.User{
 					Id:         result.TeacherInfo.Id,
 					Name:       result.TeacherInfo.Name,
 					Type:       result.TeacherInfo.Title,
@@ -200,7 +200,7 @@ func (ada *Adapter) attended(semesterID string, params map[string]string, course
 	return status
 }
 
-func (ada *Adapter) Attended(userId string, params map[string]string, courses *[]*resource.Course) (status int) {
+func (ada *Adapter) Attended(userId string, params map[string]string, courses *[]*model.Course) (status int) {
 	if userId != "" {
 		return http.StatusNotImplemented
 	}
@@ -215,7 +215,7 @@ func (ada *Adapter) Attended(userId string, params map[string]string, courses *[
 		return ada.attended(semester, params, courses)
 	}
 
-	var past_courses, this_courses, next_courses []*resource.Course
+	var past_courses, this_courses, next_courses []*model.Course
 
 	// Past semesters.
 	past_s := make(chan int, 1)

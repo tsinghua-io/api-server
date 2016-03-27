@@ -1,7 +1,7 @@
 package learn
 
 import (
-	"github.com/tsinghua-io/api-server/adapter"
+	"github.com/tsinghua-io/api-server/util"
 	"net/http"
 	"testing"
 )
@@ -13,6 +13,6 @@ func TestSemesters(t *testing.T) {
 		return
 	}
 
-	adapter.AssertDeepEqual(t, current, "2015-2016-2")
-	adapter.AssertDeepEqual(t, next, "2015-2016-3")
+	util.AssertDeepEqual(t, current, "2015-2016-2")
+	util.AssertDeepEqual(t, next, "2015-2016-3")
 }

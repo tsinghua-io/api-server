@@ -13,12 +13,11 @@ const (
 )
 
 type Adapter struct {
-	adapter.Adapter
+	*adapter.Adapter
 }
 
 func New(userId, password string) (ada *Adapter, status int) {
-	ada = new(Adapter)
-	ada.AddJar()
+	ada = &Adapter{adapter.New()}
 
 	form := url.Values{}
 	form.Add("i_user", userId)

@@ -2,8 +2,7 @@ package learn
 
 import (
 	"fmt"
-	"github.com/golang/glog"
-	"github.com/tsinghua-io/api-server/resource"
+	"github.com/tsinghua-io/api-server/model"
 	"net/http"
 	"strconv"
 )
@@ -12,12 +11,7 @@ func AnnouncementsURL(courseId string) string {
 	return fmt.Sprintf("%s/b/myCourse/notice/listForStudent/%s?pageSize=1000", BaseURL, courseId)
 }
 
-func (ada *Adapter) Announcements(courseId string, _ map[string]string, announcements *[]*resource.Announcement) (status int) {
-	if announcements == nil {
-		glog.Errorf("nil received")
-		return http.StatusInternalServerError
-	}
-
+func (ada *Adapter) Announcements(courseId string) (announcements []*model.Announcement, status int) {
 	url := AnnouncementsURL(courseId)
 	var v struct {
 		PaginationList struct {
@@ -36,22 +30,22 @@ func (ada *Adapter) Announcements(courseId string, _ map[string]string, announce
 	}
 
 	if err := ada.GetJSON("GET", url, &v); err != nil {
-		return http.StatusBadGateway
+		return nil, http.StatusBadGateway
 	}
 
 	// TODO: Iterate a pointer slice?
 	for _, result := range v.PaginationList.RecordList {
-		announcement := &resource.Announcement{
+		announcement := &model.Announcement{
 			Id:        strconv.FormatInt(result.CourseNotice.Id, 10),
 			CourseId:  result.CourseNotice.CourseId,
-			Owner:     &resource.User{Name: result.CourseNotice.Owner},
+			Owner:     &model.User{Name: result.CourseNotice.Owner},
 			CreatedAt: result.CourseNotice.RegDate,
 			Priority:  result.CourseNotice.MsgPriority,
 			Title:     result.CourseNotice.Title,
 			Body:      result.CourseNotice.Detail,
 		}
-		*announcements = append(*announcements, announcement)
+		announcements = append(announcements, announcement)
 	}
 
-	return http.StatusOK
+	return announcements, http.StatusOK
 }

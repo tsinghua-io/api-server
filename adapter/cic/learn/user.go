@@ -3,7 +3,7 @@ package learn
 import (
 	"fmt"
 	"github.com/golang/glog"
-	"github.com/tsinghua-io/api-server/resource"
+	"github.com/tsinghua-io/api-server/model"
 	"net/http"
 )
 
@@ -11,7 +11,7 @@ func UserURL(_ string) string {
 	return fmt.Sprintf("%s/b/m/getStudentById", BaseURL)
 }
 
-func (ada *Adapter) User(userId string, _ map[string]string, user *resource.User) (status int) {
+func (ada *Adapter) User(userId string, _ map[string]string, user *model.User) (status int) {
 	if user == nil {
 		glog.Errorf("nil received")
 		return http.StatusInternalServerError
@@ -36,7 +36,7 @@ func (ada *Adapter) User(userId string, _ map[string]string, user *resource.User
 	}
 
 	data := v.DataSingle
-	*user = resource.User{
+	*user = model.User{
 		Id:         data.Id,
 		Name:       data.Name,
 		Type:       data.Title,

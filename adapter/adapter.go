@@ -13,11 +13,14 @@ import (
 )
 
 type Adapter struct {
-	http.Client
+	*http.Client
 }
 
-func (ada *Adapter) AddJar() {
-	ada.Client.Jar, _ = cookiejar.New(nil)
+func New() *Adapter {
+	client := new(http.Client)
+	client.Jar, _ = cookiejar.New(nil)
+
+	return &Adapter{client}
 }
 
 func (ada *Adapter) GetDocument(url string) (doc *goquery.Document, err error) {

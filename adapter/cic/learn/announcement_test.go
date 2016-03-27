@@ -1,25 +1,25 @@
 package learn
 
 import (
-	"github.com/tsinghua-io/api-server/adapter"
-	"github.com/tsinghua-io/api-server/resource"
+	"github.com/tsinghua-io/api-server/model"
+	"github.com/tsinghua-io/api-server/util"
 	"net/http"
 	"testing"
 )
 
 func TestAnnouncements(t *testing.T) {
-	var actual []*resource.Announcement
-	if status := ada.Announcements("2014-2015-1-20750021-97", nil, &actual); status != http.StatusOK {
+	actual, status := ada.Announcements("2014-2015-1-20750021-97")
+	if status != http.StatusOK {
 		t.Errorf("Unable to get announcements: %s", http.StatusText(status))
 		return
 	}
 
 	// Check fetched data.
-	expected := []*resource.Announcement{
+	expected := []*model.Announcement{
 		{
 			Id:        "1414652412222",
 			CourseId:  "2014-2015-1-20750021-97",
-			Owner:     &resource.User{Name: "王媛"},
+			Owner:     &model.User{Name: "王媛"},
 			CreatedAt: "2014-10-30",
 			Priority:  0,
 			Title:     "课程检索报告的要求",
@@ -28,7 +28,7 @@ func TestAnnouncements(t *testing.T) {
 		{
 			Id:        "1413708226270",
 			CourseId:  "2014-2015-1-20750021-97",
-			Owner:     &resource.User{Name: "王媛"},
+			Owner:     &model.User{Name: "王媛"},
 			CreatedAt: "2014-10-19",
 			Priority:  1,
 			Title:     "第4次课预习内容",
@@ -37,7 +37,7 @@ func TestAnnouncements(t *testing.T) {
 		{
 			Id:        "1413257641943",
 			CourseId:  "2014-2015-1-20750021-97",
-			Owner:     &resource.User{Name: "王媛"},
+			Owner:     &model.User{Name: "王媛"},
 			CreatedAt: "2014-10-14",
 			Priority:  1,
 			Title:     "第三次课预习题目",
@@ -46,7 +46,7 @@ func TestAnnouncements(t *testing.T) {
 		{
 			Id:        "1411868112836",
 			CourseId:  "2014-2015-1-20750021-97",
-			Owner:     &resource.User{Name: "王媛"},
+			Owner:     &model.User{Name: "王媛"},
 			CreatedAt: "2014-09-28",
 			Priority:  1,
 			Title:     "第二节预习内容",
@@ -55,7 +55,7 @@ func TestAnnouncements(t *testing.T) {
 		{
 			Id:        "1411378457399",
 			CourseId:  "2014-2015-1-20750021-97",
-			Owner:     &resource.User{Name: "王媛"},
+			Owner:     &model.User{Name: "王媛"},
 			CreatedAt: "2014-09-22",
 			Priority:  1,
 			Title:     "第一讲---预习内容",
@@ -63,14 +63,12 @@ func TestAnnouncements(t *testing.T) {
 		},
 	}
 
-	adapter.AssertDeepEqual(t, actual, expected)
+	util.AssertDeepEqual(t, actual, expected)
 }
 
 func BenchmarkAnnouncements(b *testing.B) {
-	var announcements []*resource.Announcement
-
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ada.Announcements("2014-2015-1-20750021-97", nil, &announcements)
+		ada.Announcements("2014-2015-1-20750021-97")
 	}
 }

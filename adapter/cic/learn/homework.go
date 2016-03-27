@@ -3,7 +3,7 @@ package learn
 import (
 	"fmt"
 	"github.com/golang/glog"
-	"github.com/tsinghua-io/api-server/resource"
+	"github.com/tsinghua-io/api-server/model"
 	"net/http"
 	"strconv"
 )
@@ -12,7 +12,7 @@ func HomeworksURL(courseId string) string {
 	return fmt.Sprintf("%s/b/myCourse/homework/list4Student/%s/0", BaseURL, courseId)
 }
 
-func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[]*resource.Homework) (status int) {
+func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[]*model.Homework) (status int) {
 	if homeworks == nil {
 		glog.Errorf("nil received")
 		return http.StatusInternalServerError
@@ -62,10 +62,10 @@ func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[
 
 	for _, result := range v.ResultList {
 		// Fetch homework attachment, if exists.
-		var attach *resource.Attachment
+		var attach *model.Attachment
 
 		if fileId := result.CourseHomeworkInfo.HomewkAffix; fileId != "" {
-			attach = &resource.Attachment{
+			attach = &model.Attachment{
 				Filename:    result.CourseHomeworkInfo.HomewkAffixFilename,
 				DownloadURL: DownloadURL(fileId),
 			}
@@ -76,15 +76,15 @@ func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[
 		}
 
 		// Fetch submission, if exists.
-		var submissions []*resource.Submission
+		var submissions []*model.Submission
 
 		if result.CourseHomeworkRecord.Status != "0" {
 			// Fetch submission attachment, if exists.
-			var attach *resource.Attachment
+			var attach *model.Attachment
 			if affix := result.CourseHomeworkRecord.ResourcesMappingByHomewkAffix; affix.FileId != "" {
 				size, _ := strconv.Atoi(affix.FileSize)
 
-				attach = &resource.Attachment{
+				attach = &model.Attachment{
 					Filename:    affix.FileName,
 					Size:        size,
 					DownloadURL: DownloadURL(affix.FileId),
@@ -92,11 +92,11 @@ func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[
 			}
 
 			// Fetch comment attachment, if exists.
-			var commentAttach *resource.Attachment
+			var commentAttach *model.Attachment
 			if affix := result.CourseHomeworkRecord.ResourcesMappingByReplyAffix; affix.FileId != "" {
 				size, _ := strconv.Atoi(affix.FileSize)
 
-				commentAttach = &resource.Attachment{
+				commentAttach = &model.Attachment{
 					Filename:    affix.FileName,
 					Size:        size,
 					DownloadURL: DownloadURL(affix.FileId),
@@ -111,9 +111,9 @@ func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[
 				mark = float32(*result.CourseHomeworkRecord.Mark)
 			}
 
-			submissions = []*resource.Submission{
+			submissions = []*model.Submission{
 				{
-					Owner: &resource.User{
+					Owner: &model.User{
 						Id: result.CourseHomeworkRecord.StudentId,
 					},
 					CreatedAt:  parseRegDate(result.CourseHomeworkRecord.RegDate),
@@ -121,7 +121,7 @@ func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[
 					Body:       result.CourseHomeworkRecord.HomewkDetail,
 					Attachment: attach,
 					Marked:     marked,
-					MarkedBy: &resource.User{
+					MarkedBy: &model.User{
 						Name: result.CourseHomeworkRecord.GradeUser,
 					},
 					MarkedAt:          parseRegDate(result.CourseHomeworkRecord.ReplyDate),
@@ -132,7 +132,7 @@ func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[
 			}
 		}
 
-		homework := &resource.Homework{
+		homework := &model.Homework{
 			Id:          strconv.Itoa(result.CourseHomeworkInfo.HomewkId),
 			CourseId:    result.CourseHomeworkInfo.CourseId,
 			CreatedAt:   parseRegDate(result.CourseHomeworkInfo.RegDate),

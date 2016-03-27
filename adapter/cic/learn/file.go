@@ -3,7 +3,7 @@ package learn
 import (
 	"fmt"
 	"github.com/golang/glog"
-	"github.com/tsinghua-io/api-server/resource"
+	"github.com/tsinghua-io/api-server/model"
 	"net/http"
 	"strconv"
 	"strings"
@@ -17,7 +17,7 @@ func DownloadURL(fileId string) string {
 	return fmt.Sprintf("%s/b/resource/downloadFileStream/%s", BaseURL, fileId)
 }
 
-func (ada *Adapter) Files(courseId string, _ map[string]string, files *[]*resource.File) (status int) {
+func (ada *Adapter) Files(courseId string, _ map[string]string, files *[]*model.File) (status int) {
 	if files == nil {
 		glog.Errorf("nil received")
 		return http.StatusInternalServerError
@@ -63,10 +63,10 @@ func (ada *Adapter) Files(courseId string, _ map[string]string, files *[]*resour
 				fileId := item.ResourcesMappingByFileId.FileId
 				size, _ := strconv.Atoi(item.ResourcesMappingByFileId.FileSize)
 
-				file := &resource.File{
+				file := &model.File{
 					Id:       fileId,
 					CourseId: item.ResourcesMappingByFileId.CourseId,
-					Owner: &resource.User{
+					Owner: &model.User{
 						Id:   item.ResourcesMappingByFileId.UserCode,
 						Name: item.RegUser,
 					},
