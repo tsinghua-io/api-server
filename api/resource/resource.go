@@ -41,8 +41,8 @@ type PatchSupported interface {
 	Patch(*http.Request) (interface{}, int)
 }
 
-func SupportedList(r interface{}) string {
-	list := make([]string, 0)
+func SupportedMethods(r interface{}) []string {
+	var list []string
 
 	if _, ok := r.(GetSupported); ok {
 		list = append(list, GET)
@@ -63,7 +63,7 @@ func SupportedList(r interface{}) string {
 		list = append(list, PATCH)
 	}
 
-	return strings.Join(list, ", ")
+	return list
 }
 
 func HandlerFunc(r interface{}) http.HandlerFunc {
@@ -99,8 +99,14 @@ func HandlerFunc(r interface{}) http.HandlerFunc {
 		}
 
 		if handler == nil {
-			rw.WriteHeader(http.StatusMethodNotAllowed)
-			rw.Header().Set("Allow", SupportedList(r))
+			if supported := SupportedMethods(r); len(supported) == 0 {
+				// The resource does not exist at all.
+				rw.WriteHeader(http.StatusNotFound)
+			} else {
+				// We have other methods available, tell client.
+				rw.WriteHeader(http.StatusMethodNotAllowed)
+				rw.Header().Set("Allow", strings.Join(supported, ", "))
+			}
 			return
 		}
 		data, code := handler(req)

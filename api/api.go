@@ -30,7 +30,7 @@ func (api *API) AddResource(path string, r interface{}) *mux.Route {
 
 func (api *API) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	var handler http.Handler
-	handler = api
+	handler = api.Router
 
 	for i := len(api.middlewares) - 1; i >= 0; i-- {
 		handler = api.middlewares[i](handler)
