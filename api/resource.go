@@ -1,4 +1,4 @@
-package resource
+package api
 
 import (
 	"bytes"
@@ -8,12 +8,6 @@ import (
 	"net/http"
 	"strings"
 )
-
-type NotFoundHandler struct{}
-
-func (h *NotFoundHandler) ServeHTTP(rw http.ResponseWriter, _ *http.Request) {
-	rw.WriteHeader(http.StatusNotFound)
-}
 
 const (
 	GET    = "GET"

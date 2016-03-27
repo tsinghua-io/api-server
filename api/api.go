@@ -2,9 +2,14 @@ package api
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/tsinghua-io/api-server/api/resource"
 	"net/http"
 )
+
+type NotFoundHandler struct{}
+
+func (h *NotFoundHandler) ServeHTTP(rw http.ResponseWriter, _ *http.Request) {
+	rw.WriteHeader(http.StatusNotFound)
+}
 
 type Middleware func(http.Handler) http.Handler
 
@@ -15,7 +20,7 @@ type API struct {
 
 func New(middlewares ...Middleware) *API {
 	r := mux.NewRouter()
-	r.NotFoundHandler = new(resource.NotFoundHandler)
+	r.NotFoundHandler = new(NotFoundHandler)
 
 	return &API{
 		Router:      r,
@@ -28,7 +33,7 @@ func (api *API) Use(middlewares ...Middleware) {
 }
 
 func (api *API) AddResource(path string, r interface{}) *mux.Route {
-	return api.HandleFunc(path, resource.HandlerFunc(r))
+	return api.HandleFunc(path, HandlerFunc(r))
 }
 
 func (api *API) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
