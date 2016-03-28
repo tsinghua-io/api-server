@@ -1,15 +1,21 @@
 package resource
 
 import (
-	"github.com/gorilla/mux"
+	"github.com/tsinghua-io/api-server/adapter/cic/learn"
+	"github.com/tsinghua-io/api-server/util"
 	"net/http"
 )
 
-var User = Resource{
-	"GET": GetUser,
+var Profile = Resource{
+	"GET": util.AuthNeededHandler(GetProfile),
 }
 
-func GetUser(r *http.Request) (interface{}, int) {
-	vars := mux.Vars(r)
-	return vars, http.StatusOK
-}
+var GetProfile = http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	userId, password, _ := req.BasicAuth()
+	if ada, status, err := learn.New(userId, password); err != nil {
+		util.Error(rw, err.Error(), status)
+	} else {
+		v, status, err := ada.Profile()
+		util.JSON(rw, v, status, err)
+	}
+})

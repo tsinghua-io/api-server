@@ -11,7 +11,9 @@ func AnnouncementsURL(courseId string) string {
 	return fmt.Sprintf("%s/b/myCourse/notice/listForStudent/%s?pageSize=1000", BaseURL, courseId)
 }
 
-func (ada *Adapter) Announcements(courseId string) (announcements []*model.Announcement, status int) {
+func (ada *Adapter) Announcements(courseId string) (announcements []*model.Announcement, status int, errMsg error) {
+	status = http.StatusOK
+
 	url := AnnouncementsURL(courseId)
 	var v struct {
 		PaginationList struct {
@@ -29,9 +31,8 @@ func (ada *Adapter) Announcements(courseId string) (announcements []*model.Annou
 		}
 	}
 
-	if err := ada.GetJSON("GET", url, &v); err != nil {
-		status = http.StatusBadGateway
-		return
+	if err := ada.GetJSON(url, &v); err != nil {
+		return nil, http.StatusBadGateway, err
 	}
 
 	// TODO: Iterate a pointer slice?
@@ -48,6 +49,5 @@ func (ada *Adapter) Announcements(courseId string) (announcements []*model.Annou
 		announcements = append(announcements, announcement)
 	}
 
-	status = http.StatusOK
 	return
 }

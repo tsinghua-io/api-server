@@ -20,7 +20,9 @@ func AttendedURL(semesterID string) string {
 	return fmt.Sprintf("%s/b/myCourse/courseList/loadCourse4Student/%s", BaseURL, semesterID)
 }
 
-func (ada *Adapter) TimeLocations(courseId string) (timeLocations []*model.TimeLocation, status int) {
+func (ada *Adapter) TimeLocations(courseId string) (timeLocations []*model.TimeLocation, status int, errMsg error) {
+	status = http.StatusOK
+
 	url := TimeLocationsURL(courseId)
 	var v struct {
 		ResultList []struct {
@@ -31,20 +33,21 @@ func (ada *Adapter) TimeLocations(courseId string) (timeLocations []*model.TimeL
 		}
 	}
 
-	if err := ada.GetJSON("GET", url, &v); err != nil {
-		status = http.StatusBadGateway
-		return
+	if err := ada.GetJSON(url, &v); err != nil {
+		return nil, http.StatusBadGateway, err
 	}
-
-	status = http.StatusInternalServerError
 
 	for _, result := range v.ResultList {
 		dayOfWeek, err := strconv.Atoi(result.Skxq)
 		if err != nil {
+			status = http.StatusInternalServerError
+			errMsg = fmt.Errorf("Failed to parse day of week from %s: %s", result.Skxq, err)
 			return
 		}
 		periodOfDay, err := strconv.Atoi(result.Skjc)
 		if err != nil {
+			status = http.StatusInternalServerError
+			errMsg = fmt.Errorf("Failed to parse period of day from %s: %s", result.Skjc, err)
 			return
 		}
 
@@ -57,11 +60,12 @@ func (ada *Adapter) TimeLocations(courseId string) (timeLocations []*model.TimeL
 		timeLocations = append(timeLocations, timeLocation)
 	}
 
-	status = http.StatusOK
 	return
 }
 
-func (ada *Adapter) Assistants(courseId string) (assistants []*model.User, status int) {
+func (ada *Adapter) Assistants(courseId string) (assistants []*model.User, status int, errMsg error) {
+	status = http.StatusOK
+
 	url := AssistantsURL(courseId)
 	var v struct {
 		ResultList []struct {
@@ -74,9 +78,8 @@ func (ada *Adapter) Assistants(courseId string) (assistants []*model.User, statu
 		}
 	}
 
-	if err := ada.GetJSON("GET", url, &v); err != nil {
-		status = http.StatusBadGateway
-		return
+	if err := ada.GetJSON(url, &v); err != nil {
+		return nil, http.StatusBadGateway, err
 	}
 
 	for _, result := range v.ResultList {
@@ -91,11 +94,10 @@ func (ada *Adapter) Assistants(courseId string) (assistants []*model.User, statu
 		assistants = append(assistants, assistant)
 	}
 
-	status = http.StatusOK
 	return
 }
 
-func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.Course, status int) {
+func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.Course, status int, errMsg error) {
 	url := AttendedURL(semesterID)
 	var v struct {
 		ResultList []struct {
@@ -126,9 +128,8 @@ func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.
 		}
 	}
 
-	if err := ada.GetJSON("GET", url, &v); err != nil {
-		status = http.StatusBadGateway
-		return
+	if err := ada.GetJSON(url, &v); err != nil {
+		return nil, http.StatusBadGateway, err
 	}
 
 	sg := util.NewStatusGroup()
@@ -171,25 +172,27 @@ func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.
 		sg.Add(2)
 		go func() {
 			var status int
-			defer sg.Done(status)
-			course.TimeLocations, status = ada.TimeLocations(course.Id)
+			var err error
+			defer sg.Done(status, err)
+			course.TimeLocations, status, err = ada.TimeLocations(course.Id)
 		}()
 		go func() {
 			var status int
-			defer sg.Done(status)
-			course.Assistants, status = ada.Assistants(course.Id)
+			var err error
+			defer sg.Done(status, err)
+			course.Assistants, status, err = ada.Assistants(course.Id)
 		}()
 		courses = append(courses, course)
 	}
 
-	status = sg.Wait()
+	status, errMsg = sg.Wait()
 	return
 }
 
-func (ada *Adapter) NowAttended(english bool) (thisCourses []*model.Course, nextCourses []*model.Course, status int) {
+func (ada *Adapter) NowAttended(english bool) (thisCourses []*model.Course, nextCourses []*model.Course, status int, errMsg error) {
 	var thisSem, nextSem string
-	thisSem, nextSem, status = ada.Semesters()
-	if status != http.StatusOK {
+	thisSem, nextSem, status, errMsg = ada.Semesters()
+	if errMsg != nil {
 		return
 	}
 
@@ -197,36 +200,40 @@ func (ada *Adapter) NowAttended(english bool) (thisCourses []*model.Course, next
 	sg.Add(2)
 	go func() {
 		var status int
-		defer sg.Done(status)
-		thisCourses, status = ada.Attended(thisSem, english)
+		var err error
+		defer sg.Done(status, err)
+		thisCourses, status, err = ada.Attended(thisSem, english)
 	}()
 	go func() {
 		var status int
-		defer sg.Done(status)
-		nextCourses, status = ada.Attended(nextSem, english)
+		var err error
+		defer sg.Done(status, err)
+		nextCourses, status, err = ada.Attended(nextSem, english)
 	}()
 
-	status = sg.Wait()
+	status, errMsg = sg.Wait()
 	return
 }
 
-func (ada *Adapter) AllAttended(english bool) (courses []*model.Course, status int) {
+func (ada *Adapter) AllAttended(english bool) (courses []*model.Course, status int, errMsg error) {
 	var pastCourses, thisCourses, nextCourses []*model.Course
 
 	sg := util.NewStatusGroup()
 	sg.Add(2)
 	go func() {
 		var status int
-		defer sg.Done(status)
-		thisCourses, nextCourses, status = ada.NowAttended(english)
+		var err error
+		defer sg.Done(status, err)
+		thisCourses, nextCourses, status, err = ada.NowAttended(english)
 	}()
 	go func() {
 		var status int
-		defer sg.Done(status)
-		pastCourses, status = ada.Attended("-1", english)
+		var err error
+		defer sg.Done(status, err)
+		pastCourses, status, err = ada.Attended("-1", english)
 	}()
 
-	status = sg.Wait()
+	status, errMsg = sg.Wait()
 	courses = append(nextCourses, thisCourses...)
 	courses = append(courses, pastCourses...)
 	return

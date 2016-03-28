@@ -12,7 +12,9 @@ func AssignmentsURL(courseId string) string {
 	return fmt.Sprintf("%s/b/myCourse/homework/list4Student/%s/0", BaseURL, courseId)
 }
 
-func (ada *Adapter) Assignments(courseId string) (assignments []*model.Assignment, status int) {
+func (ada *Adapter) Assignments(courseId string) (assignments []*model.Assignment, status int, errMsg error) {
+	status = http.StatusOK
+
 	url := AssignmentsURL(courseId)
 	var v struct {
 		ResultList []struct {
@@ -51,9 +53,8 @@ func (ada *Adapter) Assignments(courseId string) (assignments []*model.Assignmen
 		}
 	}
 
-	if err := ada.GetJSON("GET", url, &v); err != nil {
-		status = http.StatusBadGateway
-		return
+	if err := ada.GetJSON(url, &v); err != nil {
+		return nil, http.StatusBadGateway, err
 	}
 
 	for _, result := range v.ResultList {
@@ -68,7 +69,7 @@ func (ada *Adapter) Assignments(courseId string) (assignments []*model.Assignmen
 				DownloadURL: DownloadURL(fileId),
 			}
 			// Get file size.
-			if _, attach.Size, status = ada.FileInfo(attach.DownloadURL, encoding.Nop); status != http.StatusOK {
+			if _, attach.Size, status, errMsg = ada.FileInfo(attach.DownloadURL, encoding.Nop); errMsg != nil {
 				return
 			}
 		}
@@ -142,6 +143,5 @@ func (ada *Adapter) Assignments(courseId string) (assignments []*model.Assignmen
 		assignments = append(assignments, assignment)
 	}
 
-	status = http.StatusOK
 	return
 }

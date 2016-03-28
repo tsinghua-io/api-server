@@ -9,7 +9,9 @@ const (
 	ProfileURL = BaseURL + "/b/m/getStudentById"
 )
 
-func (ada *Adapter) Profile() (profile *model.User, status int) {
+func (ada *Adapter) Profile() (profile *model.User, status int, errMsg error) {
+	status = http.StatusOK
+
 	var v struct {
 		DataSingle struct {
 			Classname string
@@ -23,9 +25,8 @@ func (ada *Adapter) Profile() (profile *model.User, status int) {
 		}
 	}
 
-	if err := ada.GetJSON("POST", ProfileURL, &v); err != nil {
-		status = http.StatusBadGateway
-		return
+	if err := ada.PostFormJSON(ProfileURL, nil, &v); err != nil {
+		return nil, http.StatusBadGateway, err
 	}
 
 	data := v.DataSingle
@@ -40,6 +41,5 @@ func (ada *Adapter) Profile() (profile *model.User, status int) {
 		Phone:      data.Phone,
 	}
 
-	status = http.StatusOK
 	return
 }

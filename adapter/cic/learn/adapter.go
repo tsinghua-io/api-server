@@ -1,7 +1,7 @@
 package learn
 
 import (
-	"github.com/golang/glog"
+	"fmt"
 	"github.com/tsinghua-io/api-server/adapter"
 	"net/http"
 	"net/url"
@@ -16,8 +16,9 @@ type Adapter struct {
 	*adapter.Adapter
 }
 
-func New(userId, password string) (ada *Adapter, status int) {
+func New(userId, password string) (ada *Adapter, status int, errMsg error) {
 	ada = &Adapter{adapter.New()}
+	status = http.StatusOK
 
 	form := url.Values{}
 	form.Add("i_user", userId)
@@ -25,14 +26,13 @@ func New(userId, password string) (ada *Adapter, status int) {
 
 	resp, err := ada.PostForm(AuthURL, form)
 	if err != nil {
-		glog.Errorf("Failed to post login form to %s: %s", AuthURL, err)
-		return nil, http.StatusBadGateway
+		return nil, http.StatusBadGateway, fmt.Errorf("Failed to post login form to %s: %s", AuthURL, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, http.StatusUnauthorized
+		return nil, http.StatusUnauthorized, fmt.Errorf("Failed to login to %s: %s", AuthURL, http.StatusText(resp.StatusCode))
 	}
 
-	return ada, http.StatusOK
+	return
 }

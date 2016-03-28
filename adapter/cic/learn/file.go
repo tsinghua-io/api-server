@@ -12,7 +12,9 @@ func FilesURL(courseId string) string {
 	return fmt.Sprintf("%s/b/myCourse/tree/getCoursewareTreeData/%s/0", BaseURL, courseId)
 }
 
-func (ada *Adapter) Files(courseId string) (files []*model.File, status int) {
+func (ada *Adapter) Files(courseId string) (files []*model.File, status int, errMsg error) {
+	status = http.StatusOK
+
 	url := FilesURL(courseId)
 	var v struct {
 		ResultList map[string]struct {
@@ -38,9 +40,8 @@ func (ada *Adapter) Files(courseId string) (files []*model.File, status int) {
 		}
 	}
 
-	if err := ada.GetJSON("POST", url, &v); err != nil {
-		status = http.StatusBadGateway
-		return
+	if err := ada.PostFormJSON(url, nil, &v); err != nil {
+		return nil, http.StatusBadGateway, err
 	}
 
 	for _, node1 := range v.ResultList {
@@ -74,6 +75,5 @@ func (ada *Adapter) Files(courseId string) (files []*model.File, status int) {
 		}
 	}
 
-	status = http.StatusOK
 	return
 }

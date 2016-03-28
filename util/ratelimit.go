@@ -1,9 +1,8 @@
-package api
+package util
 
 import (
 	"fmt"
 	"github.com/golang/glog"
-	"github.com/tsinghua-io/api-server/util"
 	"net"
 	"net/http"
 	"strconv"
@@ -66,7 +65,7 @@ func (l *Limiter) Handler() func(http.Handler) http.Handler {
 
 			if !ok {
 				err := fmt.Sprintf("API rate limit exceeded for %s.", host)
-				util.Error(rw, err, http.StatusTooManyRequests)
+				Error(rw, err, http.StatusTooManyRequests)
 			} else {
 				h.ServeHTTP(rw, req)
 			}
