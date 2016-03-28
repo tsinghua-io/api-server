@@ -3,27 +3,18 @@ package resource
 import (
 	"encoding/json"
 	"github.com/golang/glog"
+	"github.com/tsinghua-io/api-server/util"
 	"net/http"
 	"sort"
 	"strings"
 )
-
-func NotFound(rw http.ResponseWriter, _ *http.Request) {
-	Error(rw, "Not Found", http.StatusNotFound)
-}
-
-func Error(rw http.ResponseWriter, err string, code int) {
-	v := map[string]string{"message": err}
-	rw.WriteHeader(code)
-	json.NewEncoder(rw).Encode(v)
-}
 
 type Resource map[string]func(*http.Request) (interface{}, int)
 
 func (r Resource) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if len(r) == 0 {
 		// The resource actually does not exist.
-		NotFound(rw, req)
+		util.NotFound(rw, req)
 	} else if f, ok := r[req.Method]; ok {
 		// We can handle it.
 		data, code := f(req)
@@ -46,7 +37,7 @@ func (r Resource) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		if req.Method == "OPTIONS" {
 			rw.WriteHeader(http.StatusOK)
 		} else {
-			Error(rw, "Method Not Allowed", http.StatusMethodNotAllowed)
+			util.Error(rw, "Method Not Allowed", http.StatusMethodNotAllowed)
 		}
 	}
 }

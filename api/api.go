@@ -4,6 +4,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
 	"github.com/tsinghua-io/api-server/resource"
+	"github.com/tsinghua-io/api-server/util"
 	"net/http"
 )
 
@@ -14,7 +15,7 @@ type API struct {
 
 func New(constructors ...alice.Constructor) *API {
 	r := mux.NewRouter()
-	r.NotFoundHandler = http.HandlerFunc(resource.NotFound)
+	r.NotFoundHandler = http.HandlerFunc(util.NotFound)
 
 	return &API{
 		router: r,
