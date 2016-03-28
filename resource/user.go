@@ -14,8 +14,9 @@ var GetProfile = http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request
 	userId, password, _ := req.BasicAuth()
 	if ada, status, err := learn.New(userId, password); err != nil {
 		util.Error(rw, err.Error(), status)
+	} else if v, status, err := ada.Profile(); err != nil {
+		util.Error(rw, err.Error(), status)
 	} else {
-		v, status, err := ada.Profile()
-		util.JSON(rw, v, status, err)
+		util.JSON(rw, v, status)
 	}
 })

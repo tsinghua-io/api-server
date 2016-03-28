@@ -15,10 +15,8 @@ func Error(rw http.ResponseWriter, err string, status int) {
 	json.NewEncoder(rw).Encode(v)
 }
 
-func JSON(rw http.ResponseWriter, v interface{}, status int, err error) {
-	if err != nil {
-		Error(rw, err.Error(), status)
-	} else if body, err := json.Marshal(v); err != nil {
+func JSON(rw http.ResponseWriter, v interface{}, status int) {
+	if body, err := json.Marshal(v); err != nil {
 		Error(rw, "JSON encoding error: "+err.Error(), http.StatusInternalServerError)
 	} else {
 		rw.WriteHeader(status)
