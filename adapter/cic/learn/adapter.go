@@ -29,7 +29,7 @@ func New(userId, password string) (ada *Adapter, status int, errMsg error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK || resp.Request.URL.Host != "learn.cic.tsinghua.edu.cn" {
 		return nil, http.StatusUnauthorized, fmt.Errorf("Failed to login to %s: %s", AuthURL, http.StatusText(resp.StatusCode))
 	}
 
