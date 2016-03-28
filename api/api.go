@@ -7,12 +7,6 @@ import (
 	"net/http"
 )
 
-type NotFoundHandler struct{}
-
-func (h *NotFoundHandler) ServeHTTP(rw http.ResponseWriter, _ *http.Request) {
-	rw.WriteHeader(http.StatusNotFound)
-}
-
 type API struct {
 	router *mux.Router
 	chain  alice.Chain
@@ -20,7 +14,7 @@ type API struct {
 
 func New(constructors ...alice.Constructor) *API {
 	r := mux.NewRouter()
-	r.NotFoundHandler = new(NotFoundHandler)
+	r.NotFoundHandler = http.HandlerFunc(resource.NotFound)
 
 	return &API{
 		router: r,
@@ -33,7 +27,7 @@ func (api *API) Use(constructors ...alice.Constructor) {
 }
 
 func (api *API) AddResource(path string, r resource.Resource) {
-	api.router.Handle(path, r.Handler())
+	api.router.Handle(path, r)
 }
 
 func (api *API) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
