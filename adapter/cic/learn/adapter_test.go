@@ -36,7 +36,7 @@ func BenchmarkNew(b *testing.B) {
 }
 
 func TestMain(m *testing.M) {
-	flag.Set("alsologtostderr", "true")
+	flag.Set("logtostderr", "true")
 	flag.Set("v", "3")
 	flag.Parse()
 

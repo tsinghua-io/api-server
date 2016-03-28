@@ -12,12 +12,11 @@ const (
 	AuthURL = "https://id.tsinghua.edu.cn/do/off/ui/auth/login/post/fa8077873a7a80b1cd6b185d5a796617/0?/j_spring_security_thauth_roaming_entry"
 )
 
-type Adapter struct {
-	*adapter.Adapter
-}
+type Adapter struct{ adapter.Adapter }
 
 func New(userId, password string) (ada *Adapter, status int, errMsg error) {
-	ada = &Adapter{adapter.New()}
+	ada = new(Adapter)
+	ada.WithJar()
 	status = http.StatusOK
 
 	form := url.Values{}

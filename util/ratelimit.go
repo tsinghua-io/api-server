@@ -11,11 +11,11 @@ import (
 )
 
 type Limiter struct {
+	sync.Mutex
 	Window    int64 // In seconds.
 	RateLimit int
 	Count     map[string]int
 	Reset     int64
-	sync.Mutex
 }
 
 func NewLimiter(window int64, rate int) *Limiter {

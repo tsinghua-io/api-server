@@ -13,15 +13,10 @@ import (
 	"strconv"
 )
 
-type Adapter struct {
-	*http.Client
-}
+type Adapter struct{ http.Client }
 
-func New() *Adapter {
-	client := new(http.Client)
-	client.Jar, _ = cookiejar.New(nil)
-
-	return &Adapter{client}
+func (ada *Adapter) WithJar() {
+	ada.Jar, _ = cookiejar.New(nil)
 }
 
 func (ada *Adapter) GetDocument(url string) (doc *goquery.Document, errMsg error) {

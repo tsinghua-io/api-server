@@ -6,10 +6,10 @@ import (
 )
 
 type StatusGroup struct {
-	*sync.WaitGroup
+	sync.WaitGroup
+	sync.Mutex
 	Status int
 	Err    error
-	sync.Mutex
 }
 
 func NewStatusGroup() *StatusGroup {
