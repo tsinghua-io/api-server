@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
+	"github.com/tsinghua-io/api-server/resource"
 	"net/http"
 )
 
@@ -31,8 +32,8 @@ func (api *API) Use(constructors ...alice.Constructor) {
 	api.chain = api.chain.Append(constructors...)
 }
 
-func (api *API) AddResource(path string, r interface{}) *mux.Route {
-	return api.router.HandleFunc(path, HandlerFunc(r))
+func (api *API) AddResource(path string, r resource.Resource) {
+	api.router.Handle(path, r.Handler())
 }
 
 func (api *API) ServeHTTP(rw http.ResponseWriter, req *http.Request) {

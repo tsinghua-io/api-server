@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"github.com/golang/glog"
+	"github.com/gorilla/handlers"
 	"github.com/tsinghua-io/api-server/api"
+	"github.com/tsinghua-io/api-server/resource"
 	"net/http"
 	"strconv"
 )
@@ -13,7 +15,12 @@ func main() {
 	port := flag.Int("port", 8000, "Port of the server")
 	flag.Parse()
 
-	api := api.New()
+	api := api.New(
+		handlers.CompressHandler,
+		api.ContentTypeHandler,
+	)
+
+	api.AddResource("/users/{id}", resource.User)
 
 	addr := *host + ":" + strconv.Itoa(*port)
 	glog.Infof("Starting server on %s", addr)
