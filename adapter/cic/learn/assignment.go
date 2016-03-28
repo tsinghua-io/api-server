@@ -2,23 +2,18 @@ package learn
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/model"
+	"golang.org/x/text/encoding"
 	"net/http"
 	"strconv"
 )
 
-func HomeworksURL(courseId string) string {
+func AssignmentsURL(courseId string) string {
 	return fmt.Sprintf("%s/b/myCourse/homework/list4Student/%s/0", BaseURL, courseId)
 }
 
-func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[]*model.Homework) (status int) {
-	if homeworks == nil {
-		glog.Errorf("nil received")
-		return http.StatusInternalServerError
-	}
-
-	url := HomeworksURL(courseId)
+func (ada *Adapter) Assignments(courseId string) (assignments []*model.Assignment, status int) {
+	url := AssignmentsURL(courseId)
 	var v struct {
 		ResultList []struct {
 			CourseHomeworkRecord struct {
@@ -57,10 +52,13 @@ func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[
 	}
 
 	if err := ada.GetJSON("GET", url, &v); err != nil {
-		return http.StatusBadGateway
+		status = http.StatusBadGateway
+		return
 	}
 
 	for _, result := range v.ResultList {
+		id := strconv.Itoa(result.CourseHomeworkInfo.HomewkId)
+
 		// Fetch homework attachment, if exists.
 		var attach *model.Attachment
 
@@ -70,8 +68,8 @@ func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[
 				DownloadURL: DownloadURL(fileId),
 			}
 			// Get file size.
-			if status := ada.FileInfo(attach.DownloadURL, nil, &attach.Size); status != http.StatusOK {
-				return status
+			if _, attach.Size, status = ada.FileInfo(attach.DownloadURL, encoding.Nop); status != http.StatusOK {
+				return
 			}
 		}
 
@@ -113,14 +111,12 @@ func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[
 
 			submissions = []*model.Submission{
 				{
-					Owner: &model.User{
-						Id: result.CourseHomeworkRecord.StudentId,
-					},
-					CreatedAt:  parseRegDate(result.CourseHomeworkRecord.RegDate),
-					Late:       result.CourseHomeworkRecord.IfDelay == "1",
-					Body:       result.CourseHomeworkRecord.HomewkDetail,
-					Attachment: attach,
-					Marked:     marked,
+					AssignmentId: id,
+					CreatedAt:    parseRegDate(result.CourseHomeworkRecord.RegDate),
+					Late:         result.CourseHomeworkRecord.IfDelay == "1",
+					Body:         result.CourseHomeworkRecord.HomewkDetail,
+					Attachment:   attach,
+					Marked:       marked,
 					MarkedBy: &model.User{
 						Name: result.CourseHomeworkRecord.GradeUser,
 					},
@@ -132,8 +128,8 @@ func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[
 			}
 		}
 
-		homework := &model.Homework{
-			Id:          strconv.Itoa(result.CourseHomeworkInfo.HomewkId),
+		assignment := &model.Assignment{
+			Id:          id,
 			CourseId:    result.CourseHomeworkInfo.CourseId,
 			CreatedAt:   parseRegDate(result.CourseHomeworkInfo.RegDate),
 			BeginAt:     parseRegDate(result.CourseHomeworkInfo.BeginDate),
@@ -143,8 +139,9 @@ func (ada *Adapter) Homeworks(courseId string, _ map[string]string, homeworks *[
 			Attachment:  attach,
 			Submissions: submissions,
 		}
-		*homeworks = append(*homeworks, homework)
+		assignments = append(assignments, assignment)
 	}
 
-	return http.StatusOK
+	status = http.StatusOK
+	return
 }

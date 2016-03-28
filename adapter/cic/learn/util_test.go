@@ -9,8 +9,7 @@ import (
 func TestSemesters(t *testing.T) {
 	var current, next string
 	if status := ada.Semesters(&current, &next); status != http.StatusOK {
-		t.Errorf("Unable to get semesters: %s", http.StatusText(status))
-		return
+		t.Fatalf("Unable to get semesters: %s", http.StatusText(status))
 	}
 
 	util.AssertDeepEqual(t, current, "2015-2016-2")

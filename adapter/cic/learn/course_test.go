@@ -7,16 +7,14 @@ import (
 	"testing"
 )
 
-func TestAttended(t *testing.T) {
-	var courses []*model.Course
-	if status := ada.Attended("", nil, &courses); status != http.StatusOK {
-		t.Errorf("Unable to get attended courses: %s", http.StatusText(status))
-		return
+func TestAllAttended(t *testing.T) {
+	if courses, status := ada.AllAttended(false); status != http.StatusOK {
+		t.Fatalf("Unable to get attended courses: %s", http.StatusText(status))
 	}
 
 	// Just test the last course.
 	if len(courses) == 0 {
-		return
+		t.Fatalf("Got no courses.")
 	}
 	actual := courses[len(courses)-1]
 	expected := &model.Course{
@@ -49,11 +47,9 @@ func TestAttended(t *testing.T) {
 	util.AssertDeepEqual(t, actual, expected)
 }
 
-func BenchmarkAttended(b *testing.B) {
-	var courses []*model.Course
-
+func BenchmarkAllAttended(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ada.Attended("", nil, &courses)
+		ada.AllAttended(false)
 	}
 }

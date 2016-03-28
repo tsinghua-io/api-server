@@ -7,15 +7,13 @@ import (
 	"testing"
 )
 
-func TestUser(t *testing.T) {
-	var actual model.User
-	if status := ada.User("", nil, &actual); status != http.StatusOK {
-		t.Errorf("Unable to get self profile: %s", http.StatusText(status))
-		return
+func TestProfile(t *testing.T) {
+	if actual, status := ada.Profile(); status != http.StatusOK {
+		t.Fatalf("Unable to get Profile: %s", http.StatusText(status))
 	}
 
 	// Check fetched data.
-	expected := model.User{
+	expected := &model.User{
 		Id:         "2013011187",
 		Name:       "李思涵",
 		Department: "电子系",
@@ -29,10 +27,8 @@ func TestUser(t *testing.T) {
 }
 
 func BenchmarkPersonalInfo(b *testing.B) {
-	var user model.User
-
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ada.User("", nil, &user)
+		ada.Profile()
 	}
 }

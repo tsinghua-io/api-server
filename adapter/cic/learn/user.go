@@ -1,23 +1,15 @@
 package learn
 
 import (
-	"fmt"
-	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/model"
 	"net/http"
 )
 
-func UserURL(_ string) string {
-	return fmt.Sprintf("%s/b/m/getStudentById", BaseURL)
-}
+const (
+	ProfileURL = BaseURL + "/b/m/getStudentById"
+)
 
-func (ada *Adapter) User(userId string, _ map[string]string, user *model.User) (status int) {
-	if user == nil {
-		glog.Errorf("nil received")
-		return http.StatusInternalServerError
-	}
-
-	url := UserURL(userId)
+func (ada *Adapter) Profile() (profile *model.User, status int) {
 	var v struct {
 		DataSingle struct {
 			Classname string
@@ -31,12 +23,13 @@ func (ada *Adapter) User(userId string, _ map[string]string, user *model.User) (
 		}
 	}
 
-	if err := ada.GetJSON("POST", url, &v); err != nil {
-		return http.StatusBadGateway
+	if err := ada.GetJSON("POST", ProfileURL, &v); err != nil {
+		status = http.StatusBadGateway
+		return
 	}
 
 	data := v.DataSingle
-	*user = model.User{
+	profile = &model.User{
 		Id:         data.Id,
 		Name:       data.Name,
 		Type:       data.Title,
@@ -47,5 +40,6 @@ func (ada *Adapter) User(userId string, _ map[string]string, user *model.User) (
 		Phone:      data.Phone,
 	}
 
-	return http.StatusOK
+	status = http.StatusOK
+	return
 }

@@ -93,24 +93,13 @@ func (ada *Adapter) FileInfo(url string, encoding encoding.Encoding) (filename s
 	filename = params["filename"]
 
 	// File size.
-	if size != nil {
-		sizeStr := resp.Header.Get("Content-Length")
-		size, err = strconv.Atoi(sizeStr)
-		if err != nil {
-			glog.Errorf("Failed to convert Content-Length (%s) to int: %s", sizeStr, err)
-			return
-		}
+	sizeStr := resp.Header.Get("Content-Length")
+	size, err = strconv.Atoi(sizeStr)
+	if err != nil {
+		glog.Errorf("Failed to convert Content-Length (%s) to int: %s", sizeStr, err)
+		return
 	}
 
 	status = http.StatusOK
 	return
-}
-
-func MergeStatus(statuses ...int) (status int) {
-	for _, s := range statuses {
-		if s != 0 && s != http.StatusOK {
-			return s
-		}
-	}
-	return http.StatusOK
 }

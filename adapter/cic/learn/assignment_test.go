@@ -7,11 +7,9 @@ import (
 	"testing"
 )
 
-func TestCourseHomework(t *testing.T) {
-	var actual []*model.Homework
-	if status := ada.Homeworks("2014-2015-1-20750021-97", nil, &actual); status != http.StatusOK {
-		t.Errorf("Unable to get homeworks: %s", http.StatusText(status))
-		return
+func TestAssignments(t *testing.T) {
+	if actual, status := ada.Assignments("2014-2015-1-20750021-97"); status != http.StatusOK {
+		t.Fatalf("Unable to get homeworks: %s", http.StatusText(status))
 	}
 
 	// Check fetched data.
@@ -156,11 +154,9 @@ func TestCourseHomework(t *testing.T) {
 	util.AssertDeepEqual(t, actual, expected)
 }
 
-func BenchmarkCourseHomework(b *testing.B) {
-	var homeworks []*model.Homework
-
+func BenchmarkAssignments(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ada.Homeworks("2014-2015-1-20750021-97", nil, &homeworks)
+		ada.Assignments("2014-2015-1-20750021-97")
 	}
 }

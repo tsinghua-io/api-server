@@ -2,9 +2,8 @@ package learn
 
 import (
 	"fmt"
-	"github.com/golang/glog"
-	"github.com/tsinghua-io/api-server/adapter"
 	"github.com/tsinghua-io/api-server/model"
+	"github.com/tsinghua-io/api-server/util"
 	"net/http"
 	"strconv"
 )
@@ -21,12 +20,7 @@ func AttendedURL(semesterID string) string {
 	return fmt.Sprintf("%s/b/myCourse/courseList/loadCourse4Student/%s", BaseURL, semesterID)
 }
 
-func (ada *Adapter) TimeLocations(courseId string, _ map[string]string, timeLocations *[]*model.TimeLocation) (status int) {
-	if timeLocations == nil {
-		glog.Errorf("nil received")
-		return http.StatusInternalServerError
-	}
-
+func (ada *Adapter) TimeLocations(courseId string) (timeLocations []*model.TimeLocation, status int) {
 	url := TimeLocationsURL(courseId)
 	var v struct {
 		ResultList []struct {
@@ -38,17 +32,20 @@ func (ada *Adapter) TimeLocations(courseId string, _ map[string]string, timeLoca
 	}
 
 	if err := ada.GetJSON("GET", url, &v); err != nil {
-		return http.StatusBadGateway
+		status = http.StatusBadGateway
+		return
 	}
+
+	status = http.StatusInternalServerError
 
 	for _, result := range v.ResultList {
 		dayOfWeek, err := strconv.Atoi(result.Skxq)
 		if err != nil {
-			return http.StatusBadGateway
+			return
 		}
 		periodOfDay, err := strconv.Atoi(result.Skjc)
 		if err != nil {
-			return http.StatusBadGateway
+			return
 		}
 
 		timeLocation := &model.TimeLocation{
@@ -57,18 +54,14 @@ func (ada *Adapter) TimeLocations(courseId string, _ map[string]string, timeLoca
 			PeriodOfDay: periodOfDay,
 			Location:    result.Skdd,
 		}
-		*timeLocations = append(*timeLocations, timeLocation)
+		timeLocations = append(timeLocations, timeLocation)
 	}
 
-	return http.StatusOK
+	status = http.StatusOK
+	return
 }
 
-func (ada *Adapter) Assistants(courseId string, _ map[string]string, assistants *[]*model.User) (status int) {
-	if assistants == nil {
-		glog.Errorf("nil received")
-		return http.StatusInternalServerError
-	}
-
+func (ada *Adapter) Assistants(courseId string) (assistants []*model.User, status int) {
 	url := AssistantsURL(courseId)
 	var v struct {
 		ResultList []struct {
@@ -82,7 +75,8 @@ func (ada *Adapter) Assistants(courseId string, _ map[string]string, assistants 
 	}
 
 	if err := ada.GetJSON("GET", url, &v); err != nil {
-		return http.StatusBadGateway
+		status = http.StatusBadGateway
+		return
 	}
 
 	for _, result := range v.ResultList {
@@ -94,18 +88,14 @@ func (ada *Adapter) Assistants(courseId string, _ map[string]string, assistants 
 			Email:      result.Email,
 			Phone:      result.Phone,
 		}
-		*assistants = append(*assistants, assistant)
+		assistants = append(assistants, assistant)
 	}
 
-	return http.StatusOK
+	status = http.StatusOK
+	return
 }
 
-func (ada *Adapter) attended(semesterID string, params map[string]string, courses *[]*model.Course) (status int) {
-	if courses == nil {
-		glog.Errorf("nil received")
-		return http.StatusInternalServerError
-	}
-
+func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.Course, status int) {
 	url := AttendedURL(semesterID)
 	var v struct {
 		ResultList []struct {
@@ -137,27 +127,22 @@ func (ada *Adapter) attended(semesterID string, params map[string]string, course
 	}
 
 	if err := ada.GetJSON("GET", url, &v); err != nil {
-		return http.StatusBadGateway
+		status = http.StatusBadGateway
+		return
 	}
 
-	statuses := make(chan int, 1)
-	count := 0
+	sg := util.NewStatusGroup()
 
-	// TODO: Here we loop through a struct array. Will Go copy every struct?
-	// Try some benchmarks.
 	for _, result := range v.ResultList {
-		// Language specific fields.
-		// TODO: Move out of loop?
 		var name, description, department string
-		switch params["lang"] {
-		case "zh-CN", "":
-			name = result.Course_name
-			description = result.Detail_c
-			department = result.CodeDepartmentInfo.Dwmc
-		case "en":
+		if english {
 			name = result.E_course_name
 			description = result.Detail_e
 			department = result.CodeDepartmentInfo.Dwywmc
+		} else {
+			name = result.Course_name
+			description = result.Detail_c
+			department = result.CodeDepartmentInfo.Dwmc
 		}
 
 		course := &model.Course{
@@ -183,66 +168,66 @@ func (ada *Adapter) attended(semesterID string, params map[string]string, course
 			},
 		}
 
-		count += 2
+		sg.Add(2)
 		go func() {
-			statuses <- ada.TimeLocations(course.Id, params, &course.TimeLocations)
+			var status int
+			defer sg.Done(status)
+			course.TimeLocations, status = ada.TimeLocations(course.Id)
 		}()
 		go func() {
-			statuses <- ada.Assistants(course.Id, params, &course.Assistants)
+			var status int
+			defer sg.Done(status)
+			course.Assistants, status = ada.Assistants(course.Id)
 		}()
-		*courses = append(*courses, course)
+		courses = append(courses, course)
 	}
 
-	for i := 0; i < count; i++ {
-		status = adapter.MergeStatus(status, <-statuses)
-	}
-
-	return status
+	status = sg.Wait()
+	return
 }
 
-func (ada *Adapter) Attended(userId string, params map[string]string, courses *[]*model.Course) (status int) {
-	if userId != "" {
-		return http.StatusNotImplemented
+func (ada *Adapter) NowAttended(english bool) (thisCourses []*model.Course, nextCourses []*model.Course, status int) {
+	var thisSem, nextSem string
+	thisSem, nextSem, status = ada.Semesters()
+	if status != http.StatusOK {
+		return
 	}
 
-	if courses == nil {
-		glog.Errorf("nil received")
-		return http.StatusInternalServerError
-	}
-
-	// Return courses of a certain semester.
-	if semester, ok := params["semester"]; ok {
-		return ada.attended(semester, params, courses)
-	}
-
-	var past_courses, this_courses, next_courses []*model.Course
-
-	// Past semesters.
-	past_s := make(chan int, 1)
+	sg := util.NewStatusGroup()
+	sg.Add(2)
 	go func() {
-		past_s <- ada.attended("-1", params, &past_courses)
+		var status int
+		defer sg.Done(status)
+		thisCourses, status = ada.Attended(thisSem, english)
+	}()
+	go func() {
+		var status int
+		defer sg.Done(status)
+		nextCourses, status = ada.Attended(nextSem, english)
 	}()
 
-	var this_sem, next_sem string
-	if status := ada.Semesters(&this_sem, &next_sem); status != http.StatusOK {
-		return status
-	}
+	status = sg.Wait()
+	return
+}
 
-	// This semester.
-	this_s := make(chan int, 1)
+func (ada *Adapter) AllAttended(english bool) (courses []*model.Course, status int) {
+	var pastCourses, thisCourses, nextCourses []*model.Course
+
+	sg := util.NewStatusGroup()
+	sg.Add(2)
 	go func() {
-		this_s <- ada.attended(this_sem, params, &this_courses)
+		var status int
+		defer sg.Done(status)
+		thisCourses, nextCourses, status = ada.NowAttended(english)
+	}()
+	go func() {
+		var status int
+		defer sg.Done(status)
+		pastCourses, status = ada.Attended("-1", english)
 	}()
 
-	// Next semester.
-	next_s := ada.attended(next_sem, params, &next_courses)
-
-	// Merge.
-	if status := adapter.MergeStatus(<-past_s, <-this_s, next_s); status != http.StatusOK {
-		return status
-	}
-
-	*courses = append(next_courses, this_courses...)
-	*courses = append(*courses, past_courses...)
-	return http.StatusOK
+	status = sg.Wait()
+	courses = append(nextCourses, thisCourses...)
+	courses = append(courses, pastCourses...)
+	return
 }

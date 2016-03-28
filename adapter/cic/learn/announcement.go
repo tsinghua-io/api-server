@@ -30,7 +30,8 @@ func (ada *Adapter) Announcements(courseId string) (announcements []*model.Annou
 	}
 
 	if err := ada.GetJSON("GET", url, &v); err != nil {
-		return nil, http.StatusBadGateway
+		status = http.StatusBadGateway
+		return
 	}
 
 	// TODO: Iterate a pointer slice?
@@ -47,5 +48,6 @@ func (ada *Adapter) Announcements(courseId string) (announcements []*model.Annou
 		announcements = append(announcements, announcement)
 	}
 
-	return announcements, http.StatusOK
+	status = http.StatusOK
+	return
 }

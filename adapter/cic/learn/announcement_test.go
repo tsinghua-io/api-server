@@ -10,8 +10,7 @@ import (
 func TestAnnouncements(t *testing.T) {
 	actual, status := ada.Announcements("2014-2015-1-20750021-97")
 	if status != http.StatusOK {
-		t.Errorf("Unable to get announcements: %s", http.StatusText(status))
-		return
+		t.Fatalf("Unable to get announcements: %s", http.StatusText(status))
 	}
 
 	// Check fetched data.

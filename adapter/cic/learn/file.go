@@ -2,7 +2,6 @@ package learn
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	"github.com/tsinghua-io/api-server/model"
 	"net/http"
 	"strconv"
@@ -13,16 +12,7 @@ func FilesURL(courseId string) string {
 	return fmt.Sprintf("%s/b/myCourse/tree/getCoursewareTreeData/%s/0", BaseURL, courseId)
 }
 
-func DownloadURL(fileId string) string {
-	return fmt.Sprintf("%s/b/resource/downloadFileStream/%s", BaseURL, fileId)
-}
-
-func (ada *Adapter) Files(courseId string, _ map[string]string, files *[]*model.File) (status int) {
-	if files == nil {
-		glog.Errorf("nil received")
-		return http.StatusInternalServerError
-	}
-
+func (ada *Adapter) Files(courseId string) (files []*model.File, status int) {
 	url := FilesURL(courseId)
 	var v struct {
 		ResultList map[string]struct {
@@ -49,7 +39,8 @@ func (ada *Adapter) Files(courseId string, _ map[string]string, files *[]*model.
 	}
 
 	if err := ada.GetJSON("POST", url, &v); err != nil {
-		return http.StatusBadGateway
+		status = http.StatusBadGateway
+		return
 	}
 
 	for _, node1 := range v.ResultList {
@@ -78,10 +69,11 @@ func (ada *Adapter) Files(courseId string, _ map[string]string, files *[]*model.
 					Size:        size,
 					DownloadURL: DownloadURL(fileId),
 				}
-				*files = append(*files, file)
+				files = append(files, file)
 			}
 		}
 	}
 
-	return http.StatusOK
+	status = http.StatusOK
+	return
 }

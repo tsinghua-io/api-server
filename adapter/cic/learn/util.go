@@ -1,6 +1,7 @@
 package learn
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -9,7 +10,11 @@ const (
 	TeachingWeekURL = BaseURL + "/b/myCourse/courseList/getCurrentTeachingWeek"
 )
 
-func (ada *Adapter) Semesters(currentSemester, nextSemester *string) (status int) {
+func DownloadURL(fileId string) string {
+	return fmt.Sprintf("%s/b/resource/downloadFileStream/%s", BaseURL, fileId)
+}
+
+func (ada *Adapter) Semesters() (thisSem, nextSem string, status int) {
 	var v struct {
 		CurrentSemester struct {
 			Id string
@@ -20,17 +25,14 @@ func (ada *Adapter) Semesters(currentSemester, nextSemester *string) (status int
 	}
 
 	if err := ada.GetJSON("GET", TeachingWeekURL, &v); err != nil {
-		return http.StatusBadGateway
+		status = http.StatusBadGateway
+		return
 	}
 
-	if currentSemester != nil {
-		*currentSemester = v.CurrentSemester.Id
-	}
-	if nextSemester != nil {
-		*nextSemester = v.NextSemester.Id
-	}
-
-	return http.StatusOK
+	thisSem = v.CurrentSemester.Id
+	nextSem = v.NextSemester.Id
+	status = http.StatusOK
+	return
 }
 
 func parseRegDate(regDate int64) string {

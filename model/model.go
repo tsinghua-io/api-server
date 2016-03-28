@@ -80,10 +80,10 @@ type Attachment struct {
 
 type Submission struct {
 	// Metadata.
-	Owner      *User  `json:"student,omitempty"`
-	HomeworkId string `json:"homework_id,omitempty"`
-	CreatedAt  string `json:"created_at,omitempty"`
-	Late       bool   `json:"late,omitempty"`
+	Owner        *User  `json:"student,omitempty"`
+	AssignmentId string `json:"assignment_id,omitempty"`
+	CreatedAt    string `json:"created_at,omitempty"`
+	Late         bool   `json:"late,omitempty"`
 
 	// Content.
 	Body       string      `json:"body,omitempty"`
@@ -100,7 +100,7 @@ type Submission struct {
 	CommentAttachment *Attachment `json:"comment_attachment,omitempty"`
 }
 
-type Homework struct {
+type Assignment struct {
 	// Identifiers.
 	Id       string `json:"id,omitempty"`
 	CourseId string `json:"course_id,omitempty"`

@@ -8,10 +8,8 @@ import (
 )
 
 func TestFiles(t *testing.T) {
-	var actual []*model.File
-	if status := ada.Files("2014-2015-1-20750021-97", nil, &actual); status != http.StatusOK {
-		t.Errorf("Unable to get files: %s", http.StatusText(status))
-		return
+	if actual, status := ada.Files("2014-2015-1-20750021-97"); status != http.StatusOK {
+		t.Fatalf("Unable to get files: %s", http.StatusText(status))
 	}
 
 	// Check fetched data.
@@ -82,10 +80,8 @@ func TestFiles(t *testing.T) {
 }
 
 func BenchmarkFiles(b *testing.B) {
-	var files []*model.File
-
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ada.Files("2014-2015-1-20750021-97", nil, &files)
+		ada.Files("2014-2015-1-20750021-97")
 	}
 }
