@@ -2,6 +2,7 @@ package util
 
 import (
 	"encoding/json"
+	"net/http"
 	"os"
 	"reflect"
 	"testing"
@@ -15,7 +16,15 @@ var (
 	Password = os.Getenv("thu_pass")
 )
 
-func AssertDeepEqual(t *testing.T, actual, expected interface{}) bool {
+func ExpectStatus(t *testing.T, actual, expected int) bool {
+	if actual != expected {
+		t.Errorf("Incorrect status code: expected %s, got %s", http.StatusText(actual), http.StatusText(expected))
+		return false
+	}
+	return true
+}
+
+func ExpectDeepEqual(t *testing.T, actual, expected interface{}) bool {
 	if !reflect.DeepEqual(actual, expected) {
 		actualJson, _ := json.Marshal(actual)
 		expectedJson, _ := json.Marshal(expected)

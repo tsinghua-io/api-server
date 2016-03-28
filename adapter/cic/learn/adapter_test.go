@@ -14,16 +14,16 @@ var (
 )
 
 func TestNewFail(t *testing.T) {
-	if _, status := New("", ""); status == http.StatusOK {
+	if _, status, err := New("", ""); status == http.StatusOK || err == nil {
 		t.Error("Logged in using no username or password.")
 	}
-	if _, status := New("", "qwerty"); status == http.StatusOK {
+	if _, status, err := New("", "qwerty"); status == http.StatusOK || err == nil {
 		t.Error("Logged in using no username.")
 	}
-	if _, status := New("2013011187", ""); status == http.StatusOK {
+	if _, status, err := New("2013011187", ""); status == http.StatusOK || err == nil {
 		t.Error("Logged in using no password.")
 	}
-	if _, status := New("2013011187", "qwerty"); status == http.StatusOK {
+	if _, status, err := New("2013011187", "qwerty"); status == http.StatusOK || err == nil {
 		t.Error("Logged in using invalid password.")
 	}
 }
@@ -41,11 +41,11 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	// Login.
-	var status int
-	ada, status = New(util.UserId, util.Password)
-	if status != http.StatusOK {
-		glog.Errorf("Failed to login to %s: %s", util.UserId, http.StatusText(status))
+	if tempAda, status, err := New(util.UserId, util.Password); status != http.StatusOK || err != nil {
+		glog.Errorf("Failed to login to account %s: %s: %s", util.UserId, status, err)
 		os.Exit(1)
+	} else {
+		ada = tempAda
 	}
 
 	os.Exit(m.Run())

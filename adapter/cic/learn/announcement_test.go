@@ -8,10 +8,12 @@ import (
 )
 
 func TestAnnouncements(t *testing.T) {
-	actual, status := ada.Announcements("2014-2015-1-20750021-97")
-	if status != http.StatusOK {
-		t.Fatalf("Unable to get announcements: %s", http.StatusText(status))
+	actual, status, err := ada.Announcements("2014-2015-1-20750021-97")
+	if err != nil {
+		t.Fatalf("Failed to get announcements: %s", err)
 	}
+
+	util.ExpectStatus(t, status, http.StatusOK)
 
 	// Check fetched data.
 	expected := []*model.Announcement{
@@ -62,7 +64,7 @@ func TestAnnouncements(t *testing.T) {
 		},
 	}
 
-	util.AssertDeepEqual(t, actual, expected)
+	util.ExpectDeepEqual(t, actual, expected)
 }
 
 func BenchmarkAnnouncements(b *testing.B) {

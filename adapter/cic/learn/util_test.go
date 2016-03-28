@@ -7,11 +7,13 @@ import (
 )
 
 func TestSemesters(t *testing.T) {
-	var current, next string
-	if status := ada.Semesters(&current, &next); status != http.StatusOK {
-		t.Fatalf("Unable to get semesters: %s", http.StatusText(status))
+	thisSem, nextSem, status, err := ada.Semesters()
+	if err != nil {
+		t.Fatalf("Failed to get semesters: %s", err)
 	}
 
-	util.AssertDeepEqual(t, current, "2015-2016-2")
-	util.AssertDeepEqual(t, next, "2015-2016-3")
+	util.ExpectStatus(t, status, http.StatusOK)
+
+	util.ExpectDeepEqual(t, thisSem, "2015-2016-2")
+	util.ExpectDeepEqual(t, nextSem, "2015-2016-3")
 }

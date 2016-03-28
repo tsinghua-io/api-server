@@ -131,7 +131,7 @@ func TestCourseHomework(t *testing.T) {
 		},
 	}
 
-	adapter.AssertDeepEqual(t, actual, expected)
+	adapter.ExpectDeepEqual(t, actual, expected)
 }
 
 func BenchmarkCourseHomework(b *testing.B) {

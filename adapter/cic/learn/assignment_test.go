@@ -8,12 +8,15 @@ import (
 )
 
 func TestAssignments(t *testing.T) {
-	if actual, status := ada.Assignments("2014-2015-1-20750021-97"); status != http.StatusOK {
-		t.Fatalf("Unable to get homeworks: %s", http.StatusText(status))
+	actual, status, err := ada.Assignments("2014-2015-1-20750021-97")
+	if err != nil {
+		t.Fatalf("Failed to get homeworks: %s", err)
 	}
 
+	util.ExpectStatus(t, status, http.StatusOK)
+
 	// Check fetched data.
-	expected := []*model.Homework{
+	expected := []*model.Assignment{
 		{
 			Id:          "58093",
 			CourseId:    "2014-2015-1-20750021-97",
@@ -36,10 +39,11 @@ func TestAssignments(t *testing.T) {
 			Attachment: nil,
 			Submissions: []*model.Submission{
 				{
-					Owner:     &model.User{Id: "2013011187"},
-					CreatedAt: "2014-10-20T23:50:27+0800",
-					Late:      false,
-					Body:      "",
+					Owner:        &model.User{Id: "2013011187"},
+					AssignmentId: "71056",
+					CreatedAt:    "2014-10-20T23:50:27+0800",
+					Late:         false,
+					Body:         "",
 					Attachment: &model.Attachment{
 						Filename:    "作业1.pptx",
 						Size:        315198,
@@ -69,10 +73,11 @@ func TestAssignments(t *testing.T) {
 			},
 			Submissions: []*model.Submission{
 				{
-					Owner:     &model.User{Id: "2013011187"},
-					CreatedAt: "2014-11-01T23:58:44+0800",
-					Late:      false,
-					Body:      "",
+					Owner:        &model.User{Id: "2013011187"},
+					AssignmentId: "76121",
+					CreatedAt:    "2014-11-01T23:58:44+0800",
+					Late:         false,
+					Body:         "",
 					Attachment: &model.Attachment{
 						Filename:    "文献检索与利用-第二次作业——SCI.docx",
 						Size:        250204,
@@ -102,10 +107,11 @@ func TestAssignments(t *testing.T) {
 			},
 			Submissions: []*model.Submission{
 				{
-					Owner:     &model.User{Id: "2013011187"},
-					CreatedAt: "2014-11-14T11:17:18+0800",
-					Late:      false,
-					Body:      "",
+					Owner:        &model.User{Id: "2013011187"},
+					AssignmentId: "88053",
+					CreatedAt:    "2014-11-14T11:17:18+0800",
+					Late:         false,
+					Body:         "",
 					Attachment: &model.Attachment{
 						Filename:    "EI作业.doc",
 						Size:        36352,
@@ -131,10 +137,11 @@ func TestAssignments(t *testing.T) {
 			Attachment: nil,
 			Submissions: []*model.Submission{
 				{
-					Owner:     &model.User{Id: "2013011187"},
-					CreatedAt: "2014-12-02T13:21:56+0800",
-					Late:      true,
-					Body:      "",
+					Owner:        &model.User{Id: "2013011187"},
+					AssignmentId: "92095",
+					CreatedAt:    "2014-12-02T13:21:56+0800",
+					Late:         true,
+					Body:         "",
 					Attachment: &model.Attachment{
 						Filename:    "final.pdf",
 						Size:        223372,
@@ -151,7 +158,7 @@ func TestAssignments(t *testing.T) {
 		},
 	}
 
-	util.AssertDeepEqual(t, actual, expected)
+	util.ExpectDeepEqual(t, actual, expected)
 }
 
 func BenchmarkAssignments(b *testing.B) {

@@ -39,8 +39,8 @@ func TestCourseFiles(t *testing.T) {
 		DownloadURL: "https://learn.tsinghua.edu.cn/uploadFile/downloadFile_student.jsp?module_id=322\u0026filePath=tAY6dAg1JH0INPji6josGqd/QGxTAbvadCvv0EfUnWw1ilm2qC/RZXchbtqC3FfuswFdhSOzbohNc8dms8TKZOiOp0KJm7vo8kXwiCOpbiSvRRDvZlFfPmDX4MQCdxbueQFju3W3qmM%3D\u0026course_id=127756\u0026file_id=1429268",
 	}
 
-	adapter.AssertDeepEqual(t, actual[0], tab1file1)
-	adapter.AssertDeepEqual(t, actual[16], tab2file1)
+	adapter.ExpectDeepEqual(t, actual[0], tab1file1)
+	adapter.ExpectDeepEqual(t, actual[16], tab2file1)
 }
 
 func BenchmarkCourseFiles(b *testing.B) {

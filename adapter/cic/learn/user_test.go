@@ -8,9 +8,12 @@ import (
 )
 
 func TestProfile(t *testing.T) {
-	if actual, status := ada.Profile(); status != http.StatusOK {
-		t.Fatalf("Unable to get Profile: %s", http.StatusText(status))
+	actual, status, err := ada.Profile()
+	if err != nil {
+		t.Fatalf("Failed to get Profile: %s", err)
 	}
+
+	util.ExpectStatus(t, status, http.StatusOK)
 
 	// Check fetched data.
 	expected := &model.User{
@@ -23,7 +26,7 @@ func TestProfile(t *testing.T) {
 		Phone:      "18800183697",
 	}
 
-	util.AssertDeepEqual(t, actual, expected)
+	util.ExpectDeepEqual(t, actual, expected)
 }
 
 func BenchmarkPersonalInfo(b *testing.B) {

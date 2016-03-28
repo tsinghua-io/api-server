@@ -8,9 +8,12 @@ import (
 )
 
 func TestFiles(t *testing.T) {
-	if actual, status := ada.Files("2014-2015-1-20750021-97"); status != http.StatusOK {
-		t.Fatalf("Unable to get files: %s", http.StatusText(status))
+	actual, status, err := ada.Files("2014-2015-1-20750021-97")
+	if err != nil {
+		t.Fatalf("Failed to get files: %s", err)
 	}
+
+	util.ExpectStatus(t, status, http.StatusOK)
 
 	// Check fetched data.
 	expected := []*model.File{
@@ -76,7 +79,7 @@ func TestFiles(t *testing.T) {
 		},
 	}
 
-	util.AssertDeepEqual(t, actual, expected)
+	util.ExpectDeepEqual(t, actual, expected)
 }
 
 func BenchmarkFiles(b *testing.B) {

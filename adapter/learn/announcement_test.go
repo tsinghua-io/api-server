@@ -90,7 +90,7 @@ func TestCourseAnnouncements(t *testing.T) {
 		},
 	}
 
-	adapter.AssertDeepEqual(t, actual, expected)
+	adapter.ExpectDeepEqual(t, actual, expected)
 }
 
 func BenchmarkCourseAnnouncements(b *testing.B) {

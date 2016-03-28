@@ -112,15 +112,14 @@ func (ada *Adapter) Assignments(courseId string) (assignments []*model.Assignmen
 
 			submissions = []*model.Submission{
 				{
-					AssignmentId: id,
-					CreatedAt:    parseRegDate(result.CourseHomeworkRecord.RegDate),
-					Late:         result.CourseHomeworkRecord.IfDelay == "1",
-					Body:         result.CourseHomeworkRecord.HomewkDetail,
-					Attachment:   attach,
-					Marked:       marked,
-					MarkedBy: &model.User{
-						Name: result.CourseHomeworkRecord.GradeUser,
-					},
+					Owner:             &model.User{Id: result.CourseHomeworkRecord.StudentId},
+					AssignmentId:      id,
+					CreatedAt:         parseRegDate(result.CourseHomeworkRecord.RegDate),
+					Late:              result.CourseHomeworkRecord.IfDelay == "1",
+					Body:              result.CourseHomeworkRecord.HomewkDetail,
+					Attachment:        attach,
+					Marked:            marked,
+					MarkedBy:          &model.User{Name: result.CourseHomeworkRecord.GradeUser},
 					MarkedAt:          parseRegDate(result.CourseHomeworkRecord.ReplyDate),
 					Mark:              mark,
 					Comment:           result.CourseHomeworkRecord.ReplyDetail,

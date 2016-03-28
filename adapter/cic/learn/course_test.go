@@ -8,9 +8,12 @@ import (
 )
 
 func TestAllAttended(t *testing.T) {
-	if courses, status := ada.AllAttended(false); status != http.StatusOK {
-		t.Fatalf("Unable to get attended courses: %s", http.StatusText(status))
+	courses, status, err := ada.AllAttended(false)
+	if err != nil {
+		t.Fatalf("Failed to get attended courses: %s", err)
 	}
+
+	util.ExpectStatus(t, status, http.StatusOK)
 
 	// Just test the last course.
 	if len(courses) == 0 {
@@ -44,7 +47,7 @@ func TestAllAttended(t *testing.T) {
 		},
 	}
 
-	util.AssertDeepEqual(t, actual, expected)
+	util.ExpectDeepEqual(t, actual, expected)
 }
 
 func BenchmarkAllAttended(b *testing.B) {

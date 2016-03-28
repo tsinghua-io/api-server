@@ -19,7 +19,7 @@ func TestURL2CourseId(t *testing.T) {
 
 	for _, testInput := range testSet {
 		id, _ := URL2CourseId(testInput.courseURL)
-		adapter.AssertDeepEqual(t, id, testInput.courseId)
+		adapter.ExpectDeepEqual(t, id, testInput.courseId)
 	}
 }
 
@@ -36,7 +36,7 @@ func TestCourseName2Semester(t *testing.T) {
 
 	for _, testInput := range testSet {
 		semester, _ := courseName2Semester(testInput.Name)
-		adapter.AssertDeepEqual(t, semester, testInput.Semester)
+		adapter.ExpectDeepEqual(t, semester, testInput.Semester)
 	}
 }
 
@@ -66,9 +66,9 @@ func TestAttended(t *testing.T) {
 		},
 	}
 
-	adapter.AssertDeepEqual(t, courses[0], &testSet[0])
-	adapter.AssertDeepEqual(t, courses[len(courses)-1], &testSet[1])
-	adapter.AssertDeepEqual(t, courses[len(courses)-25], &testSet[2])
+	adapter.ExpectDeepEqual(t, courses[0], &testSet[0])
+	adapter.ExpectDeepEqual(t, courses[len(courses)-1], &testSet[1])
+	adapter.ExpectDeepEqual(t, courses[len(courses)-25], &testSet[2])
 }
 
 func BenchmarkAttended(b *testing.B) {
@@ -87,7 +87,7 @@ func TestCourseIdMap(t *testing.T) {
 		return
 	}
 
-	adapter.AssertDeepEqual(t, actual["2014-2015-2-40260202-0"], "")
-	adapter.AssertDeepEqual(t, actual["2014-2015-2-30230711-2"], "123510")
-	adapter.AssertDeepEqual(t, actual["2013-2014-2-10610193-18"], "108357")
+	adapter.ExpectDeepEqual(t, actual["2014-2015-2-40260202-0"], "")
+	adapter.ExpectDeepEqual(t, actual["2014-2015-2-30230711-2"], "123510")
+	adapter.ExpectDeepEqual(t, actual["2013-2014-2-10610193-18"], "108357")
 }
