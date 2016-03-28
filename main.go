@@ -18,6 +18,7 @@ func main() {
 	api := api.New(
 		handlers.CompressHandler,
 		api.ContentTypeHandler,
+		api.NewLimiter(60, 10).Handler(),
 	)
 
 	api.AddResource("/users/{id}", resource.User)
