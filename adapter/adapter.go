@@ -36,7 +36,7 @@ func (ada *Adapter) GetDocument(url string) (doc *goquery.Document, errMsg error
 }
 
 func (ada *Adapter) PostFormJSON(url string, data url.Values, v interface{}) error {
-	glog.Infof("Posting form to %s", url)
+	glog.Infof("Posting %v to %s", data, url)
 
 	resp, err := ada.PostForm(url, data)
 	if err != nil {
