@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/golang/glog"
-	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/encoding"
 	"mime"
 	"net/http"
 	"net/http/cookiejar"
@@ -65,42 +65,45 @@ func (ada *Adapter) GetJSON(method, url string, v interface{}) error {
 	return nil
 }
 
-func (ada *Adapter) FileInfo(url string, filename *string, size *int) (status int) {
+func (ada *Adapter) FileInfo(url string, encoding encoding.Encoding) (filename string, size int, status int) {
+	status = http.StatusBadGateway
+
 	resp, err := ada.Head(url)
 	if err != nil {
 		glog.Errorf("Failed to HEAD file at %s: %s", url, err)
-		return http.StatusBadGateway
+		return
 	}
+
+	status = http.StatusInternalServerError
 
 	// Filename.
-	if filename != nil {
-		disposition := resp.Header.Get("Content-Disposition")
-		disposition, err = simplifiedchinese.GBK.NewDecoder().String(disposition)
-		if err != nil {
-			glog.Errorf("Failed to decode Content-Disposition using GBK decoder: %s", err)
-			return http.StatusBadGateway
-		}
-
-		// Parse disposition header.
-		_, params, err := mime.ParseMediaType(disposition)
-		if err != nil {
-			glog.Errorf("Failed to parse header Content-Disposition of file at %s: %s", url, err)
-			return http.StatusBadGateway
-		}
-		*filename = params["filename"]
+	disposition := resp.Header.Get("Content-Disposition")
+	disposition, err = encoding.NewDecoder().String(disposition)
+	if err != nil {
+		glog.Errorf("Failed to decode Content-Disposition: %s", err)
+		return
 	}
+
+	// Parse disposition header.
+	_, params, err := mime.ParseMediaType(disposition)
+	if err != nil {
+		glog.Errorf("Failed to parse header Content-Disposition of file at %s: %s", url, err)
+		return
+	}
+	filename = params["filename"]
 
 	// File size.
 	if size != nil {
 		sizeStr := resp.Header.Get("Content-Length")
-		*size, err = strconv.Atoi(sizeStr)
+		size, err = strconv.Atoi(sizeStr)
 		if err != nil {
 			glog.Errorf("Failed to convert Content-Length (%s) to int: %s", sizeStr, err)
-			return http.StatusBadGateway
+			return
 		}
 	}
 
-	return http.StatusOK
+	status = http.StatusOK
+	return
 }
 
 func MergeStatus(statuses ...int) (status int) {
