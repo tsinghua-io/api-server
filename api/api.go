@@ -33,3 +33,10 @@ func (api *API) AddResource(path string, r resource.Resource) {
 func (api *API) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	api.chain.Then(api.router).ServeHTTP(rw, req)
 }
+
+func ContentTypeHandler(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		rw.Header().Set("Content-Type", "application/json; charset=utf-8")
+		h.ServeHTTP(rw, req)
+	})
+}
