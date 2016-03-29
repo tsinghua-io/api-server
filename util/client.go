@@ -1,4 +1,4 @@
-package adapter
+package util
 
 import (
 	"encoding/json"
@@ -13,16 +13,16 @@ import (
 	"strconv"
 )
 
-type Adapter struct{ http.Client }
+type Client struct{ http.Client }
 
-func (ada *Adapter) WithJar() {
-	ada.Jar, _ = cookiejar.New(nil)
+func (client *Client) WithJar() {
+	client.Jar, _ = cookiejar.New(nil)
 }
 
-func (ada *Adapter) GetDocument(url string) (doc *goquery.Document, errMsg error) {
+func (client *Client) GetDocument(url string) (doc *goquery.Document, errMsg error) {
 	glog.Infof("Getting document from %s", url)
 
-	resp, err := ada.Get(url)
+	resp, err := client.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get document from %s: %s", url, err)
 	}
@@ -35,20 +35,20 @@ func (ada *Adapter) GetDocument(url string) (doc *goquery.Document, errMsg error
 	return
 }
 
-func (ada *Adapter) PostFormJSON(url string, data url.Values, v interface{}) error {
+func (client *Client) PostFormJSON(url string, data url.Values, v interface{}) error {
 	glog.Infof("Posting %v to %s", data, url)
 
-	resp, err := ada.PostForm(url, data)
+	resp, err := client.PostForm(url, data)
 	if err != nil {
 		return fmt.Errorf("Failed to post form to %s: %s", url, err)
 	}
 	return parseJSON(resp, v)
 }
 
-func (ada *Adapter) GetJSON(url string, v interface{}) error {
+func (client *Client) GetJSON(url string, v interface{}) error {
 	glog.Infof("Getting JSON from %s", url)
 
-	resp, err := ada.Get(url)
+	resp, err := client.Get(url)
 	if err != nil {
 		return fmt.Errorf("Failed to get from %s: %s", url, err)
 	}
@@ -66,10 +66,10 @@ func parseJSON(resp *http.Response, v interface{}) error {
 	return nil
 }
 
-func (ada *Adapter) FileInfo(url string, encoding encoding.Encoding) (filename string, size int, status int, errMsg error) {
+func (client *Client) FileInfo(url string, encoding encoding.Encoding) (filename string, size int, status int, errMsg error) {
 	status = http.StatusOK
 
-	resp, err := ada.Head(url)
+	resp, err := client.Head(url)
 	if err != nil {
 		status = http.StatusBadGateway
 		errMsg = fmt.Errorf("Failed to HEAD from %s: %s", url, err)

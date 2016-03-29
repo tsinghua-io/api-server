@@ -24,7 +24,7 @@ func (r Resource) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		if req.Method == "OPTIONS" {
 			rw.WriteHeader(http.StatusOK)
 		} else {
-			util.Error(rw, "Method Not Allowed", http.StatusMethodNotAllowed)
+			util.Error(rw, "Method not allowed.", http.StatusMethodNotAllowed)
 		}
 	} else {
 		// We can handle it.
