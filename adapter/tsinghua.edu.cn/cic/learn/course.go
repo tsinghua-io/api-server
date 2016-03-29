@@ -21,6 +21,7 @@ func AttendedURL(semesterID string) string {
 }
 
 func (ada *Adapter) TimeLocations(courseId string) (timeLocations []*model.TimeLocation, status int, errMsg error) {
+	timeLocations = make([]*model.TimeLocation, 0)
 	status = http.StatusOK
 
 	url := TimeLocationsURL(courseId)
@@ -64,6 +65,7 @@ func (ada *Adapter) TimeLocations(courseId string) (timeLocations []*model.TimeL
 }
 
 func (ada *Adapter) Assistants(courseId string) (assistants []*model.User, status int, errMsg error) {
+	assistants = make([]*model.User, 0)
 	status = http.StatusOK
 
 	url := AssistantsURL(courseId)
@@ -98,6 +100,8 @@ func (ada *Adapter) Assistants(courseId string) (assistants []*model.User, statu
 }
 
 func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.Course, status int, errMsg error) {
+	courses = make([]*model.Course, 0)
+
 	url := AttendedURL(semesterID)
 	var v struct {
 		ResultList []struct {

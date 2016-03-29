@@ -13,6 +13,7 @@ func AssignmentsURL(courseId string) string {
 }
 
 func (ada *Adapter) Assignments(courseId string) (assignments []*model.Assignment, status int, errMsg error) {
+	assignments = make([]*model.Assignment, 0)
 	status = http.StatusOK
 
 	url := AssignmentsURL(courseId)

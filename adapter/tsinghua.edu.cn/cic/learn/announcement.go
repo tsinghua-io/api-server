@@ -12,6 +12,7 @@ func AnnouncementsURL(courseId string) string {
 }
 
 func (ada *Adapter) Announcements(courseId string) (announcements []*model.Announcement, status int, errMsg error) {
+	announcements = make([]*model.Announcement, 0)
 	status = http.StatusOK
 
 	url := AnnouncementsURL(courseId)

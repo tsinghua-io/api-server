@@ -13,6 +13,7 @@ func FilesURL(courseId string) string {
 }
 
 func (ada *Adapter) Files(courseId string) (files []*model.File, status int, errMsg error) {
+	files = make([]*model.File, 0)
 	status = http.StatusOK
 
 	url := FilesURL(courseId)
