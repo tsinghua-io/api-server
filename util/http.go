@@ -2,6 +2,7 @@ package util
 
 import (
 	"encoding/json"
+	"github.com/golang/glog"
 	"net/http"
 )
 
@@ -18,11 +19,12 @@ func Error(rw http.ResponseWriter, err string, status int) {
 func JSON(rw http.ResponseWriter, v interface{}, status int, err error) {
 	if err != nil {
 		Error(rw, err.Error(), status)
-	} else if body, err := json.Marshal(v); err != nil {
-		Error(rw, "JSON encoding error: "+err.Error(), http.StatusInternalServerError)
 	} else {
 		rw.WriteHeader(status)
-		rw.Write(body)
+		if err := json.NewEncoder(rw).Encode(v); err != nil {
+			// Too late, just log it.
+			glog.Errorf("JSON encoding error: %s", err)
+		}
 	}
 }
 
