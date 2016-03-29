@@ -24,6 +24,9 @@ func main() {
 
 	api.AddResource("/users/me", resource.Profile)
 	api.AddResource("/users/me/attended", resource.Attended)
+	api.AddResource("/courses/{id}/announcements", resource.CourseAnnouncements)
+	api.AddResource("/courses/{id}/files", resource.CourseFiles)
+	api.AddResource("/courses/{id}/assignments", resource.CourseAssignments)
 
 	addr := *host + ":" + strconv.Itoa(*port)
 	glog.Infof("Starting server on %s", addr)
