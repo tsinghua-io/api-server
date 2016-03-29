@@ -11,6 +11,6 @@ var Profile = Resource{
 }
 
 var GetProfile = learn.HandlerFunc(func(rw http.ResponseWriter, req *http.Request, ada *learn.Adapter) {
-	v, status, err := ada.Profile()
-	util.JSON(rw, v, status, err)
+	profile, status, err := ada.Profile()
+	util.JSON(rw, profile, status, err)
 })

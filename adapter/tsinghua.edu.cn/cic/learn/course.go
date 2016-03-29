@@ -215,6 +215,10 @@ func (ada *Adapter) NowAttended(english bool) (thisCourses []*model.Course, next
 	return
 }
 
+func (ada *Adapter) PastAttended(english bool) (courses []*model.Course, status int, errMsg error) {
+	return ada.Attended("-1", english)
+}
+
 func (ada *Adapter) AllAttended(english bool) (courses []*model.Course, status int, errMsg error) {
 	var pastCourses, thisCourses, nextCourses []*model.Course
 
@@ -230,7 +234,7 @@ func (ada *Adapter) AllAttended(english bool) (courses []*model.Course, status i
 		var status int
 		var err error
 		defer sg.Done(status, err)
-		pastCourses, status, err = ada.Attended("-1", english)
+		pastCourses, status, err = ada.PastAttended(english)
 	}()
 
 	status, errMsg = sg.Wait()

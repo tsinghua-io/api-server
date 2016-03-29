@@ -22,7 +22,8 @@ func main() {
 		util.NewLimiter(60, 10).Handler(),
 	)
 
-	api.AddResource("/user", resource.Profile)
+	api.AddResource("/users/me", resource.Profile)
+	api.AddResource("/users/me/attended", resource.Attended)
 
 	addr := *host + ":" + strconv.Itoa(*port)
 	glog.Infof("Starting server on %s", addr)

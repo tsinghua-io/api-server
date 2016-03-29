@@ -27,8 +27,8 @@ func (api *API) Use(constructors ...alice.Constructor) {
 	api.chain = api.chain.Append(constructors...)
 }
 
-func (api *API) AddResource(path string, r resource.Resource) {
-	api.router.Handle(path, r)
+func (api *API) AddResource(path string, r resource.Resource) *mux.Route {
+	return api.router.Handle(path, r)
 }
 
 func (api *API) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
