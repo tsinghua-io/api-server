@@ -22,7 +22,7 @@ var GetAttended = learn.HandlerFunc(func(rw http.ResponseWriter, req *http.Reque
 		} else {
 			util.JSON(rw, next, status, err)
 		}
-	case "now":
+	case "this":
 		this, _, status, err := ada.NowAttended(english)
 		util.JSON(rw, this, status, err)
 	case "next":
@@ -31,6 +31,9 @@ var GetAttended = learn.HandlerFunc(func(rw http.ResponseWriter, req *http.Reque
 	case "past":
 		past, status, err := ada.PastAttended(english)
 		util.JSON(rw, past, status, err)
+	case "all":
+		all, status, err := ada.AllAttended(english)
+		util.JSON(rw, all, status, err)
 	default:
 		courses, status, err := ada.Attended(sem, english)
 		util.JSON(rw, courses, status, err)
