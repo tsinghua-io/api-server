@@ -15,7 +15,7 @@ func FilesURL(courseId string) string {
 }
 
 func ParseDownloadURL(downloadURL string) (courseId, id string) {
-	if parsed, err := url.Parse(downloadURL); err != nil {
+	if parsed, err := url.Parse(downloadURL); err == nil {
 		courseId = parsed.Query().Get("course_id")
 		id = parsed.Query().Get("file_id")
 	}

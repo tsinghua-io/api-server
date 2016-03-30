@@ -16,7 +16,7 @@ func AttendedURL(page int) string {
 }
 
 func ParseCourseURL(rawurl string) (id string) {
-	if parsed, err := url.Parse(rawurl); err != nil {
+	if parsed, err := url.Parse(rawurl); err == nil {
 		if parsed.Host == "" {
 			id = parsed.Query().Get("course_id")
 		} else if parsed.Host == "learn.cic.tsinghua.edu.cn" {
@@ -27,7 +27,7 @@ func ParseCourseURL(rawurl string) (id string) {
 }
 
 func ParseCourseName(rawName string) (name, seq, sem string) {
-	regex, _ := regexp.Compile("\\s+(.*)\\((\\S+)\\)\\((\\d{4}-\\d{4})(秋|春|夏)季学期\\)")
+	regex, _ := regexp.Compile("\\s*(.*)\\((\\S+)\\)\\((\\d{4}-\\d{4})(秋|春|夏)季学期\\)")
 	if match := regex.FindStringSubmatch(rawName); len(match) > 4 {
 		name = match[1]
 		seq = match[2]
