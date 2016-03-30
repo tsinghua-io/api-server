@@ -114,7 +114,7 @@ func (ada *Adapter) Submission(courseId, id string) (submission *model.Submissio
 			attachSel = content.Eq(2)
 			commentAttachSel = content.Eq(7)
 
-			submission := &model.Submission{
+			submission = &model.Submission{
 				AssignmentId: id,
 				CreatedAt:    texts[4],
 				Late:         false, // Or we cannot view it now.
@@ -136,20 +136,12 @@ func (ada *Adapter) Submission(courseId, id string) (submission *model.Submissio
 	}
 
 	sg := util.NewStatusGroup()
-	sg.Add(2)
-
-	go func() {
-		var status int
-		var err error
-		defer sg.Done(status, err)
-		submission.Attachment, status, err = ada.Attachment(attachSel)
-	}()
-	go func() {
-		var status int
-		var err error
-		defer sg.Done(status, err)
-		submission.CommentAttachment, status, err = ada.Attachment(commentAttachSel)
-	}()
+	sg.Go(func(status *int, err *error) {
+		submission.Attachment, *status, *err = ada.Attachment(attachSel)
+	})
+	sg.Go(func(status *int, err *error) {
+		submission.CommentAttachment, *status, *err = ada.Attachment(commentAttachSel)
+	})
 
 	status, errMsg = sg.Wait()
 	return
@@ -218,22 +210,14 @@ func (ada *Adapter) Assignments(courseId string) (assignments []*model.Assignmen
 	for _, assign := range assignments {
 		assign := assign
 
-		sg.Add(1)
-		go func() {
-			var status int
-			var err error
-			defer sg.Done(status, err)
-			_, assign.Body, assign.Attachment, status, err = ada.AssignmentDetail(courseId, assign.Id)
-		}()
+		sg.Go(func(status *int, err *error) {
+			_, assign.Body, assign.Attachment, *status, *err = ada.AssignmentDetail(courseId, assign.Id)
+		})
 
 		if len(assign.Submissions) > 0 {
-			sg.Add(1)
-			go func() {
-				var status int
-				var err error
-				defer sg.Done(status, err)
-				assign.Submissions[0], status, err = ada.Submission(courseId, assign.Id)
-			}()
+			sg.Go(func(status *int, err *error) {
+				assign.Submissions[0], *status, *err = ada.Submission(courseId, assign.Id)
+			})
 		}
 	}
 

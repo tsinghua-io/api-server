@@ -173,19 +173,12 @@ func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.
 			},
 		}
 
-		sg.Add(2)
-		go func() {
-			var status int
-			var err error
-			defer sg.Done(status, err)
-			course.TimeLocations, status, err = ada.TimeLocations(course.Id)
-		}()
-		go func() {
-			var status int
-			var err error
-			defer sg.Done(status, err)
-			course.Assistants, status, err = ada.Assistants(course.Id)
-		}()
+		sg.Go(func(status *int, err *error) {
+			course.TimeLocations, *status, *err = ada.TimeLocations(course.Id)
+		})
+		sg.Go(func(status *int, err *error) {
+			course.Assistants, *status, *err = ada.Assistants(course.Id)
+		})
 		courses = append(courses, course)
 	}
 
@@ -201,19 +194,12 @@ func (ada *Adapter) NowAttended(english bool) (thisCourses []*model.Course, next
 	}
 
 	sg := util.NewStatusGroup()
-	sg.Add(2)
-	go func() {
-		var status int
-		var err error
-		defer sg.Done(status, err)
-		thisCourses, status, err = ada.Attended(thisSem, english)
-	}()
-	go func() {
-		var status int
-		var err error
-		defer sg.Done(status, err)
-		nextCourses, status, err = ada.Attended(nextSem, english)
-	}()
+	sg.Go(func(status *int, err *error) {
+		thisCourses, *status, *err = ada.Attended(thisSem, english)
+	})
+	sg.Go(func(status *int, err *error) {
+		nextCourses, *status, *err = ada.Attended(nextSem, english)
+	})
 
 	status, errMsg = sg.Wait()
 	return
@@ -227,19 +213,12 @@ func (ada *Adapter) AllAttended(english bool) (courses []*model.Course, status i
 	var pastCourses, thisCourses, nextCourses []*model.Course
 
 	sg := util.NewStatusGroup()
-	sg.Add(2)
-	go func() {
-		var status int
-		var err error
-		defer sg.Done(status, err)
-		thisCourses, nextCourses, status, err = ada.NowAttended(english)
-	}()
-	go func() {
-		var status int
-		var err error
-		defer sg.Done(status, err)
-		pastCourses, status, err = ada.PastAttended(english)
-	}()
+	sg.Go(func(status *int, err *error) {
+		thisCourses, nextCourses, *status, *err = ada.NowAttended(english)
+	})
+	sg.Go(func(status *int, err *error) {
+		pastCourses, *status, *err = ada.PastAttended(english)
+	})
 
 	status, errMsg = sg.Wait()
 	courses = append(nextCourses, thisCourses...)

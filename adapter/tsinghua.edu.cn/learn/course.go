@@ -90,20 +90,13 @@ func (ada *Adapter) AllAttendedList() (courses []*model.Course, status int, errM
 	var thisCourses, pastCourses []*model.Course
 
 	sg := util.NewStatusGroup()
-	sg.Add(2)
 
-	go func() {
-		var status int
-		var err error
-		defer sg.Done(status, err)
-		thisCourses, status, err = ada.AttendedList(1)
-	}()
-	go func() {
-		var status int
-		var err error
-		defer sg.Done(status, err)
-		pastCourses, status, err = ada.AttendedList(2)
-	}()
+	sg.Go(func(status *int, err *error) {
+		thisCourses, *status, *err = ada.AttendedList(1)
+	})
+	sg.Go(func(status *int, err *error) {
+		pastCourses, *status, *err = ada.AttendedList(2)
+	})
 
 	status, errMsg = sg.Wait()
 	courses = append(thisCourses, pastCourses...)

@@ -120,16 +120,12 @@ func (ada *Adapter) Announcements(courseId string) (announcements []*model.Annou
 	}
 
 	sg := util.NewStatusGroup()
-	sg.Add(len(announcements))
 
 	for _, annc := range announcements {
 		annc := annc
-		go func() {
-			var status int
-			var err error
-			defer sg.Done(status, err)
-			_, annc.Body, annc.Owner.Email, status, err = ada.Announcement(courseId, annc.Id)
-		}()
+		sg.Go(func(status *int, err *error) {
+			_, annc.Body, annc.Owner.Email, *status, *err = ada.Announcement(courseId, annc.Id)
+		})
 	}
 
 	status, errMsg = sg.Wait()

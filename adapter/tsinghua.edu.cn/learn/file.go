@@ -79,16 +79,12 @@ func (ada *Adapter) Files(courseId string) (files []*model.File, status int, err
 
 	// Fill file infos.
 	sg := util.NewStatusGroup()
-	sg.Add(len(files))
 
 	for _, file := range files {
 		file := file
-		go func() {
-			var status int
-			var err error
-			defer sg.Done(status, err)
-			file.Filename, file.Size, status, err = ada.FileInfo(file.DownloadURL, simplifiedchinese.GBK)
-		}()
+		sg.Go(func(status *int, err *error) {
+			file.Filename, file.Size, *status, *err = ada.FileInfo(file.DownloadURL, simplifiedchinese.GBK)
+		})
 	}
 
 	status, errMsg = sg.Wait()
