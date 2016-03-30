@@ -40,7 +40,7 @@ func (ada *Adapter) Announcement(courseId, id string) (title, body, email string
 	}
 
 	// Be careful here, as the body can contain anything.
-	if content := doc.Find("#table_box>tbody>tr>td:last-child"); content.Size() != 2 {
+	if content := doc.Find("#table_box>tbody>tr>td:nth-child(2)"); content.Size() != 2 {
 		errMsg = fmt.Errorf("Expect 2 content blocks, got %d.", content.Size())
 	} else if bodyHTML, err := content.Eq(1).Html(); err != nil {
 		errMsg = fmt.Errorf("Failed to rebuild body HTML: %s", err)
