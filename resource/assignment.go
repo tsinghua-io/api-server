@@ -2,7 +2,7 @@ package resource
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/tsinghua-io/api-server/adapter/tsinghua.edu.cn/cic/learn"
+	"github.com/tsinghua-io/api-server/adapter/tsinghua.edu.cn/x/learn"
 	"github.com/tsinghua-io/api-server/util"
 	"net/http"
 )
