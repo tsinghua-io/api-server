@@ -23,7 +23,7 @@ func TestAssignments(t *testing.T) {
 			BeginAt:  "2015-11-02",
 			DueAt:    "2015-11-05",
 			Title:    "第六次作业",
-			Body:     "    第六次作业有部分内容需要Matlab仿真，所以如果有同学想提交电子版作业，请把非仿真的部分也拍照一并提交上来，这样就可以不必提交纸版作业了。\n    如果有同学要提交纸板作业，请把仿真内容打印出来，在课堂上交给老师！\n",
+			Body:     "第六次作业有部分内容需要Matlab仿真，所以如果有同学想提交电子版作业，请把非仿真的部分也拍照一并提交上来，这样就可以不必提交纸版作业了。\n    如果有同学要提交纸板作业，请把仿真内容打印出来，在课堂上交给老师！",
 			Submissions: []*model.Submission{
 				{
 					AssignmentId: "663857",
@@ -46,7 +46,7 @@ func TestAssignments(t *testing.T) {
 			BeginAt:  "2015-11-15",
 			DueAt:    "2015-11-30",
 			Title:    "大作业",
-			Body:     "作业说明件附件，参考论文和数据请从“课程文件”中下载。\n\n",
+			Body:     "作业说明件附件，参考论文和数据请从“课程文件”中下载。",
 			Attachment: &model.Attachment{
 				Filename:    "625602385_2_2015年《数字信号处理》课程大作业.pdf",
 				Size:        112055,
