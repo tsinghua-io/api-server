@@ -1,88 +1,148 @@
 package learn
 
 import (
-	"github.com/tsinghua-io/api-server/adapter/cic/learn"
-	"github.com/tsinghua-io/api-server/adapter/learn"
-	"github.com/tsinghua-io/api-server/resource"
+	cic "github.com/tsinghua-io/api-server/adapter/tsinghua.edu.cn/cic/learn"
+	old "github.com/tsinghua-io/api-server/adapter/tsinghua.edu.cn/learn"
+	"github.com/tsinghua-io/api-server/model"
+	"github.com/tsinghua-io/api-server/util"
 	"net/http"
 	"strings"
 )
 
-type MixedAdapter struct {
-	old *old.OldAdapter
-	cic *cic.CicAdapter
+type Adapter struct {
+	*cic.Adapter
+	Old *old.Adapter
 }
 
-func Login(username string, password string) (ada *MixedAdapter, status int) {
-	var oldAda *old.OldAdapter
-	oldStatus := make(chan int, 1)
-	go func() {
-		ada, status := old.Login(username, password)
-		oldAda = ada
-		oldStatus <- status
-	}()
+func New(userId, password string) (ada *Adapter, status int, errMsg error) {
+	ada = new(Adapter)
 
-	cicAda, cicStatus := cic.Login(username, password)
-	if cicStatus != http.StatusOK {
-		return nil, cicStatus
+	sg := util.NewStatusGroup()
+	sg.Go(func(status *int, err *error) {
+		ada.Adapter, *status, *err = cic.New(userId, password)
+	})
+	sg.Go(func(status *int, err *error) {
+		ada.Old, *status, *err = old.New(userId, password)
+	})
+	status, errMsg = sg.Wait()
+
+	return
+}
+
+func (ada *Adapter) Announcements(courseId string) (announcements []*model.Announcement, status int, errMsg error) {
+	if strings.Contains(courseId, "-") {
+		return ada.Adapter.Announcements(courseId)
+	} else {
+		return ada.Old.Announcements(courseId)
 	}
-	if status := <-oldStatus; status != http.StatusOK {
-		return nil, status
+}
+
+func (ada *Adapter) Assignments(courseId string) (assignments []*model.Assignment, status int, errMsg error) {
+	if strings.Contains(courseId, "-") {
+		return ada.Adapter.Assignments(courseId)
+	} else {
+		return ada.Old.Assignments(courseId)
 	}
-
-	// We are safe.
-	return &MixedAdapter{old: oldAda, cic: cicAda}, http.StatusOK
 }
 
-func (ada *MixedAdapter) Profile(username string, params map[string]string) (user *resource.User, status int) {
-	return ada.cic.Profile(username, params)
+type fatName struct {
+	name string
+	seq  string
+	sem  string
 }
 
-func (ada *MixedAdapter) Attended(username string, params map[string]string) (courses []*resource.Course, status int) {
-	cic2old := make(chan map[string]string, 1)
+func newFatName(course *model.Course) fatName {
+	return fatName{course.Name, course.CourseSequence, course.Semester}
+}
 
-	go func() {
-		courses, status := ada.old.Attended(username, params)
-		if status != http.StatusOK {
-			cic2old <- make(map[string]string)
+func (ada *Adapter) nameIdMap() (m map[fatName]string, status int, errMsg error) {
+	var courses []*model.Course
+	if courses, status, errMsg = ada.Old.AllAttendedList(); errMsg == nil {
+		m := make(map[fatName]string)
+		for _, course := range courses {
+			if strings.Contains(course.Id, "-") {
+				m[newFatName(course)] = course.Id
+			}
 		}
-		cic2old <- old.CourseIdMap(courses)
-	}()
-
-	if courses, status = ada.cic.Attended(username, params); status != http.StatusOK {
-		return nil, status
 	}
+}
 
-	// We are safe, substitute ids.
-	mapping := <-cic2old
+func replaceCourseIds(courses []*model.Course, m map[fatName]string) {
 	for _, course := range courses {
-		if oldId := mapping[course.Id]; oldId != "" {
+		if oldId, ok := m[newFatName(course)]; ok {
 			course.Id = oldId
 		}
 	}
-	return courses, http.StatusOK
 }
 
-func (ada *MixedAdapter) CourseAnnouncements(courseId string, params map[string]string) (announcements []*resource.Announcement, status int) {
-	if strings.Contains(courseId, "-") {
-		return ada.cic.CourseAnnouncements(courseId, params)
-	} else {
-		return ada.old.CourseAnnouncements(courseId, params)
+func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.Course, status int, errMsg error) {
+	var m map[fatName]string
+
+	sg := util.NewStatusGroup()
+	sg.Go(func(status *int, err *error) {
+		m, *status, *err = ada.nameIdMap()
+	})
+	sg.Go(func(status *int, err *error) {
+		courses, *status, *err = ada.Adapter.Attended(semesterID, english)
+	})
+	if status, errMsg = sg.Wait(); errMsg == nil {
+		replaceCourseIds(courses, m)
 	}
 }
 
-func (ada *MixedAdapter) CourseFiles(courseId string, params map[string]string) (files []*resource.File, status int) {
-	if strings.Contains(courseId, "-") {
-		return ada.cic.CourseFiles(courseId, params)
-	} else {
-		return ada.old.CourseFiles(courseId, params)
+func (ada *Adapter) NowAttended(english bool) (thisCourses []*model.Course, nextCourses []*model.Course, status int, errMsg error) {
+	var m map[fatName]string
+
+	sg := util.NewStatusGroup()
+	sg.Go(func(status *int, err *error) {
+		m, *status, *err = ada.nameIdMap()
+	})
+	sg.Go(func(status *int, err *error) {
+		courses, *status, *err = ada.Adapter.NowAttended(english)
+	})
+	if status, errMsg = sg.Wait(); errMsg == nil {
+		replaceCourseIds(courses, m)
 	}
 }
 
-func (ada *MixedAdapter) CourseHomework(courseId string, params map[string]string) (files []*resource.Homework, status int) {
-	if strings.Contains(courseId, "-") {
-		return ada.cic.CourseHomework(courseId, params)
-	} else {
-		return ada.old.CourseHomework(courseId, params)
+func (ada *Adapter) PastAttended(english bool) (courses []*model.Course, status int, errMsg error) {
+	var m map[fatName]string
+
+	sg := util.NewStatusGroup()
+	sg.Go(func(status *int, err *error) {
+		m, *status, *err = ada.nameIdMap()
+	})
+	sg.Go(func(status *int, err *error) {
+		courses, *status, *err = ada.Adapter.PastAttended(english)
+	})
+	if status, errMsg = sg.Wait(); errMsg == nil {
+		replaceCourseIds(courses, m)
 	}
+}
+
+func (ada *Adapter) AllAttended(english bool) (courses []*model.Course, status int, errMsg error) {
+	var m map[fatName]string
+
+	sg := util.NewStatusGroup()
+	sg.Go(func(status *int, err *error) {
+		m, *status, *err = ada.nameIdMap()
+	})
+	sg.Go(func(status *int, err *error) {
+		courses, *status, *err = ada.Adapter.AllAttended(english)
+	})
+	if status, errMsg = sg.Wait(); errMsg == nil {
+		replaceCourseIds(courses, m)
+	}
+}
+
+func (ada *Adapter) Files(courseId string) (files []*model.File, status int, errMsg error) {
+	if strings.Contains(courseId, "-") {
+		return ada.Adapter.Files(courseId)
+	} else {
+		return ada.Old.Files(courseId)
+	}
+}
+
+func (ada *Adapter) Profile() (profile *model.User, status int, errMsg error) {
+	return ada.Adapter.Profile()
 }
