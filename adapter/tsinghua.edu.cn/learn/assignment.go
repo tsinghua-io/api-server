@@ -116,12 +116,13 @@ func (ada *Adapter) Submission(courseId, id string) (submission *model.Submissio
 
 			submission = &model.Submission{
 				AssignmentId: id,
-				CreatedAt:    texts[4],
 				Late:         false, // Or we cannot view it now.
 				Body:         texts[1],
 			}
 			if markedAt := texts[4]; markedAt != "null" {
-				submission.MarkedBy = &model.User{Name: texts[3]}
+				if name := texts[3]; name != "" {
+					submission.MarkedBy = &model.User{Name: name}
+				}
 				submission.MarkedAt = markedAt
 				submission.Mark = mark
 				submission.Comment = texts[6]
