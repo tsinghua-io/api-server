@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 )
@@ -17,12 +18,14 @@ func NewStatusGroup() *StatusGroup {
 }
 
 func (sg *StatusGroup) Done(status int, err error) {
+	if status == 0 {
+		// An early exit.
+		status = http.StatusInternalServerError
+		err = fmt.Errorf("Unkown errors occur in an goroutine.")
+	}
+
 	sg.Lock()
 	if sg.Err == nil && err != nil {
-		if status == 0 {
-			// Usually caused by an early exit.
-			status = http.StatusInternalServerError
-		}
 		sg.Status = status
 		sg.Err = err
 	}
