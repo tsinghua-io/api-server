@@ -175,7 +175,7 @@ func (ada *Adapter) AssignmentList(courseId string) (assignments []*model.Assign
 				Id:       id,
 				CourseId: courseId,
 				BeginAt:  texts[1],
-				DueAt:    texts[2],
+				DueAt:    texts[2] + "T23:59:59+0800",
 				Title:    texts[0],
 			}
 			switch subStatus := texts[3]; subStatus {
