@@ -1,25 +1,26 @@
 package learn
 
 import (
-	"github.com/tsinghua-io/api-server/adapter"
-	"github.com/tsinghua-io/api-server/resource"
+	"github.com/tsinghua-io/api-server/model"
+	"github.com/tsinghua-io/api-server/util"
 	"net/http"
 	"testing"
 )
 
-func TestCourseAnnouncements(t *testing.T) {
-	var actual []*resource.Announcement
-	if status := ada.Announcements("103048", nil, &actual); status != http.StatusOK {
-		t.Errorf("Unable to get announcements: %s", http.StatusText(status))
-		return
+func TestAnnouncements(t *testing.T) {
+	actual, status, err := ada.Announcements("103048")
+	if err != nil {
+		t.Fatalf("Failed to get announcements: %s", err)
 	}
 
+	util.ExpectStatus(t, status, http.StatusOK)
+
 	// Check fetched data.
-	expected := []*resource.Announcement{
+	expected := []*model.Announcement{
 		{
 			Id:        "1535567",
 			CourseId:  "103048",
-			Owner:     &resource.User{Name: "孙甲松老师"},
+			Owner:     &model.User{Name: "孙甲松"},
 			CreatedAt: "2013-12-31",
 			Priority:  1,
 			Title:     "期末考试时间地点",
@@ -28,7 +29,7 @@ func TestCourseAnnouncements(t *testing.T) {
 		{
 			Id:        "1481094",
 			CourseId:  "103048",
-			Owner:     &resource.User{Name: "陈权崎"},
+			Owner:     &model.User{Name: "陈权崎"},
 			CreatedAt: "2013-10-16",
 			Priority:  0,
 			Title:     "捡到一个U盘",
@@ -37,7 +38,7 @@ func TestCourseAnnouncements(t *testing.T) {
 		{
 			Id:        "1466904",
 			CourseId:  "103048",
-			Owner:     &resource.User{Name: "孙甲松老师"},
+			Owner:     &model.User{Name: "孙甲松"},
 			CreatedAt: "2013-09-26",
 			Priority:  1,
 			Title:     "《C程序设计教程》马上到教材中心",
@@ -46,7 +47,7 @@ func TestCourseAnnouncements(t *testing.T) {
 		{
 			Id:        "1466172",
 			CourseId:  "103048",
-			Owner:     &resource.User{Name: "孙甲松老师"},
+			Owner:     &model.User{Name: "孙甲松"},
 			CreatedAt: "2013-09-25",
 			Priority:  1,
 			Title:     "注意：C语言02课件已经更新",
@@ -55,7 +56,7 @@ func TestCourseAnnouncements(t *testing.T) {
 		{
 			Id:        "1463882",
 			CourseId:  "103048",
-			Owner:     &resource.User{Name: "孙甲松老师"},
+			Owner:     &model.User{Name: "孙甲松"},
 			CreatedAt: "2013-09-23",
 			Priority:  1,
 			Title:     "分组与助教联系方式",
@@ -64,7 +65,7 @@ func TestCourseAnnouncements(t *testing.T) {
 		{
 			Id:        "1463860",
 			CourseId:  "103048",
-			Owner:     &resource.User{Name: "孙甲松老师"},
+			Owner:     &model.User{Name: "孙甲松"},
 			CreatedAt: "2013-09-23",
 			Priority:  1,
 			Title:     "提交作业或者实验报告后请检查附件大小！",
@@ -73,7 +74,7 @@ func TestCourseAnnouncements(t *testing.T) {
 		{
 			Id:        "1460655",
 			CourseId:  "103048",
-			Owner:     &resource.User{Name: "孙甲松老师"},
+			Owner:     &model.User{Name: "孙甲松"},
 			CreatedAt: "2013-09-18",
 			Priority:  1,
 			Title:     "关于前两次纸值作业",
@@ -82,7 +83,7 @@ func TestCourseAnnouncements(t *testing.T) {
 		{
 			Id:        "1460638",
 			CourseId:  "103048",
-			Owner:     &resource.User{Name: "孙甲松老师"},
+			Owner:     &model.User{Name: "孙甲松"},
 			CreatedAt: "2013-09-18",
 			Priority:  1,
 			Title:     "实验写报告提交到网络学堂中",
@@ -90,14 +91,12 @@ func TestCourseAnnouncements(t *testing.T) {
 		},
 	}
 
-	adapter.ExpectDeepEqual(t, actual, expected)
+	util.ExpectDeepEqual(t, actual, expected)
 }
 
-func BenchmarkCourseAnnouncements(b *testing.B) {
-	var announcements []*resource.Announcement
-
+func BenchmarkAnnouncements(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ada.Announcements("103048", nil, &announcements)
+		ada.Announcements("103048")
 	}
 }

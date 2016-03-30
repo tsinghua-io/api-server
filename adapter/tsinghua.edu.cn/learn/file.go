@@ -3,87 +3,94 @@ package learn
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/golang/glog"
-	"github.com/tsinghua-io/api-server/adapter"
-	"github.com/tsinghua-io/api-server/resource"
+	"github.com/tsinghua-io/api-server/model"
+	"github.com/tsinghua-io/api-server/util"
+	"golang.org/x/text/encoding/simplifiedchinese"
 	"net/http"
 	"net/url"
-	"strings"
 )
 
 func FilesURL(courseId string) string {
 	return fmt.Sprintf("%s/MultiLanguage/lesson/student/download.jsp?course_id=%s", BaseURL, courseId)
 }
 
-func (ada *Adapter) Files(courseId string, _ map[string]string, files *[]*resource.File) (status int) {
-	if files == nil {
-		glog.Errorf("nil received")
-		return http.StatusInternalServerError
+func ParseDownloadURL(downloadURL string) (courseId, id string) {
+	if parsed, err := url.Parse(downloadURL); err != nil {
+		courseId = parsed.Query().Get("course_id")
+		id = parsed.Query().Get("file_id")
 	}
+	return
+}
 
-	doc, err := ada.GetDocument(FilesURL(courseId))
+func (ada *Adapter) Files(courseId string) (files []*model.File, status int, errMsg error) {
+	// TODO: Clean this function up.
+	files = make([]*model.File, 0)
+
+	url := FilesURL(courseId)
+	doc, err := ada.GetDocument(url)
 	if err != nil {
-		return http.StatusBadGateway
+		status = http.StatusBadGateway
+		errMsg = err
+		return
 	}
 
-	// Find all categories
-	categories := doc.Find("td.textTD").Map(func(i int, s *goquery.Selection) (info string) {
-		info = strings.TrimSpace(s.Text())
-		return info
-	})
+	// Find all categories.
+	categories := util.TrimmedTexts(doc.Find("#table_box td.textTD"))
 
-	statuses := make(chan int, 1)
-	count := 0
+	doc.Find("div.layerbox").EachWithBreak(func(i int, div *goquery.Selection) bool {
+		if i >= len(categories) {
+			return false
+		}
+		category := []string{categories[i]}
 
-	categoryDivs := doc.Find("div.layerbox")
-	categoryDivs.Each(func(i int, div *goquery.Selection) {
-		category := categories[i]
-		trs := div.Find("#table_box tr~tr")
-		trs.Each(func(i int, s *goquery.Selection) {
-			infos := s.Find("td").Map(func(i int, tdSelection *goquery.Selection) (info string) {
-				info = strings.TrimSpace(tdSelection.Text())
-				return info
-			})
-
-			hrefSelection := s.Find("td a")
-
-			var href string
-			var hrefUrl *url.URL
-			var err error
-			if href, _ = hrefSelection.Attr("href"); href == "" {
-				return
-			}
-			if hrefUrl, err = url.Parse(href); err != nil {
-				return
-			}
-
-			if fileId := hrefUrl.Query().Get("file_id"); fileId != "" {
-				title := strings.TrimSpace(hrefSelection.Text())
-				file := &resource.File{
-					Id:          fileId,
+		div.Find("#table_box tr~tr").EachWithBreak(func(_ int, s *goquery.Selection) bool {
+			if cols := s.Children(); cols.Size() != 6 {
+				errMsg = fmt.Errorf("Expect 6 columns, got %d.", cols.Size())
+			} else if link := cols.Eq(1).Find("a"); link.Size() == 0 {
+				errMsg = fmt.Errorf("Failed to find link in column 1.")
+			} else if _, id := ParseDownloadURL(link.AttrOr("href", "")); id == "" {
+				errMsg = fmt.Errorf("Failed to find file id from href (%s).", link.AttrOr("href", ""))
+			} else {
+				texts := util.TrimmedTexts(cols)
+				file := &model.File{
+					Id:          id,
 					CourseId:    courseId,
-					CreatedAt:   infos[4],
-					Title:       title,
-					Description: infos[2],
-					Category:    []string{category},
-					DownloadURL: BaseURL + href,
+					CreatedAt:   texts[4],
+					Title:       texts[1],
+					Description: texts[2],
+					Category:    category,
+					DownloadURL: BaseURL + link.AttrOr("href", ""),
 				}
 
-				// Get file info.
-				count++
-				go func() {
-					statuses <- ada.FileInfo(file.DownloadURL, &file.Filename, &file.Size)
-				}()
-
-				*files = append(*files, file)
+				files = append(files, file)
 			}
 
+			return errMsg == nil
 		})
+
+		return errMsg == nil
 	})
 
-	for i := 0; i < count; i++ {
-		status = adapter.MergeStatus(status, <-statuses)
+	if errMsg != nil {
+		status = http.StatusInternalServerError
+		errMsg = fmt.Errorf("Failed to parse %s: %s", url, errMsg)
+		return
 	}
 
-	return status
+	// Fill file infos.
+	sg := util.NewStatusGroup()
+	sg.Add(len(files))
+
+	for _, file := range files {
+		file := file
+		go func() {
+			var status int
+			var err error
+			defer sg.Done(status, err)
+			file.Filename, file.Size, status, err = ada.FileInfo(file.DownloadURL, simplifiedchinese.GBK)
+		}()
+	}
+
+	status, errMsg = sg.Wait()
+	return
 }

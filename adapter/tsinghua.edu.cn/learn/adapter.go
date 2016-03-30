@@ -1,8 +1,8 @@
 package learn
 
 import (
-	"github.com/golang/glog"
-	"github.com/tsinghua-io/api-server/adapter"
+	"fmt"
+	"github.com/tsinghua-io/api-server/util"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -14,13 +14,12 @@ const (
 	AuthURL = "https://learn.tsinghua.edu.cn/MultiLanguage/lesson/teacher/loginteacher.jsp"
 )
 
-type Adapter struct {
-	adapter.Adapter
-}
+type Adapter struct{ util.Client }
 
-func New(userId, password string) (ada *Adapter, status int) {
+func New(userId, password string) (ada *Adapter, status int, errMsg error) {
 	ada = new(Adapter)
-	ada.AddJar()
+	ada.WithJar()
+	status = http.StatusOK
 
 	form := url.Values{}
 	form.Add("userid", userId)
@@ -28,18 +27,25 @@ func New(userId, password string) (ada *Adapter, status int) {
 
 	resp, err := ada.PostForm(AuthURL, form)
 	if err != nil {
-		glog.Errorf("Failed to post login form to %s: %s", AuthURL, err)
-		return nil, http.StatusBadGateway
+		return nil, http.StatusBadGateway, fmt.Errorf("Failed to post login form to %s: %s", AuthURL, err)
 	}
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
-	bodyStr := string(body)
-
-	if strings.Contains(bodyStr, "用户名或密码错误，登录失败") ||
-		strings.Contains(bodyStr, "您没有登陆网络学堂的权限") {
-		return nil, http.StatusUnauthorized
+	location := "loginteacher_action.jsp"
+	if body, _ := ioutil.ReadAll(resp.Body); !strings.Contains(string(body), location) {
+		return nil, http.StatusUnauthorized, fmt.Errorf("Failed to login to %s: No \"%s\" found in response", AuthURL, location)
 	}
 
-	return ada, http.StatusOK
+	return
+}
+
+func HandlerFunc(f func(http.ResponseWriter, *http.Request, *Adapter)) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		userId, password, _ := req.BasicAuth()
+		if ada, status, err := New(userId, password); err != nil {
+			util.Error(rw, err.Error(), status)
+		} else {
+			f(rw, req, ada)
+		}
+	})
 }

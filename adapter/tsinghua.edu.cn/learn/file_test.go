@@ -1,21 +1,25 @@
 package learn
 
 import (
-	"github.com/tsinghua-io/api-server/adapter"
-	"github.com/tsinghua-io/api-server/resource"
+	"github.com/tsinghua-io/api-server/model"
+	"github.com/tsinghua-io/api-server/util"
 	"net/http"
 	"testing"
 )
 
-func TestCourseFiles(t *testing.T) {
-	var actual []*resource.File
-	if status := ada.Files("127756", nil, &actual); status != http.StatusOK {
-		t.Errorf("Unable to get files: %s", http.StatusText(status))
-		return
+func TestFiles(t *testing.T) {
+	actual, status, err := ada.Files("127756")
+	if err != nil {
+		t.Fatalf("Failed to get files: %s", err)
+	}
+	if len(actual) < 17 {
+		t.Fatalf("Files length (%d) too small", len(actual))
 	}
 
+	util.ExpectStatus(t, status, http.StatusOK)
+
 	// Check fetched data.
-	tab1file1 := &resource.File{
+	tab1file1 := &model.File{
 		Id:          "1426717",
 		CourseId:    "127756",
 		CreatedAt:   "2015-09-13",
@@ -27,7 +31,7 @@ func TestCourseFiles(t *testing.T) {
 		DownloadURL: "https://learn.tsinghua.edu.cn/uploadFile/downloadFile_student.jsp?module_id=322\u0026filePath=N4Tel3ukBcf0P%2BxFdYeeoHN1562AESxTOYGA60sn5xpe9dkSxsvYaLcsha/n4FAm\u0026course_id=127756\u0026file_id=1426717",
 	}
 
-	tab2file1 := &resource.File{
+	tab2file1 := &model.File{
 		Id:          "1429268",
 		CourseId:    "127756",
 		CreatedAt:   "2015-09-14",
@@ -39,15 +43,13 @@ func TestCourseFiles(t *testing.T) {
 		DownloadURL: "https://learn.tsinghua.edu.cn/uploadFile/downloadFile_student.jsp?module_id=322\u0026filePath=tAY6dAg1JH0INPji6josGqd/QGxTAbvadCvv0EfUnWw1ilm2qC/RZXchbtqC3FfuswFdhSOzbohNc8dms8TKZOiOp0KJm7vo8kXwiCOpbiSvRRDvZlFfPmDX4MQCdxbueQFju3W3qmM%3D\u0026course_id=127756\u0026file_id=1429268",
 	}
 
-	adapter.ExpectDeepEqual(t, actual[0], tab1file1)
-	adapter.ExpectDeepEqual(t, actual[16], tab2file1)
+	util.ExpectDeepEqual(t, actual[0], tab1file1)
+	util.ExpectDeepEqual(t, actual[16], tab2file1)
 }
 
-func BenchmarkCourseFiles(b *testing.B) {
-	var files []*resource.File
-
+func BenchmarkFiles(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ada.Files("127756", nil, &files)
+		ada.Files("127756")
 	}
 }

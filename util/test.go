@@ -16,6 +16,10 @@ var (
 	Password = os.Getenv("thu_pass")
 )
 
+func NewFloat32(f float32) *float32 {
+	return &f
+}
+
 func ExpectStatus(t *testing.T, actual, expected int) bool {
 	if actual != expected {
 		t.Errorf("Incorrect status code: expected %s, got %s", http.StatusText(actual), http.StatusText(expected))

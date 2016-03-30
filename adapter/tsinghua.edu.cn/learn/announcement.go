@@ -3,127 +3,135 @@ package learn
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/golang/glog"
-	"github.com/tsinghua-io/api-server/adapter"
-	"github.com/tsinghua-io/api-server/resource"
-	"golang.org/x/net/html"
+	"github.com/tsinghua-io/api-server/model"
+	"github.com/tsinghua-io/api-server/util"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strings"
 )
 
-func AnnouncementBodyURL(courseId, id string) string {
+func AnnouncementURL(courseId, id string) string {
 	return fmt.Sprintf("%s/MultiLanguage/public/bbs/note_reply.jsp?bbs_type=课程公告&course_id=%s&id=%s", BaseURL, courseId, id)
 }
 
-func AnnouncementsURL(courseId string) string {
+func ParseAnnouncementURL(rawurl string) (courseId, id string) {
+	if parsed, err := url.Parse(rawurl); err == nil {
+		values := parsed.Query()
+		courseId = values.Get("course_id")
+		id = values.Get("id")
+	}
+	return
+}
+
+func AnnouncementListURL(courseId string) string {
 	return fmt.Sprintf("%s/MultiLanguage/public/bbs/getnoteid_student.jsp?course_id=%s", BaseURL, courseId)
 }
 
-func (ada *Adapter) AnnouncementBody(courseId, id string, _ map[string]string, body *string) (status int) {
-	if body == nil {
-		glog.Errorf("nil received")
-		return http.StatusInternalServerError
-	}
+func (ada *Adapter) Announcement(courseId, id string) (title, body, email string, status int, errMsg error) {
+	status = http.StatusOK
 
-	url := AnnouncementBodyURL(courseId, id)
+	url := AnnouncementURL(courseId, id)
 	doc, err := ada.GetDocument(url)
 	if err != nil {
-		return http.StatusBadGateway
+		status = http.StatusBadGateway
+		errMsg = err
+		return
 	}
 
-	tempBody, err := doc.Find("tr[height='300'] td.tr_l2").Html()
-	if err != nil {
-		return http.StatusBadGateway
+	// Be careful here, as the body can contain anything.
+	if content := doc.Find("#table_box>tbody>tr>td:last-child"); content.Size() != 2 {
+		errMsg = fmt.Errorf("Expect 2 content blocks, got %d.", content.Size())
+	} else if bodyHTML, err := content.Eq(1).Html(); err != nil {
+		errMsg = fmt.Errorf("Failed to rebuild body HTML: %s", err)
+	} else {
+		title = strings.TrimSpace(content.Eq(0).Text())
+		body = strings.TrimSpace(bodyHTML)
+		if sendEmail := doc.Find("#table_box>tbody>tr:last-child>td>input[name=sendmail]"); sendEmail.Size() != 0 {
+			// Try our best to parse it, but don't panic if we cannot.
+			regex, _ := regexp.Compile("/MultiLanguage/public/mail/student/sendmail.jsp\\?usersToSend=(.*?)&")
+			if subs := regex.FindStringSubmatch(sendEmail.AttrOr("onclick", "")); len(subs) > 1 {
+				email = subs[1]
+			}
+		}
 	}
-	*body = tempBody
 
-	return http.StatusOK
+	if errMsg != nil {
+		status = http.StatusInternalServerError
+		errMsg = fmt.Errorf("Failed to parse %s: %s", url, errMsg)
+		return
+	}
+
+	return
 }
 
-func (ada *Adapter) Announcements(courseId string, _ map[string]string, announcements *[]*resource.Announcement) (status int) {
-	if announcements == nil {
-		glog.Errorf("nil received")
-		return http.StatusInternalServerError
-	}
+func (ada *Adapter) AnnouncementList(courseId string) (announcements []*model.Announcement, status int, errMsg error) {
+	status = http.StatusOK
 
-	url := AnnouncementsURL(courseId)
+	url := AnnouncementListURL(courseId)
 	doc, err := ada.GetDocument(url)
 	if err != nil {
-		return http.StatusBadGateway
+		status = http.StatusBadGateway
+		errMsg = err
+		return
 	}
 
-	rows := doc.Find("tr.tr1, tr.tr2")
-	*announcements = make([]*resource.Announcement, rows.Size())
+	rows := doc.Find("#table_box tr~tr")
+	announcements = make([]*model.Announcement, rows.Size())
 
-	// Parse each row.
-	statuses := make(chan int, 1)
+	rows.EachWithBreak(func(i int, s *goquery.Selection) bool {
+		if cols := s.Children(); cols.Size() != 5 {
+			errMsg = fmt.Errorf("Expect 5 columns, got %d.", cols.Size())
+		} else if link := cols.Eq(1).Find("a"); link.Size() == 0 {
+			errMsg = fmt.Errorf("Failed to find link in column 1.")
+		} else if _, id := ParseAnnouncementURL(link.AttrOr("href", "")); id == "" {
+			errMsg = fmt.Errorf("Failed to find announcement id from href (%s).", link.AttrOr("href", ""))
+		} else {
+			texts := util.TrimmedTexts(cols)
+			annc := &model.Announcement{
+				Id:        id,
+				CourseId:  courseId,
+				Owner:     &model.User{Name: strings.TrimSuffix(texts[2], "老师")},
+				CreatedAt: texts[3],
+				Title:     texts[1],
+			}
+			if red := link.Find("font[color=red]"); red.Size() > 0 {
+				annc.Priority = 1
+			}
 
-	rows.Each(func(i int, s *goquery.Selection) {
-		annc := &resource.Announcement{CourseId: courseId}
+			announcements[i] = annc
+		}
+
+		return errMsg == nil
+	})
+
+	if errMsg != nil {
+		status = http.StatusInternalServerError
+		errMsg = fmt.Errorf("Failed to parse %s: %s", url, errMsg)
+		return
+	}
+
+	return
+}
+
+func (ada *Adapter) Announcements(courseId string) (announcements []*model.Announcement, status int, errMsg error) {
+	if announcements, status, errMsg = ada.AnnouncementList(courseId); errMsg != nil {
+		return
+	}
+
+	sg := util.NewStatusGroup()
+	sg.Add(len(announcements))
+
+	for _, annc := range announcements {
+		annc := annc
 		go func() {
-			statuses <- ada.parseAnnouncementsRow(s, annc)
+			var status int
+			var err error
+			defer sg.Done(status, err)
+			_, annc.Body, annc.Owner.Email, status, err = ada.Announcement(courseId, annc.Id)
 		}()
-		(*announcements)[i] = annc
-	})
-
-	for i := 0; i < rows.Size(); i++ {
-		status = adapter.MergeStatus(status, <-statuses)
 	}
 
-	return status
-}
-
-func (ada *Adapter) parseAnnouncementsRow(s *goquery.Selection, annc *resource.Announcement) (status int) {
-	infos := s.Find("td").Map(func(i int, tdSelection *goquery.Selection) (info string) {
-		info, _ = tdSelection.Html()
-		return info
-	})
-	if len(infos) < 5 {
-		glog.Errorf("No enough cols: %d", len(infos))
-		return http.StatusBadGateway
-	}
-
-	hrefSelection := s.Find("td a")
-	href, exists := hrefSelection.Attr("href")
-	if !exists {
-		glog.Errorf("href not found")
-		return http.StatusBadGateway
-	}
-	hrefURL, err := url.Parse(href)
-	if err != nil {
-		glog.Errorf("Failed to parse href (%s): %s", href, err)
-		return http.StatusBadGateway
-	}
-
-	// Id.
-	id := hrefURL.Query().Get("id")
-	if id == "" {
-		glog.Errorf("Cannot get id from %s", hrefURL)
-		return http.StatusBadGateway
-	}
-
-	// Title & priority.
-	var priority int
-	switch hrefSelection.Nodes[0].FirstChild.Type {
-	case html.TextNode:
-		priority = 0
-	default:
-		priority = 1
-	}
-
-	// Body.
-	var body string
-	if status := ada.AnnouncementBody(annc.CourseId, id, nil, &body); status != http.StatusOK {
-		return status
-	}
-
-	// We are safe.
-	annc.Id = id
-	annc.Owner = &resource.User{Name: infos[2]}
-	annc.CreatedAt = infos[3]
-	annc.Priority = priority
-	annc.Title = hrefSelection.Text()
-	annc.Body = body
-
-	return http.StatusOK
+	status, errMsg = sg.Wait()
+	return
 }

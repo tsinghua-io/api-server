@@ -47,7 +47,7 @@ type Announcement struct {
 	// Metadata.
 	Owner     *User  `json:"owner,omitempty"`
 	CreatedAt string `json:"created_at,omitempty"`
-	Priority  int    `json:"priority,omitempty"`
+	Priority  int    `json:"priority"`
 
 	// Content.
 	Title string `json:"title,omitempty"`
@@ -68,13 +68,13 @@ type File struct {
 
 	// Content.
 	Filename    string `json:"filename,omitempty"`
-	Size        int    `json:"size,omitempty"`
+	Size        int    `json:"size"`
 	DownloadURL string `json:"download_url,omitempty"`
 }
 
 type Attachment struct {
 	Filename    string `json:"filename,omitempty"`
-	Size        int    `json:"size,omitempty"`
+	Size        int    `json:"size"`
 	DownloadURL string `json:"download_url,omitempty"`
 }
 
@@ -83,19 +83,18 @@ type Submission struct {
 	Owner        *User  `json:"student,omitempty"`
 	AssignmentId string `json:"assignment_id,omitempty"`
 	CreatedAt    string `json:"created_at,omitempty"`
-	Late         bool   `json:"late,omitempty"`
+	Late         bool   `json:"late"`
 
 	// Content.
 	Body       string      `json:"body,omitempty"`
 	Attachment *Attachment `json:"attachment,omitempty"`
 
 	// Scoring metadata.
-	Marked   bool   `json:"marked,omitempty"`
 	MarkedBy *User  `json:"marked_by,omitempty"`
 	MarkedAt string `json:"marked_at,omitempty"`
 
 	// Scoring content.
-	Mark              float32     `json:"mark,omitempty"`
+	Mark              *float32    `json:"mark"`
 	Comment           string      `json:"comment,omitempty"`
 	CommentAttachment *Attachment `json:"comment_attachment,omitempty"`
 }

@@ -1,13 +1,13 @@
 package learn
 
 import (
-	"github.com/tsinghua-io/api-server/adapter"
-	"github.com/tsinghua-io/api-server/resource"
+	"github.com/tsinghua-io/api-server/model"
+	"github.com/tsinghua-io/api-server/util"
 	"net/http"
 	"testing"
 )
 
-func TestURL2CourseId(t *testing.T) {
+func TestParseCourseURL(t *testing.T) {
 	testSet := []struct {
 		courseURL string
 		courseId  string
@@ -18,76 +18,68 @@ func TestURL2CourseId(t *testing.T) {
 	}
 
 	for _, testInput := range testSet {
-		id, _ := URL2CourseId(testInput.courseURL)
-		adapter.ExpectDeepEqual(t, id, testInput.courseId)
+		id := ParseCourseURL(testInput.courseURL)
+		util.ExpectDeepEqual(t, id, testInput.courseId)
 	}
 }
 
-func TestCourseName2Semester(t *testing.T) {
+func TestParseCourseName(t *testing.T) {
 	testSet := []struct {
-		Name     string
-		Semester string
+		rawName string
+		name    string
+		seq     string
+		sem     string
 	}{
-		{"", ""},
-		{"计算机网络(0)(2015-2016秋季学期)", "2015-2016-1"},
-		{"   博弈论(0)(2015-2016春季学期)", "2015-2016-2"},
-		{"Matlab高级编程与工程应用(0)(2014-2015夏季学期)", "2014-2015-3"},
+		{"", "", "", ""},
+		{"计算机网络(0)(2015-2016秋季学期)", "计算机网络", "0", "2015-2016-1"},
+		{"   博弈论(0)(2015-2016春季学期)", "博弈论", "0", "2015-2016-2"},
+		{"Matlab高级编程与工程应用(0)(2014-2015夏季学期)", "Matlab高级编程与工程应用", "0", "2014-2015-3"},
 	}
 
 	for _, testInput := range testSet {
-		semester, _ := courseName2Semester(testInput.Name)
-		adapter.ExpectDeepEqual(t, semester, testInput.Semester)
+		name, seq, sem := ParseCourseName(testInput.rawName)
+		util.ExpectDeepEqual(t, name, testInput.name)
+		util.ExpectDeepEqual(t, seq, testInput.seq)
+		util.ExpectDeepEqual(t, sem, testInput.sem)
 	}
 }
 
-func TestAttended(t *testing.T) {
-	var courses []*resource.Course
-	if status := ada.Attended("", nil, &courses); status != http.StatusOK {
-		t.Errorf("Unable to get attended courses: %s", http.StatusText(status))
-		return
+func TestAllAttendedList(t *testing.T) {
+	courses, status, err := ada.AllAttendedList()
+	if err != nil {
+		t.Fatalf("Failed to get all attended list: %s", err)
+	}
+	if len(courses) < 25 {
+		t.Fatalf("All attended list length (%d) too small", len(courses))
 	}
 
-	testSet := []resource.Course{
+	util.ExpectStatus(t, status, http.StatusOK)
+
+	testSet := []model.Course{
 		{
 			Id:             "132577",
 			Semester:       "2015-2016-2",
-			CourseNumber:   "10721181",
 			CourseSequence: "1",
 		},
 		{
 			Id:             "108357",
 			Semester:       "2013-2014-2",
-			CourseNumber:   "10610193",
 			CourseSequence: "18",
 		},
 		{
-			Id:       "2014-2015-2-30230742-0",
-			Semester: "2014-2015-2",
+			Id:             "2014-2015-2-30230742-0",
+			Semester:       "2014-2015-2",
+			CourseSequence: "0",
 		},
 	}
 
-	adapter.ExpectDeepEqual(t, courses[0], &testSet[0])
-	adapter.ExpectDeepEqual(t, courses[len(courses)-1], &testSet[1])
-	adapter.ExpectDeepEqual(t, courses[len(courses)-25], &testSet[2])
+	util.ExpectDeepEqual(t, courses[0], &testSet[0])
+	util.ExpectDeepEqual(t, courses[len(courses)-1], &testSet[1])
+	util.ExpectDeepEqual(t, courses[len(courses)-25], &testSet[2])
 }
 
 func BenchmarkAttended(b *testing.B) {
-	var courses []*resource.Course
-
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ada.Attended("", nil, &courses)
+		ada.AllAttendedList()
 	}
-}
-
-func TestCourseIdMap(t *testing.T) {
-	actual := make(map[string]string)
-	if status := ada.CourseIdMap("", nil, actual); status != http.StatusOK {
-		t.Errorf("Unable to get attended courses: %s", http.StatusText(status))
-		return
-	}
-
-	adapter.ExpectDeepEqual(t, actual["2014-2015-2-40260202-0"], "")
-	adapter.ExpectDeepEqual(t, actual["2014-2015-2-30230711-2"], "123510")
-	adapter.ExpectDeepEqual(t, actual["2013-2014-2-10610193-18"], "108357")
 }
