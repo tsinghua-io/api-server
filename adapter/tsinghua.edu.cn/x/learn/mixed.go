@@ -146,3 +146,14 @@ func (ada *Adapter) Files(courseId string) (files []*model.File, status int, err
 func (ada *Adapter) Profile() (profile *model.User, status int, errMsg error) {
 	return ada.Adapter.Profile()
 }
+
+func HandlerFunc(f func(http.ResponseWriter, *http.Request, *Adapter)) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		userId, password, _ := req.BasicAuth()
+		if ada, status, err := New(userId, password); err != nil {
+			util.Error(rw, err.Error(), status)
+		} else {
+			f(rw, req, ada)
+		}
+	})
+}
