@@ -3,6 +3,7 @@ package learn
 import (
 	"github.com/tsinghua-io/api-server/model"
 	"net/http"
+	"strings"
 )
 
 const (
@@ -35,7 +36,7 @@ func (ada *Adapter) Profile() (profile *model.User, status int, errMsg error) {
 		Name:       data.Name,
 		Type:       data.Title,
 		Department: data.MajorName,
-		Class:      data.Classname,
+		Class:      strings.TrimSpace(data.Classname),
 		Gender:     data.Gender,
 		Email:      data.Email,
 		Phone:      data.Phone,
