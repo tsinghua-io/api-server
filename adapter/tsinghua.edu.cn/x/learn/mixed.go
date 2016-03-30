@@ -65,6 +65,7 @@ func (ada *Adapter) nameIdMap() (m map[fatName]string, status int, errMsg error)
 			}
 		}
 	}
+	return
 }
 
 func replaceCourseIds(courses []*model.Course, m map[fatName]string) {
@@ -88,6 +89,8 @@ func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.
 	if status, errMsg = sg.Wait(); errMsg == nil {
 		replaceCourseIds(courses, m)
 	}
+
+	return
 }
 
 func (ada *Adapter) NowAttended(english bool) (thisCourses []*model.Course, nextCourses []*model.Course, status int, errMsg error) {
@@ -98,11 +101,14 @@ func (ada *Adapter) NowAttended(english bool) (thisCourses []*model.Course, next
 		m, *status, *err = ada.nameIdMap()
 	})
 	sg.Go(func(status *int, err *error) {
-		courses, *status, *err = ada.Adapter.NowAttended(english)
+		thisCourses, nextCourses, *status, *err = ada.Adapter.NowAttended(english)
 	})
 	if status, errMsg = sg.Wait(); errMsg == nil {
-		replaceCourseIds(courses, m)
+		replaceCourseIds(thisCourses, m)
+		replaceCourseIds(nextCourses, m)
 	}
+
+	return
 }
 
 func (ada *Adapter) PastAttended(english bool) (courses []*model.Course, status int, errMsg error) {
@@ -118,6 +124,8 @@ func (ada *Adapter) PastAttended(english bool) (courses []*model.Course, status 
 	if status, errMsg = sg.Wait(); errMsg == nil {
 		replaceCourseIds(courses, m)
 	}
+
+	return
 }
 
 func (ada *Adapter) AllAttended(english bool) (courses []*model.Course, status int, errMsg error) {
@@ -133,6 +141,8 @@ func (ada *Adapter) AllAttended(english bool) (courses []*model.Course, status i
 	if status, errMsg = sg.Wait(); errMsg == nil {
 		replaceCourseIds(courses, m)
 	}
+
+	return
 }
 
 func (ada *Adapter) Files(courseId string) (files []*model.File, status int, errMsg error) {
