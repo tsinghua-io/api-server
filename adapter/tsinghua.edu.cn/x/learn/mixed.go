@@ -60,7 +60,7 @@ func (ada *Adapter) nameIdMap() (m map[fatName]string, status int, errMsg error)
 	if courses, status, errMsg = ada.Old.AllAttendedList(); errMsg == nil {
 		m = make(map[fatName]string)
 		for _, course := range courses {
-			if strings.Contains(course.Id, "-") {
+			if !strings.Contains(course.Id, "-") {
 				m[newFatName(course)] = course.Id
 			}
 		}
