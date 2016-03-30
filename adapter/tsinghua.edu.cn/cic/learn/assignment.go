@@ -34,7 +34,7 @@ func (ada *Adapter) Assignments(courseId string) (assignments []*model.Assignmen
 					FileName string
 					FileSize string
 				}
-				Mark      *int
+				Mark      *float32
 				ReplyDate int64
 				Status    string // 0 for 未交, 1 for 未批, 2 for 已阅, 3 for 已批
 				IfDelay   string // 1 for late, 2 for 代交
@@ -103,14 +103,6 @@ func (ada *Adapter) Assignments(courseId string) (assignments []*model.Assignmen
 				}
 			}
 
-			// Mark.
-			var marked bool
-			var mark float32
-			if result.CourseHomeworkRecord.Mark != nil {
-				marked = true
-				mark = float32(*result.CourseHomeworkRecord.Mark)
-			}
-
 			submissions = []*model.Submission{
 				{
 					Owner:             &model.User{Id: result.CourseHomeworkRecord.StudentId},
@@ -119,10 +111,9 @@ func (ada *Adapter) Assignments(courseId string) (assignments []*model.Assignmen
 					Late:              result.CourseHomeworkRecord.IfDelay == "1",
 					Body:              result.CourseHomeworkRecord.HomewkDetail,
 					Attachment:        attach,
-					Marked:            marked,
 					MarkedBy:          &model.User{Name: result.CourseHomeworkRecord.GradeUser},
 					MarkedAt:          parseRegDate(result.CourseHomeworkRecord.ReplyDate),
-					Mark:              mark,
+					Mark:              result.CourseHomeworkRecord.Mark,
 					Comment:           result.CourseHomeworkRecord.ReplyDetail,
 					CommentAttachment: commentAttach,
 				},

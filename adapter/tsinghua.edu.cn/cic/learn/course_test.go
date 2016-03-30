@@ -45,6 +45,7 @@ func TestAllAttended(t *testing.T) {
 				Gender:     "男",
 			},
 		},
+		Assistants: []*model.User{},
 	}
 
 	util.ExpectDeepEqual(t, actual, expected)
