@@ -58,7 +58,7 @@ func newFatName(course *model.Course) fatName {
 func (ada *Adapter) nameIdMap() (m map[fatName]string, status int, errMsg error) {
 	var courses []*model.Course
 	if courses, status, errMsg = ada.Old.AllAttendedList(); errMsg == nil {
-		m := make(map[fatName]string)
+		m = make(map[fatName]string)
 		for _, course := range courses {
 			if strings.Contains(course.Id, "-") {
 				m[newFatName(course)] = course.Id
