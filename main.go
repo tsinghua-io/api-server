@@ -12,8 +12,11 @@ import (
 )
 
 func main() {
-	host := flag.String("host", "", "Host of the server")
-	port := flag.Int("port", 8000, "Port of the server")
+	host := flag.String("host", "api.tsinghua.io", "Host of the server")
+	port := flag.Int("port", 443, "Port of the server")
+	certFile := flag.String("cert", "", "Certificate file.")
+	keyFile := flag.String("key", "", "key file.")
+
 	flag.Parse()
 
 	api := api.New(
@@ -30,6 +33,6 @@ func main() {
 
 	addr := *host + ":" + strconv.Itoa(*port)
 	glog.Infof("Starting server on %s", addr)
-	err := http.ListenAndServe(addr, api)
+	err := http.ListenAndServeTLS(addr, *certFile, *keyFile, api)
 	glog.Fatalf("Shutting down: %s", err)
 }
