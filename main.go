@@ -21,7 +21,7 @@ func main() {
 
 	api := api.New(
 		handlers.CompressHandler,
-		util.ContentTypeHandler,
+		util.HeadersHandler,
 		util.NewLimiter(60, 10).Handler(),
 	)
 

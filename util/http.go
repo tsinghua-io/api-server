@@ -28,9 +28,10 @@ func JSON(rw http.ResponseWriter, v interface{}, status int, err error) {
 	}
 }
 
-func ContentTypeHandler(h http.Handler) http.Handler {
+func HeadersHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		rw.Header().Set("Content-Type", "application/json; charset=utf-8")
+		rw.Header().Add("Vary", "Authorization")
 		h.ServeHTTP(rw, req)
 	})
 }
