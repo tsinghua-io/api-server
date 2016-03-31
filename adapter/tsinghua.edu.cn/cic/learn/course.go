@@ -144,9 +144,15 @@ func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.
 			name = result.E_course_name
 			description = result.Detail_e
 			department = result.CodeDepartmentInfo.Dwywmc
-		} else {
+		}
+		// Fallback to Chinese version.
+		if name == "" {
 			name = result.Course_name
+		}
+		if description == "" {
 			description = result.Detail_c
+		}
+		if department == "" {
 			department = result.CodeDepartmentInfo.Dwmc
 		}
 
