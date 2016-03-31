@@ -80,7 +80,7 @@ type Attachment struct {
 
 type Submission struct {
 	// Metadata.
-	Owner        *User  `json:"student,omitempty"`
+	Owner        *User  `json:"owner,omitempty"`
 	AssignmentId string `json:"assignment_id,omitempty"`
 	CreatedAt    string `json:"created_at,omitempty"`
 	Late         bool   `json:"late"`

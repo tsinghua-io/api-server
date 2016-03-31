@@ -16,7 +16,7 @@ func main() {
 	port := flag.Int("port", 443, "Port of the server")
 	certFile := flag.String("cert", "", "Certificate file.")
 	keyFile := flag.String("key", "", "key file.")
-	windowMin := flag.Int64("window", 900, "Window size of the rate limit (in minutes).")
+	windowMin := flag.Int64("window", 15, "Window size of the rate limit (in minutes).")
 	rate := flag.Int("rate", 900, "Max requests per window per IP.")
 
 	flag.Parse()
