@@ -6,7 +6,7 @@ import (
 )
 
 var SupportedLanguageMatcher = language.NewMatcher([]language.Tag{
-	language.Chinese,
+	language.SimplifiedChinese,
 	language.English,
 })
 
