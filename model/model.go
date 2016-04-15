@@ -117,3 +117,9 @@ type Assignment struct {
 	// Submission.
 	Submission *Submission `json:"submission,omitempty"`
 }
+
+type Materials struct {
+	Announcements []*Announcement `json:"announcements,omitempty"`
+	Files         []*File         `json:"files,omitempty"`
+	Assignments   []*Assignment   `json:"assignments,omitempty"`
+}

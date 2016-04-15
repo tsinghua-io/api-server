@@ -39,16 +39,17 @@ func BatchResourceFunc(argsStr string, f func(string) (interface{}, int, error))
 		v, status, err = f(args[0])
 	} else {
 		list := make([]interface{}, len(args))
-
 		sg := util.NewStatusGroup()
+
 		for i := range args {
 			i := i
 			sg.Go(func(status *int, err *error) {
 				list[i], *status, *err = f(args[i])
 			})
 		}
-		v = list
+
 		status, err = sg.Wait()
+		v = list
 	}
 
 	return
