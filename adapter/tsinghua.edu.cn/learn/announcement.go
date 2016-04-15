@@ -40,14 +40,14 @@ func (ada *Adapter) Announcement(courseId, id string) (title, body, email string
 	}
 
 	// Be careful here, as the body can contain anything.
-	if content := doc.Find("#table_box>tbody>tr>td:nth-child(2)"); content.Size() != 2 {
-		errMsg = fmt.Errorf("Expect 2 content blocks, got %d.", content.Size())
-	} else if bodyHTML, err := content.Eq(1).Html(); err != nil {
+	if trs := doc.Find("#table_box>tbody").First().Children(); trs.Size() != 4 {
+		errMsg = fmt.Errorf("Expect 4 rows, got %d.", trs.Size())
+	} else if bodyHTML, err := trs.Eq(1).Find(".tr_l2").Html(); err != nil {
 		errMsg = fmt.Errorf("Failed to rebuild body HTML: %s", err)
 	} else {
-		title = strings.TrimSpace(content.Eq(0).Text())
+		title = strings.TrimSpace(trs.Eq(0).Text())
 		body = strings.TrimSpace(bodyHTML)
-		if sendEmail := doc.Find("#table_box>tbody>tr:last-child>td>input[name=sendmail]"); sendEmail.Size() != 0 {
+		if sendEmail := trs.Eq(3).Find("input[name=sendmail]"); sendEmail.Size() != 0 {
 			// Try our best to parse it, but don't panic if we cannot.
 			regex, _ := regexp.Compile("/MultiLanguage/public/mail/student/sendmail.jsp\\?usersToSend=(.*?)&")
 			if subs := regex.FindStringSubmatch(sendEmail.AttrOr("onclick", "")); len(subs) > 1 {
