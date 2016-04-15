@@ -12,6 +12,10 @@ var CourseFiles = Resource{
 }
 
 var GetCourseFiles = learn.HandlerFunc(func(rw http.ResponseWriter, req *http.Request, ada *learn.Adapter) {
-	files, status, err := ada.Files(mux.Vars(req)["id"])
-	util.JSON(rw, files, status, err)
+	v, status, err := BatchResourceFunc(
+		mux.Vars(req)["id"],
+		func(id string) (interface{}, int, error) {
+			return ada.Files(id)
+		})
+	util.JSON(rw, v, status, err)
 })

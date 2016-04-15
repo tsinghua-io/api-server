@@ -12,6 +12,10 @@ var CourseAssignments = Resource{
 }
 
 var GetCourseAssignments = learn.HandlerFunc(func(rw http.ResponseWriter, req *http.Request, ada *learn.Adapter) {
-	assignments, status, err := ada.Assignments(mux.Vars(req)["id"])
-	util.JSON(rw, assignments, status, err)
+	v, status, err := BatchResourceFunc(
+		mux.Vars(req)["id"],
+		func(id string) (interface{}, int, error) {
+			return ada.Assignments(id)
+		})
+	util.JSON(rw, v, status, err)
 })

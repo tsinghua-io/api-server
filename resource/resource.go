@@ -31,3 +31,25 @@ func (r Resource) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		h.ServeHTTP(rw, req)
 	}
 }
+
+func BatchResourceFunc(argsStr string, f func(string) (interface{}, int, error)) (v interface{}, status int, err error) {
+	args := strings.Split(argsStr, ",")
+
+	if len(args) == 1 {
+		v, status, err = f(args[0])
+	} else {
+		list := make([]interface{}, len(args))
+
+		sg := util.NewStatusGroup()
+		for i := range args {
+			i := i
+			sg.Go(func(status *int, err *error) {
+				list[i], *status, *err = f(args[i])
+			})
+		}
+		v = list
+		status, err = sg.Wait()
+	}
+
+	return
+}

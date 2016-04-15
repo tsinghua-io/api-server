@@ -12,6 +12,10 @@ var CourseAnnouncements = Resource{
 }
 
 var GetCourseAnnouncements = learn.HandlerFunc(func(rw http.ResponseWriter, req *http.Request, ada *learn.Adapter) {
-	announcements, status, err := ada.Announcements(mux.Vars(req)["id"])
-	util.JSON(rw, announcements, status, err)
+	v, status, err := BatchResourceFunc(
+		mux.Vars(req)["id"],
+		func(id string) (interface{}, int, error) {
+			return ada.Announcements(id)
+		})
+	util.JSON(rw, v, status, err)
 })
