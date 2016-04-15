@@ -52,7 +52,7 @@ type fatName struct {
 }
 
 func newFatName(course *model.Course) fatName {
-	return fatName{course.Name, course.CourseSequence, course.Semester}
+	return fatName{course.Name, course.Sequence, course.Semester}
 }
 
 func (ada *Adapter) nameIdMap() (m map[fatName]string, status int, errMsg error) {

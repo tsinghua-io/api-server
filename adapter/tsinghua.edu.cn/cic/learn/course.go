@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func TimeLocationsURL(courseId string) string {
+func SchedulesURL(courseId string) string {
 	return fmt.Sprintf("%s/b/course/info/timePlace/%s", BaseURL, courseId)
 }
 
@@ -20,11 +20,11 @@ func AttendedURL(semesterID string) string {
 	return fmt.Sprintf("%s/b/myCourse/courseList/loadCourse4Student/%s", BaseURL, semesterID)
 }
 
-func (ada *Adapter) TimeLocations(courseId string) (timeLocations []*model.TimeLocation, status int, errMsg error) {
-	timeLocations = make([]*model.TimeLocation, 0)
+func (ada *Adapter) Schedules(courseId string) (schedules []*model.Schedule, status int, errMsg error) {
+	schedules = make([]*model.Schedule, 0)
 	status = http.StatusOK
 
-	url := TimeLocationsURL(courseId)
+	url := SchedulesURL(courseId)
 	var v struct {
 		ResultList []struct {
 			Skzc string
@@ -39,26 +39,26 @@ func (ada *Adapter) TimeLocations(courseId string) (timeLocations []*model.TimeL
 	}
 
 	for _, result := range v.ResultList {
-		dayOfWeek, err := strconv.Atoi(result.Skxq)
+		day, err := strconv.Atoi(result.Skxq)
 		if err != nil {
 			status = http.StatusInternalServerError
 			errMsg = fmt.Errorf("Failed to parse day of week from %s: %s", result.Skxq, err)
 			return
 		}
-		periodOfDay, err := strconv.Atoi(result.Skjc)
+		slot, err := strconv.Atoi(result.Skjc)
 		if err != nil {
 			status = http.StatusInternalServerError
 			errMsg = fmt.Errorf("Failed to parse period of day from %s: %s", result.Skjc, err)
 			return
 		}
 
-		timeLocation := &model.TimeLocation{
-			Weeks:       result.Skzc,
-			DayOfWeek:   dayOfWeek,
-			PeriodOfDay: periodOfDay,
-			Location:    result.Skdd,
+		schedule := &model.Schedule{
+			Weeks:    result.Skzc,
+			Day:      day,
+			Slot:     slot,
+			Location: result.Skdd,
 		}
-		timeLocations = append(timeLocations, timeLocation)
+		schedules = append(schedules, schedule)
 	}
 
 	return
@@ -157,14 +157,14 @@ func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.
 		}
 
 		course := &model.Course{
-			Id:             result.CourseId,
-			Semester:       result.SemesterInfo.Id,
-			CourseNumber:   result.Course_no,
-			CourseSequence: result.Course_seq,
-			Name:           name,
-			Credit:         result.Credit,
-			Hour:           result.Course_time,
-			Description:    description,
+			Id:          result.CourseId,
+			Semester:    result.SemesterInfo.Id,
+			Number:      result.Course_no,
+			Sequence:    result.Course_seq,
+			Name:        name,
+			Credit:      result.Credit,
+			Hour:        result.Course_time,
+			Description: description,
 
 			Teachers: []*model.User{
 				&model.User{
@@ -180,7 +180,7 @@ func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.
 		}
 
 		sg.Go(func(status *int, err *error) {
-			course.TimeLocations, *status, *err = ada.TimeLocations(course.Id)
+			course.Schedules, *status, *err = ada.Schedules(course.Id)
 		})
 		sg.Go(func(status *int, err *error) {
 			course.Assistants, *status, *err = ada.Assistants(course.Id)

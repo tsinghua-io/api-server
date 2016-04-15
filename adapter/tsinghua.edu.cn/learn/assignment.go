@@ -181,7 +181,7 @@ func (ada *Adapter) AssignmentList(courseId string) (assignments []*model.Assign
 			switch subStatus := texts[3]; subStatus {
 			case "尚未提交":
 			case "已经提交":
-				assign.Submissions = make([]*model.Submission, 1)
+				assign.Submission = new(model.Submission)
 			default:
 				errMsg = fmt.Errorf("Unknown submission status: %s", subStatus)
 			}
@@ -215,9 +215,9 @@ func (ada *Adapter) Assignments(courseId string) (assignments []*model.Assignmen
 			_, assign.Body, assign.Attachment, *status, *err = ada.AssignmentDetail(courseId, assign.Id)
 		})
 
-		if len(assign.Submissions) > 0 {
+		if assign.Submission != nil {
 			sg.Go(func(status *int, err *error) {
-				assign.Submissions[0], *status, *err = ada.Submission(courseId, assign.Id)
+				assign.Submission, *status, *err = ada.Submission(courseId, assign.Id)
 			})
 		}
 	}

@@ -11,19 +11,19 @@ type User struct {
 	Phone      string `json:"phone,omitempty"`
 }
 
-type TimeLocation struct {
-	Weeks       string `json:"weeks,omitempty"`
-	DayOfWeek   int    `json:"day_of_week,omitempty"`
-	PeriodOfDay int    `json:"period_of_day,omitempty"`
-	Location    string `json:"location,omitempty"`
+type Schedule struct {
+	Weeks    string `json:"weeks,omitempty"`
+	Day      int    `json:"day,omitempty"`
+	Slot     int    `json:"slot,omitempty"`
+	Location string `json:"location,omitempty"`
 }
 
 type Course struct {
 	// Identifiers.
-	Id             string `json:"id,omitempty"`
-	Semester       string `json:"semester,omitempty"`
-	CourseNumber   string `json:"course_number,omitempty"`
-	CourseSequence string `json:"course_sequence,omitempty"`
+	Id       string `json:"id,omitempty"`
+	Semester string `json:"semester,omitempty"`
+	Number   string `json:"number,omitempty"`
+	Sequence string `json:"sequence,omitempty"`
 
 	// Metadata.
 	Name        string `json:"name,omitempty"`
@@ -31,8 +31,8 @@ type Course struct {
 	Hour        int    `json:"hour,omitempty"`
 	Description string `json:"description,omitempty"`
 
-	// Time & location.
-	TimeLocations []*TimeLocation `json:"time_locations,omitempty"`
+	// Schedules.
+	Schedules []*Schedule `json:"schedules,omitempty"`
 
 	// Staff.
 	Teachers   []*User `json:"teachers,omitempty"`
@@ -114,6 +114,6 @@ type Assignment struct {
 	Body       string      `json:"body,omitempty"`
 	Attachment *Attachment `json:"attachment,omitempty"`
 
-	// Submissions.
-	Submissions []*Submission `json:"submissions,omitempty"`
+	// Submission.
+	Submission *Submission `json:"submission,omitempty"`
 }

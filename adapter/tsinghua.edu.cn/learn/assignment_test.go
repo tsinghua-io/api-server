@@ -24,7 +24,7 @@ func TestAssignments(t *testing.T) {
 			DueAt:    "2015-11-05T23:59:59+0800",
 			Title:    "第六次作业",
 			Body:     "第六次作业有部分内容需要Matlab仿真，所以如果有同学想提交电子版作业，请把非仿真的部分也拍照一并提交上来，这样就可以不必提交纸版作业了。\n    如果有同学要提交纸板作业，请把仿真内容打印出来，在课堂上交给老师！",
-			Submissions: []*model.Submission{
+			Submission: &model.Submission{
 				{
 					AssignmentId: "663857",
 					Late:         false,
@@ -52,7 +52,7 @@ func TestAssignments(t *testing.T) {
 				Size:        112055,
 				DownloadURL: "https://learn.tsinghua.edu.cn/uploadFile/downloadFile.jsp?module_id=322\u0026course_id=127743\u0026filePath=7D5eM/3uxuWgUscnZFe5xYFRwCtzmT3Nd4b8XfYdVt9QXP6jW0X3Mw6gr2ogb0t8bD67/q7AeDDvr3x32279mpdW6Tj5nS6ysO1fFyPcUzk%3D",
 			},
-			Submissions: []*model.Submission{
+			Submission: &model.Submission{
 				{
 					AssignmentId: "667021",
 					Late:         false,
@@ -112,7 +112,7 @@ func TestAssignments(t *testing.T) {
 			DueAt:    "2016-01-01T23:59:59+0800",
 			Title:    "第十四次作业",
 			Body:     "",
-			Submissions: []*model.Submission{
+			Submission: &model.Submission{
 				{
 					AssignmentId: "677925",
 					Late:         false,

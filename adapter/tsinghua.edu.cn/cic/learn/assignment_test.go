@@ -18,15 +18,15 @@ func TestAssignments(t *testing.T) {
 	// Check fetched data.
 	expected := []*model.Assignment{
 		{
-			Id:          "58093",
-			CourseId:    "2014-2015-1-20750021-97",
-			CreatedAt:   "",
-			BeginAt:     "2014-09-23T10:02:50+0800",
-			DueAt:       "2014-09-23T18:59:59+0800",
-			Title:       "第一节课预习作业：已经发了课程公告，为防止大家没看到",
-			Body:        "<p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\">重要：预习作业每人都要做，但不用交，我会课堂上随机抽查预习效果。</p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\"><br/></p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\">本课第一讲将主要帮助大家正确认识文献信息源。请大家预习以下内容。</p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\"><br/></p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\">查清华大学图书馆是否有“凌晓峰.学术研究：你的成功之道.北京 : 清华大学出版社, 2012”一书。</p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\">如有，告知馆藏地、索书号和馆藏状态。</p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\">本馆是否该书的英文版本？如何使用该书电子版？</p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\"><br/></p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\">请大家使用图书馆馆藏目录查阅以上信息。课堂上我会随机点名抽查预习的效果哦。</p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\"><br/></p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\">晚上见！</p><p><br/></p>",
-			Attachment:  nil,
-			Submissions: nil,
+			Id:         "58093",
+			CourseId:   "2014-2015-1-20750021-97",
+			CreatedAt:  "",
+			BeginAt:    "2014-09-23T10:02:50+0800",
+			DueAt:      "2014-09-23T18:59:59+0800",
+			Title:      "第一节课预习作业：已经发了课程公告，为防止大家没看到",
+			Body:       "<p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\">重要：预习作业每人都要做，但不用交，我会课堂上随机抽查预习效果。</p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\"><br/></p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\">本课第一讲将主要帮助大家正确认识文献信息源。请大家预习以下内容。</p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\"><br/></p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\">查清华大学图书馆是否有“凌晓峰.学术研究：你的成功之道.北京 : 清华大学出版社, 2012”一书。</p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\">如有，告知馆藏地、索书号和馆藏状态。</p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\">本馆是否该书的英文版本？如何使用该书电子版？</p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\"><br/></p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\">请大家使用图书馆馆藏目录查阅以上信息。课堂上我会随机点名抽查预习的效果哦。</p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\"><br/></p><p style=\"margin-top: 0px; margin-bottom: 0px; padding: 0px; font-family: Tahoma, Helvetica, Arial, 微软雅黑, sans-serif; font-size: 12px; line-height: 22px; white-space: normal; background-color: rgb(255, 255, 255);\">晚上见！</p><p><br/></p>",
+			Attachment: nil,
+			Submission: nil,
 		},
 		{
 			Id:         "71056",
@@ -37,7 +37,7 @@ func TestAssignments(t *testing.T) {
 			Title:      "第一次作业：电子图书与检索式编写",
 			Body:       "<p>请于10月20日前提交作业，电子版即可，可将两个题目做在一个ppt或word中，推荐使用ppt呈现。有不明白的请给我或助教发邮件。<br/></p>",
 			Attachment: nil,
-			Submissions: []*model.Submission{
+			Submission: &model.Submission{
 				{
 					Owner:        &model.User{Id: "2013011187"},
 					AssignmentId: "71056",
@@ -70,7 +70,7 @@ func TestAssignments(t *testing.T) {
 				Size:        15832,
 				DownloadURL: "http://learn.cic.tsinghua.edu.cn/b/resource/downloadFileStream/2004980851_2014-2015-1-20750021-97_ZY_1413969147",
 			},
-			Submissions: []*model.Submission{
+			Submission: &model.Submission{
 				{
 					Owner:        &model.User{Id: "2013011187"},
 					AssignmentId: "76121",
@@ -103,7 +103,7 @@ func TestAssignments(t *testing.T) {
 				Size:        32256,
 				DownloadURL: "http://learn.cic.tsinghua.edu.cn/b/resource/downloadFileStream/2004980851_2014-2015-1-20750021-97_ZY_1414652158",
 			},
-			Submissions: []*model.Submission{
+			Submission: &model.Submission{
 				{
 					Owner:        &model.User{Id: "2013011187"},
 					AssignmentId: "88053",
@@ -132,7 +132,7 @@ func TestAssignments(t *testing.T) {
 			Title:      "综合检索报告提交专用",
 			Body:       "",
 			Attachment: nil,
-			Submissions: []*model.Submission{
+			Submission: &model.Submission{
 				{
 					Owner:        &model.User{Id: "2013011187"},
 					AssignmentId: "92095",

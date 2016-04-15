@@ -65,10 +65,10 @@ func (ada *Adapter) AttendedList(page int) (courses []*model.Course, status int,
 			errMsg = fmt.Errorf("Failed to parse course name, sequence number and semester id from link text (%s)", s.Text())
 		} else {
 			course := &model.Course{
-				Id:             id,
-				Semester:       sem,
-				CourseSequence: seq,
-				Name:           name,
+				Id:       id,
+				Semester: sem,
+				Sequence: seq,
+				Name:     name,
 			}
 
 			courses[i] = course

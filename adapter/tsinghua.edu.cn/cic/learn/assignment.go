@@ -76,7 +76,7 @@ func (ada *Adapter) Assignments(courseId string) (assignments []*model.Assignmen
 		}
 
 		// Fetch submission, if exists.
-		var submissions []*model.Submission
+		var submission *model.Submission
 
 		if result.CourseHomeworkRecord.Status != "0" {
 			// Fetch submission attachment, if exists.
@@ -103,33 +103,31 @@ func (ada *Adapter) Assignments(courseId string) (assignments []*model.Assignmen
 				}
 			}
 
-			submissions = []*model.Submission{
-				{
-					Owner:             &model.User{Id: result.CourseHomeworkRecord.StudentId},
-					AssignmentId:      id,
-					CreatedAt:         parseRegDate(result.CourseHomeworkRecord.RegDate),
-					Late:              result.CourseHomeworkRecord.IfDelay == "1",
-					Body:              result.CourseHomeworkRecord.HomewkDetail,
-					Attachment:        attach,
-					MarkedBy:          &model.User{Name: result.CourseHomeworkRecord.GradeUser},
-					MarkedAt:          parseRegDate(result.CourseHomeworkRecord.ReplyDate),
-					Mark:              result.CourseHomeworkRecord.Mark,
-					Comment:           result.CourseHomeworkRecord.ReplyDetail,
-					CommentAttachment: commentAttach,
-				},
+			submission = &model.Submission{
+				Owner:             &model.User{Id: result.CourseHomeworkRecord.StudentId},
+				AssignmentId:      id,
+				CreatedAt:         parseRegDate(result.CourseHomeworkRecord.RegDate),
+				Late:              result.CourseHomeworkRecord.IfDelay == "1",
+				Body:              result.CourseHomeworkRecord.HomewkDetail,
+				Attachment:        attach,
+				MarkedBy:          &model.User{Name: result.CourseHomeworkRecord.GradeUser},
+				MarkedAt:          parseRegDate(result.CourseHomeworkRecord.ReplyDate),
+				Mark:              result.CourseHomeworkRecord.Mark,
+				Comment:           result.CourseHomeworkRecord.ReplyDetail,
+				CommentAttachment: commentAttach,
 			}
 		}
 
 		assignment := &model.Assignment{
-			Id:          id,
-			CourseId:    result.CourseHomeworkInfo.CourseId,
-			CreatedAt:   parseRegDate(result.CourseHomeworkInfo.RegDate),
-			BeginAt:     parseRegDate(result.CourseHomeworkInfo.BeginDate),
-			DueAt:       parseRegDate(result.CourseHomeworkInfo.EndDate),
-			Title:       result.CourseHomeworkInfo.Title,
-			Body:        result.CourseHomeworkInfo.Detail,
-			Attachment:  attach,
-			Submissions: submissions,
+			Id:         id,
+			CourseId:   result.CourseHomeworkInfo.CourseId,
+			CreatedAt:  parseRegDate(result.CourseHomeworkInfo.RegDate),
+			BeginAt:    parseRegDate(result.CourseHomeworkInfo.BeginDate),
+			DueAt:      parseRegDate(result.CourseHomeworkInfo.EndDate),
+			Title:      result.CourseHomeworkInfo.Title,
+			Body:       result.CourseHomeworkInfo.Detail,
+			Attachment: attach,
+			Submission: submission,
 		}
 		assignments = append(assignments, assignment)
 	}
