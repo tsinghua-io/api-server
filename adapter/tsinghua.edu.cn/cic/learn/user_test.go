@@ -20,7 +20,7 @@ func TestProfile(t *testing.T) {
 		Id:         "2013011187",
 		Name:       "李思涵",
 		Department: "电子系",
-		Class:      "无36 ",
+		Class:      "无36",
 		Gender:     "男",
 		Email:      "lisihan969@gmail.com",
 		Phone:      "18800183697",
