@@ -57,22 +57,22 @@ func TestAllAttendedList(t *testing.T) {
 
 	testSet := []model.Course{
 		{
-			Id:             "132577",
-			Semester:       "2015-2016-2",
-			CourseSequence: "1",
-			Name:           "三年级男生击剑",
+			Id:       "132577",
+			Semester: "2015-2016-2",
+			Sequence: "1",
+			Name:     "三年级男生击剑",
 		},
 		{
-			Id:             "108357",
-			Semester:       "2013-2014-2",
-			CourseSequence: "18",
-			Name:           "中国近现代史纲要",
+			Id:       "108357",
+			Semester: "2013-2014-2",
+			Sequence: "18",
+			Name:     "中国近现代史纲要",
 		},
 		{
-			Id:             "2014-2015-2-30230742-0",
-			Semester:       "2014-2015-2",
-			CourseSequence: "0",
-			Name:           "概率论与随机过程 (1)",
+			Id:       "2014-2015-2-30230742-0",
+			Semester: "2014-2015-2",
+			Sequence: "0",
+			Name:     "概率论与随机过程 (1)",
 		},
 	}
 

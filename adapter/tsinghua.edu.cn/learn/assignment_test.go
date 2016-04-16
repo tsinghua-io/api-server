@@ -25,19 +25,17 @@ func TestAssignments(t *testing.T) {
 			Title:    "第六次作业",
 			Body:     "第六次作业有部分内容需要Matlab仿真，所以如果有同学想提交电子版作业，请把非仿真的部分也拍照一并提交上来，这样就可以不必提交纸版作业了。\n    如果有同学要提交纸板作业，请把仿真内容打印出来，在课堂上交给老师！",
 			Submission: &model.Submission{
-				{
-					AssignmentId: "663857",
-					Late:         false,
-					Body:         "",
-					Attachment: &model.Attachment{
-						Filename:    "2013011187_663857_873609575_p4.pdf",
-						Size:        2820876,
-						DownloadURL: "https://learn.tsinghua.edu.cn/uploadFile/downloadFile.jsp?module_id=322\u0026course_id=127743\u0026filePath=Ui6dWfN3E23iy92Lm3GqLolVIj%2Bu5tfsytg7jRwlhOqxaULAEWF80pMjNsAbeGoNLbxf932lsPZSeaPFGySxlzqYaxPQuvWF9JTL%2B1WuOg4%3D",
-					},
-					MarkedAt: "2015-11-06",
-					Mark:     util.NewFloat32(9.5),
-					Comment:  "第二题分析和结论正确，公式有问题。",
+				AssignmentId: "663857",
+				Late:         false,
+				Body:         "",
+				Attachment: &model.Attachment{
+					Filename:    "2013011187_663857_873609575_p4.pdf",
+					Size:        2820876,
+					DownloadURL: "https://learn.tsinghua.edu.cn/uploadFile/downloadFile.jsp?module_id=322\u0026course_id=127743\u0026filePath=Ui6dWfN3E23iy92Lm3GqLolVIj%2Bu5tfsytg7jRwlhOqxaULAEWF80pMjNsAbeGoNLbxf932lsPZSeaPFGySxlzqYaxPQuvWF9JTL%2B1WuOg4%3D",
 				},
+				MarkedAt: "2015-11-06",
+				Mark:     util.NewFloat32(9.5),
+				Comment:  "第二题分析和结论正确，公式有问题。",
 			},
 		},
 		{
@@ -53,15 +51,13 @@ func TestAssignments(t *testing.T) {
 				DownloadURL: "https://learn.tsinghua.edu.cn/uploadFile/downloadFile.jsp?module_id=322\u0026course_id=127743\u0026filePath=7D5eM/3uxuWgUscnZFe5xYFRwCtzmT3Nd4b8XfYdVt9QXP6jW0X3Mw6gr2ogb0t8bD67/q7AeDDvr3x32279mpdW6Tj5nS6ysO1fFyPcUzk%3D",
 			},
 			Submission: &model.Submission{
-				{
-					AssignmentId: "667021",
-					Late:         false,
-					Body:         "",
-					Attachment: &model.Attachment{
-						Filename:    "2013011187_667021_531504538_report.pdf",
-						Size:        98640,
-						DownloadURL: "https://learn.tsinghua.edu.cn/uploadFile/downloadFile.jsp?module_id=322\u0026course_id=127743\u0026filePath=Ui6dWfN3E23iy92Lm3GqLolVIj%2Bu5tfsVetxSI%2BmeI5zL/GWM0GkxzPppRm00efUNVY7MLZOt3A1jm56tM3YdeAlZMTa30DiABpxaPmB1YI%3D",
-					},
+				AssignmentId: "667021",
+				Late:         false,
+				Body:         "",
+				Attachment: &model.Attachment{
+					Filename:    "2013011187_667021_531504538_report.pdf",
+					Size:        98640,
+					DownloadURL: "https://learn.tsinghua.edu.cn/uploadFile/downloadFile.jsp?module_id=322\u0026course_id=127743\u0026filePath=Ui6dWfN3E23iy92Lm3GqLolVIj%2Bu5tfsVetxSI%2BmeI5zL/GWM0GkxzPppRm00efUNVY7MLZOt3A1jm56tM3YdeAlZMTa30DiABpxaPmB1YI%3D",
 				},
 			},
 		},
@@ -113,19 +109,17 @@ func TestAssignments(t *testing.T) {
 			Title:    "第十四次作业",
 			Body:     "",
 			Submission: &model.Submission{
-				{
-					AssignmentId: "677925",
-					Late:         false,
-					Body:         "助教你好，这是最后的三次作业（对于课件12，13，14，15），一起交上来了！",
-					Attachment: &model.Attachment{
-						Filename:    "2013011187_677925_351002502_课件12-15对应的作业.zip",
-						Size:        13601942,
-						DownloadURL: "https://learn.tsinghua.edu.cn/uploadFile/downloadFile.jsp?module_id=322\u0026course_id=127743\u0026filePath=Ui6dWfN3E23iy92Lm3GqLolVIj%2Bu5tfsAqZGEzdQ71%2BH77AyehAScSLl2e2n5PeFBbCCeknxk/vScQfKcoZU4o%2B/fgVxuHWOFnv5a2X8eUU%3D",
-					},
-					MarkedAt: "2016-01-03",
-					Mark:     util.NewFloat32(9.5),
-					Comment:  "前面三次各8分",
+				AssignmentId: "677925",
+				Late:         false,
+				Body:         "助教你好，这是最后的三次作业（对于课件12，13，14，15），一起交上来了！",
+				Attachment: &model.Attachment{
+					Filename:    "2013011187_677925_351002502_课件12-15对应的作业.zip",
+					Size:        13601942,
+					DownloadURL: "https://learn.tsinghua.edu.cn/uploadFile/downloadFile.jsp?module_id=322\u0026course_id=127743\u0026filePath=Ui6dWfN3E23iy92Lm3GqLolVIj%2Bu5tfsAqZGEzdQ71%2BH77AyehAScSLl2e2n5PeFBbCCeknxk/vScQfKcoZU4o%2B/fgVxuHWOFnv5a2X8eUU%3D",
 				},
+				MarkedAt: "2016-01-03",
+				Mark:     util.NewFloat32(9.5),
+				Comment:  "前面三次各8分",
 			},
 		},
 	}
