@@ -20,10 +20,10 @@ type Schedule struct {
 
 type Course struct {
 	// Identifiers.
-	Id       string `json:"id,omitempty"`
-	Semester string `json:"semester,omitempty"`
-	Number   string `json:"number,omitempty"`
-	Sequence string `json:"sequence,omitempty"`
+	Id         string `json:"id,omitempty"`
+	SemesterId string `json:"semester_id,omitempty"`
+	Number     string `json:"number,omitempty"`
+	Sequence   string `json:"sequence,omitempty"`
 
 	// Metadata.
 	Name        string `json:"name,omitempty"`
@@ -122,4 +122,9 @@ type Materials struct {
 	Announcements []*Announcement `json:"announcements,omitempty"`
 	Files         []*File         `json:"files,omitempty"`
 	Assignments   []*Assignment   `json:"assignments,omitempty"`
+}
+
+type Semester struct {
+	Id      string `json:"id,omitempty"`
+	BeginAt string `json:"begin_at,omitempty"`
 }

@@ -27,11 +27,13 @@ func main() {
 		util.NewLimiter(*windowMin*60, *rate).Handler(),
 	)
 
+	api.AddResource("/semester", resource.Semester)
 	api.AddResource("/users/me", resource.Profile)
 	api.AddResource("/users/me/attended", resource.Attended)
 	api.AddResource("/courses/{id}/announcements", resource.CourseAnnouncements)
 	api.AddResource("/courses/{id}/files", resource.CourseFiles)
 	api.AddResource("/courses/{id}/assignments", resource.CourseAssignments)
+	api.AddResource("/courses/{id}/materials", resource.CourseMaterials)
 
 	addr := *host + ":" + strconv.Itoa(*port)
 	glog.Infof("windowMin = %d, rate = %d", *windowMin, *rate)

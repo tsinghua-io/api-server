@@ -52,7 +52,7 @@ type fatName struct {
 }
 
 func newFatName(course *model.Course) fatName {
-	return fatName{course.Name, course.Sequence, course.Semester}
+	return fatName{course.Name, course.Sequence, course.SemesterId}
 }
 
 func (ada *Adapter) nameIdMap() (m map[fatName]string, status int, errMsg error) {
@@ -76,7 +76,7 @@ func replaceCourseIds(courses []*model.Course, m map[fatName]string) {
 	}
 }
 
-func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.Course, status int, errMsg error) {
+func (ada *Adapter) Attended(semesterId string, english bool) (courses []*model.Course, status int, errMsg error) {
 	var m map[fatName]string
 
 	sg := util.NewStatusGroup()
@@ -84,7 +84,7 @@ func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.
 		m, *status, *err = ada.nameIdMap()
 	})
 	sg.Go(func(status *int, err *error) {
-		courses, *status, *err = ada.Adapter.Attended(semesterID, english)
+		courses, *status, *err = ada.Adapter.Attended(semesterId, english)
 	})
 	if status, errMsg = sg.Wait(); errMsg == nil {
 		replaceCourseIds(courses, m)

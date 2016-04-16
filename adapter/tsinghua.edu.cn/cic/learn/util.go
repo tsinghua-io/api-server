@@ -2,6 +2,7 @@ package learn
 
 import (
 	"fmt"
+	"github.com/tsinghua-io/api-server/model"
 	"net/http"
 	"time"
 )
@@ -23,15 +24,17 @@ func parseRegDate(regDate int64) string {
 	return time.Unix(regDate/1000, 0).Format("2006-01-02T15:04:05+0800")
 }
 
-func (ada *Adapter) Semesters() (thisSem, nextSem string, status int, errMsg error) {
+func (ada *Adapter) Semesters() (thisSem, nextSem *model.Semester, status int, errMsg error) {
 	status = http.StatusOK
 
 	var v struct {
 		CurrentSemester struct {
-			Id string
+			Id        string
+			StartDate string
 		}
 		NextSemester struct {
-			Id string
+			Id        string
+			StartDate string
 		}
 	}
 
@@ -41,7 +44,7 @@ func (ada *Adapter) Semesters() (thisSem, nextSem string, status int, errMsg err
 		return
 	}
 
-	thisSem = v.CurrentSemester.Id
-	nextSem = v.NextSemester.Id
+	thisSem = &model.Semester{Id: v.CurrentSemester.Id, BeginAt: v.CurrentSemester.StartDate}
+	nextSem = &model.Semester{Id: v.NextSemester.Id, BeginAt: v.NextSemester.StartDate}
 	return
 }

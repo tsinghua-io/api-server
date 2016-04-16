@@ -22,7 +22,7 @@ func TestAllAttended(t *testing.T) {
 	actual := courses[len(courses)-1]
 	expected := &model.Course{
 		Id:          "2013-2014-1-00640252-96",
-		Semester:    "2013-2014-1",
+		SemesterId:  "2013-2014-1",
 		Number:      "00640252",
 		Sequence:    "96",
 		Name:        "英语报刊选读",

@@ -16,8 +16,8 @@ func AssistantsURL(courseId string) string {
 	return fmt.Sprintf("%s/b/mycourse/AssistTeacher/list/%s", BaseURL, courseId)
 }
 
-func AttendedURL(semesterID string) string {
-	return fmt.Sprintf("%s/b/myCourse/courseList/loadCourse4Student/%s", BaseURL, semesterID)
+func AttendedURL(semesterId string) string {
+	return fmt.Sprintf("%s/b/myCourse/courseList/loadCourse4Student/%s", BaseURL, semesterId)
 }
 
 func (ada *Adapter) Schedules(courseId string) (schedules []*model.Schedule, status int, errMsg error) {
@@ -99,10 +99,10 @@ func (ada *Adapter) Assistants(courseId string) (assistants []*model.User, statu
 	return
 }
 
-func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.Course, status int, errMsg error) {
+func (ada *Adapter) Attended(semesterId string, english bool) (courses []*model.Course, status int, errMsg error) {
 	courses = make([]*model.Course, 0)
 
-	url := AttendedURL(semesterID)
+	url := AttendedURL(semesterId)
 	var v struct {
 		ResultList []struct {
 			CourseId      string
@@ -158,7 +158,7 @@ func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.
 
 		course := &model.Course{
 			Id:          result.CourseId,
-			Semester:    result.SemesterInfo.Id,
+			SemesterId:  result.SemesterInfo.Id,
 			Number:      result.Course_no,
 			Sequence:    result.Course_seq,
 			Name:        name,
@@ -193,7 +193,7 @@ func (ada *Adapter) Attended(semesterID string, english bool) (courses []*model.
 }
 
 func (ada *Adapter) NowAttended(english bool) (thisCourses []*model.Course, nextCourses []*model.Course, status int, errMsg error) {
-	var thisSem, nextSem string
+	var thisSem, nextSem *model.Semester
 	thisSem, nextSem, status, errMsg = ada.Semesters()
 	if errMsg != nil {
 		return
@@ -201,10 +201,10 @@ func (ada *Adapter) NowAttended(english bool) (thisCourses []*model.Course, next
 
 	sg := util.NewStatusGroup()
 	sg.Go(func(status *int, err *error) {
-		thisCourses, *status, *err = ada.Attended(thisSem, english)
+		thisCourses, *status, *err = ada.Attended(thisSem.Id, english)
 	})
 	sg.Go(func(status *int, err *error) {
-		nextCourses, *status, *err = ada.Attended(nextSem, english)
+		nextCourses, *status, *err = ada.Attended(nextSem.Id, english)
 	})
 
 	status, errMsg = sg.Wait()
